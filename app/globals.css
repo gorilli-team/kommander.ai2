@@ -1,0 +1,90 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 220 13% 95%; /* Very light gray #F0F2F5 */
+    --foreground: 220 13% 10%; /* Dark charcoal for text */
+    --card: 0 0% 100%; /* White cards */
+    --card-foreground: 220 13% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 10%;
+    --primary: 221 79% 48%; /* New Blue #1a56db */
+    --primary-foreground: 0 0% 100%; /* White text on primary */
+    --secondary: 220 10% 90%; /* Lighter gray for secondary elements */
+    --secondary-foreground: 220 13% 10%;
+    --muted: 220 10% 85%; /* Muted gray */
+    --muted-foreground: 220 10% 45%;
+    --accent: 220 80% 75%; /* Lighter Blue */
+    --accent-foreground: 221 40% 25%; /* Darker blue text on accent */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 13% 88%; /* Border color */
+    --input: 220 13% 88%; /* Input background / border */
+    --ring: 221 79% 48%; /* New Blue for rings */
+    --chart-1: 221 79% 48%; /* New Primary Blue */
+    --chart-2: 220 80% 75%; /* New Accent Light Blue */
+    --chart-3: 215 60% 60%; /* Distinct Mid-Blue */
+    --chart-4: 43 74% 66%; /* Kept Yellow/Orange */
+    --chart-5: 27 87% 67%; /* Kept Orange */
+    --radius: 0.5rem;
+    --sidebar-background: 220 10% 98%; /* Slightly off-white for sidebar */
+    --sidebar-foreground: 220 13% 20%;
+    --sidebar-primary: 221 70% 55%; /* Adjusted Sidebar Blue */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text on sidebar primary */
+    --sidebar-accent: 220 75% 80%; /* Lighter blue for sidebar accent */
+    --sidebar-accent-foreground: 221 30% 30%; /* Darker blue text for sidebar accent */
+    --sidebar-border: 220 13% 88%;
+    --sidebar-ring: 221 70% 55%; /* Adjusted Sidebar Blue for ring */
+  }
+
+  .dark {
+    --background: 220 13% 10%; /* Dark Slate Gray/Charcoal #1A202C */
+    --foreground: 220 13% 95%; /* Light Gray text #F0F2F5 */
+    --card: 220 13% 15%; /* Slightly Lighter Charcoal for cards */
+    --card-foreground: 220 13% 95%;
+    --popover: 220 13% 15%;
+    --popover-foreground: 220 13% 95%;
+    --primary: 221 79% 58%; /* New Blue for dark mode (brighter) */
+    --primary-foreground: 0 0% 100%; /* White text on primary */
+    --secondary: 220 13% 25%; /* Darker gray for secondary elements */
+    --secondary-foreground: 220 13% 95%;
+    --muted: 220 13% 20%; /* Muted dark gray */
+    --muted-foreground: 220 10% 65%;
+    --accent: 220 70% 45%; /* Dark mode Accent Blue */
+    --accent-foreground: 0 0% 100%; /* White text on dark mode accent */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 13% 20%; /* Border color for dark theme */
+    --input: 220 13% 20%; /* Input background / border for dark theme */
+    --ring: 221 79% 58%; /* New Blue for rings in dark mode */
+    --chart-1: 221 79% 58%; /* Dark Mode Primary Blue */
+    --chart-2: 220 70% 45%; /* Dark Mode Accent Blue */
+    --chart-3: 215 55% 50%; /* Dark Mode Distinct Mid-Blue */
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --sidebar-background: 220 13% 8%; /* Very dark for sidebar */
+    --sidebar-foreground: 220 13% 85%;
+    --sidebar-primary: 221 65% 50%; /* Adjusted Sidebar Blue for dark theme */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text on sidebar primary (dark theme) */
+    --sidebar-accent: 220 60% 35%; /* Darker blue for sidebar accent (dark theme) */
+    --sidebar-accent-foreground: 0 0% 90%; /* Light gray text for sidebar accent (dark theme) */
+    --sidebar-border: 220 13% 20%;
+    --sidebar-ring: 221 65% 50%; /* Adjusted Sidebar Blue for ring (dark theme) */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
