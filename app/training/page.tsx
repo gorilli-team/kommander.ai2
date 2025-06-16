@@ -1,16 +1,46 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import FaqList from '@/frontend/components/training/FaqList';
 import FileList from '@/frontend/components/training/FileList';
 import { Button } from '@/frontend/components/ui/button';
 import { cn } from '@/frontend/lib/utils';
+import { Skeleton } from '@/frontend/components/ui/skeleton';
 
 type ActiveTab = "faqs" | "files";
 
 export default function TrainingPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>("faqs");
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/login?callbackUrl=/training');
+    }
+  }, [status, router]);
+
+  if (status === 'loading') {
+    return (
+      <div className="container mx-auto py-2 space-y-6">
+        <Skeleton className="h-10 w-1/3 mb-2" />
+        <Skeleton className="h-6 w-2/3" />
+        <div className="flex">
+          <Skeleton className="h-10 w-24 mr-px" />
+          <Skeleton className="h-10 w-24" />
+        </div>
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+  
+  if (status === 'unauthenticated') {
+    // This will be brief as the useEffect above will redirect
+    return <div className="container mx-auto py-2 space-y-6">Redirecting to login...</div>;
+  }
 
   return (
     <div className="container mx-auto py-2 space-y-6">

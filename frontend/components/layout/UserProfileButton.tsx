@@ -1,4 +1,4 @@
-// frontend/components/layout/UserProfileButton.tsx
+
 "use client";
 
 import React from 'react';
@@ -13,28 +13,44 @@ import {
   DropdownMenuTrigger,
 } from '@/frontend/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/frontend/components/ui/avatar';
-import { UserCircle, LogOut, Settings } from 'lucide-react'; // Added Settings for profile
+import { UserCircle, LogOut, Settings } from 'lucide-react';
+import { signOut, useSession } from 'next-auth/react';
 
 export default function UserProfileButton() {
   const router = useRouter();
+  const { data: session, status } = useSession();
 
-  const handleLogout = () => {
-    // In a real app, you'd clear session/token here
-    router.push('/login');
+  const handleLogout = async () => {
+    await signOut({ redirect: true, callbackUrl: '/login' });
   };
 
   const handleProfile = () => {
     router.push('/profile');
   };
 
+  if (status === 'loading') {
+    return <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 animate-pulse bg-muted/50"></Button>;
+  }
+
+  if (status === 'unauthenticated') {
+    return (
+      <Button onClick={() => router.push('/login')} variant="outline" size="sm">
+        Log In
+      </Button>
+    );
+  }
+  
+  const userInitial = session?.user?.name?.charAt(0).toUpperCase() || session?.user?.email?.charAt(0).toUpperCase() || <UserCircle className="h-7 w-7 text-muted-foreground" />;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://placehold.co/40x40/1a56db/FFFFFF.png?text=A" data-ai-hint="avatar placeholder" />
+            {/* Use a placeholder if no image, or first letter of name/email */}
+            <AvatarImage src={session?.user?.image || `https://placehold.co/40x40/1a56db/FFFFFF.png?text=${userInitial}`} data-ai-hint="avatar placeholder" />
             <AvatarFallback>
-              <UserCircle className="h-7 w-7 text-muted-foreground" />
+              {userInitial}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -42,9 +58,9 @@ export default function UserProfileButton() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Arbi Shehu</p>
+            <p className="text-sm font-medium leading-none">{session?.user?.name || 'User'}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              arbi@gorilli.io
+              {session?.user?.email}
             </p>
           </div>
         </DropdownMenuLabel>

@@ -4,6 +4,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import AppLayout from '@/frontend/components/layout/AppLayout';
 import { Toaster } from "@/frontend/components/ui/toaster";
+import { SessionProvider } from 'next-auth/react'; // Import SessionProvider
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -25,8 +26,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className={`${inter.variable} font-body antialiased`}>
-        <AppLayout>{children}</AppLayout>
-        <Toaster />
+        <SessionProvider> {/* Wrap AppLayout and children with SessionProvider */}
+          <AppLayout>{children}</AppLayout>
+          <Toaster />
+        </SessionProvider>
       </body>
     </html>
   );

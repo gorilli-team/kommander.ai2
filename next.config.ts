@@ -16,9 +16,21 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      { // Adding GitHub to allow user profile images from NextAuth.js if they use GitHub for login
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      { // Adding Google to allow user profile images from NextAuth.js if they use Google for login
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
-  experimental: { // Spostato serverActions qui
+  experimental: { 
     serverActions: {
       bodySizeLimit: '10mb', 
     },
