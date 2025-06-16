@@ -7,7 +7,7 @@ import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { Progress } from '@/frontend/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
-import { UploadCloud, FileText, XCircle, AlertTriangle } from 'lucide-react';
+import { UploadCloud, FileText, XCircle } from 'lucide-react'; // AlertTriangle rimosso
 
 interface FileUploaderProps {
   onUploadComplete?: () => void;
@@ -87,14 +87,7 @@ export default function FileUploader({ onUploadComplete }: FileUploaderProps) {
             />
           </div>
 
-          <Alert variant="default" className="border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-300">
-            <AlertTriangle className="h-4 w-4 !text-amber-600 dark:!text-amber-400" />
-            <AlertTitle className="text-amber-800 dark:text-amber-200">Nota sull'elaborazione PDF</AlertTitle>
-            <AlertDescription>
-              L'estrazione del testo dai file PDF potrebbe non funzionare correttamente a causa di limitazioni dell'ambiente server. 
-              Si consiglia di utilizzare file TXT o DOCX per risultati ottimali. Se riscontri problemi con i PDF, contatta il supporto.
-            </AlertDescription>
-          </Alert>
+          {/* L'Alert specifico per i problemi di elaborazione PDF è stato rimosso */}
 
           {selectedFile && (
             <div className="mt-4 p-4 border rounded-md bg-secondary/50">

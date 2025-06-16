@@ -50,9 +50,11 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
     console.error(`[app/chatbot/actions.ts] Error during text extraction from ${fileName} (type: ${fileType}):`, error.message);
     console.error(`[app/chatbot/actions.ts] Extraction error stack:`, error.stack);
     let detailedErrorMessage = error.message;
-    if (fileType === 'application/pdf' && error.message && (error.message.toLowerCase().includes("cannot find module './pdf.worker.js'") || error.message.toLowerCase().includes("libuuid.so.1") || error.message.toLowerCase().includes("setting up fake worker failed"))) {
-        detailedErrorMessage = "Spiacenti, l'elaborazione dei file PDF è temporaneamente non disponibile a causa di limitazioni dell'ambiente server. Prova con un file TXT o DOCX, oppure contatta il supporto se il problema persiste.";
-         console.warn(`[app/chatbot/actions.ts] Specific PDF processing environment error for ${fileName}: ${error.message}`);
+    // Se è un PDF e si verifica ancora un errore relativo al worker, fornire un messaggio specifico.
+    // Il controllo libuuid.so.1 viene rimosso poiché è stato segnalato come risolto.
+    if (fileType === 'application/pdf' && error.message && (error.message.toLowerCase().includes("cannot find module './pdf.worker.js'") || error.message.toLowerCase().includes("setting up fake worker failed"))) {
+        detailedErrorMessage = "Si è verificato un problema con l'inizializzazione del componente di elaborazione PDF. L'estrazione del testo potrebbe non riuscire. Prova con un file TXT o DOCX, o contatta il supporto se il problema persiste con i PDF.";
+         console.warn(`[app/chatbot/actions.ts] PDF processing component initialization error for ${fileName}: ${error.message}`);
     }
     return `Errore durante l'estrazione del testo dal file ${fileName}. Dettagli: ${detailedErrorMessage}`;
   }

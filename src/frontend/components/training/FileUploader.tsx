@@ -7,9 +7,7 @@ import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { Progress } from '@/frontend/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
-// Card components are not used if this is directly in a modal
-// import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; 
-import { UploadCloud, FileText, XCircle, AlertTriangle } from 'lucide-react';
+import { UploadCloud, FileText, XCircle } from 'lucide-react';
 
 interface FileUploaderProps {
   onUploadComplete?: () => void;
@@ -18,7 +16,6 @@ interface FileUploaderProps {
 export default function FileUploader({ onUploadComplete }: FileUploaderProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
-  // Pass onUploadComplete to the hook
   const { uploadFile, uploadProgress, isUploading, error, successMessage } = useFileUpload({ onUploadComplete });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,10 +39,6 @@ export default function FileUploader({ onUploadComplete }: FileUploaderProps) {
     event.preventDefault();
     if (selectedFile) {
       await uploadFile(selectedFile);
-      // onUploadComplete is now handled by the hook
-      // Consider clearing selection after attempt, or only on success by moving this to onUploadComplete
-      // setSelectedFile(null); 
-      // setFilePreview(null);
     }
   };
   
@@ -71,9 +64,6 @@ export default function FileUploader({ onUploadComplete }: FileUploaderProps) {
     event.stopPropagation();
   }, []);
 
-  // The useEffect for onUploadComplete based on successMessage is removed from here,
-  // as it's now handled more directly within the useFileUpload hook.
-
   return (
     <div className="w-full">
         <form onSubmit={handleSubmit} className="space-y-6 p-1">
@@ -97,14 +87,7 @@ export default function FileUploader({ onUploadComplete }: FileUploaderProps) {
             />
           </div>
 
-          <Alert variant="default" className="border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-300">
-            <AlertTriangle className="h-4 w-4 !text-amber-600 dark:!text-amber-400" />
-            <AlertTitle className="text-amber-800 dark:text-amber-200">Nota sull'elaborazione PDF</AlertTitle>
-            <AlertDescription>
-              L'estrazione del testo dai file PDF potrebbe non funzionare correttamente a causa di limitazioni dell'ambiente server. 
-              Si consiglia di utilizzare file TXT o DOCX per risultati ottimali. Se riscontri problemi con i PDF, contatta il supporto.
-            </AlertDescription>
-          </Alert>
+          {/* L'Alert specifico per i problemi di elaborazione PDF è stato rimosso */}
 
           {selectedFile && (
             <div className="mt-4 p-4 border rounded-md bg-secondary/50">
