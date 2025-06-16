@@ -23,8 +23,9 @@ export const authConfig = {
           
           try {
             console.log('[auth.config.ts] Attempting to connect to database...');
-            const { db } = await connectToDatabase();
+            const { db } = await connectToDatabase(); // This can throw an error
             console.log('[auth.config.ts] Successfully connected to database. Searching for user:', email);
+            
             const user = await db.collection<UserDocument>('users').findOne({ email });
 
             if (!user) {
@@ -34,7 +35,7 @@ export const authConfig = {
             console.log('[auth.config.ts] User found for email:', email, 'User ID:', user._id);
 
             if (!user.hashedPassword) {
-              console.log('[auth.config.ts] User found but no hashed password for email:', email);
+              console.log('[auth.config.ts] User found but no hashed password for email:', email, '(User ID:', user._id, ')');
               return null; // User exists but has no password (should not happen in normal flow)
             }
             
@@ -42,16 +43,18 @@ export const authConfig = {
             const passwordsMatch = await bcrypt.compare(password, user.hashedPassword);
 
             if (passwordsMatch) {
-              console.log('[auth.config.ts] Passwords match for user:', email);
+              console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', user._id, ')');
               // Return a user object that will be encoded in the JWT
               return { id: user._id.toString(), email: user.email, name: user.name };
             } else {
-              console.log('[auth.config.ts] Passwords do NOT match for user:', email);
+              console.log('[auth.config.ts] Passwords do NOT match for user:', email, '(User ID:', user._id, ')');
               return null; // Passwords don't match
             }
           } catch (dbError: any) {
-            console.error('[auth.config.ts] Database error during authorization for email:', email, dbError.message);
-            console.error('[auth.config.ts] Database error stack:', dbError.stack);
+            console.error('[auth.config.ts] CRITICAL DATABASE/AUTHORIZATION ERROR for email:', email, dbError);
+            console.error('[auth.config.ts] Error Name:', dbError.name);
+            console.error('[auth.config.ts] Error Message:', dbError.message);
+            console.error('[auth.config.ts] Error Stack:', dbError.stack);
             return null; // Or throw an error to display a generic message to the user via error page
           }
         } else {
