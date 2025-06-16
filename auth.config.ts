@@ -14,7 +14,7 @@ export const authConfig = {
   providers: [
     Credentials({
       async authorize(credentials) {
-        console.log('[auth.config.ts] Authorize function called with credentials:', credentials);
+        console.log('[auth.config.ts] Authorize function called with credentials:', credentials ? { email: (credentials as any).email } : 'null');
         const validatedFields = LoginSchema.safeParse(credentials);
 
         if (validatedFields.success) {
@@ -23,20 +23,20 @@ export const authConfig = {
           
           try {
             console.log('[auth.config.ts] Attempting to connect to database...');
-            const { db } = await connectToDatabase(); // This can throw an error
+            const { db } = await connectToDatabase(); 
             console.log('[auth.config.ts] Successfully connected to database. Searching for user:', email);
             
             const user = await db.collection<UserDocument>('users').findOne({ email });
 
             if (!user) {
               console.log('[auth.config.ts] No user found for email:', email);
-              return null; // User not found
+              return null; 
             }
             console.log('[auth.config.ts] User found for email:', email, 'User ID:', user._id);
 
             if (!user.hashedPassword) {
               console.log('[auth.config.ts] User found but no hashed password for email:', email, '(User ID:', user._id, ')');
-              return null; // User exists but has no password (should not happen in normal flow)
+              return null; 
             }
             
             console.log('[auth.config.ts] Comparing passwords for user:', email);
@@ -44,18 +44,17 @@ export const authConfig = {
 
             if (passwordsMatch) {
               console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', user._id, ')');
-              // Return a user object that will be encoded in the JWT
               return { id: user._id.toString(), email: user.email, name: user.name };
             } else {
               console.log('[auth.config.ts] Passwords do NOT match for user:', email, '(User ID:', user._id, ')');
-              return null; // Passwords don't match
+              return null; 
             }
           } catch (dbError: any) {
             console.error('[auth.config.ts] CRITICAL DATABASE/AUTHORIZATION ERROR for email:', email, dbError);
             console.error('[auth.config.ts] Error Name:', dbError.name);
             console.error('[auth.config.ts] Error Message:', dbError.message);
             console.error('[auth.config.ts] Error Stack:', dbError.stack);
-            return null; // Or throw an error to display a generic message to the user via error page
+            return null; 
           }
         } else {
           console.log('[auth.config.ts] Invalid credentials (Zod validation failed):', validatedFields.error?.flatten().fieldErrors);
@@ -70,14 +69,12 @@ export const authConfig = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      // console.log('[auth.config.ts] JWT callback:', { token, user });
       if (user) {
         token.id = user.id; 
       }
       return token;
     },
     async session({ session, token }) {
-      // console.log('[auth.config.ts] Session callback:', { session, token });
       if (session.user && token.id) {
         session.user.id = token.id as string;
       }
@@ -86,10 +83,8 @@ export const authConfig = {
   },
   cookies: {
     // Explicitly adding an empty cookies configuration.
-    // This is speculative and aims to ensure default CSRF cookie settings
-    // are not inadvertently affected by the absence of this block in beta versions.
+    // This ensures default CSRF cookie settings are applied.
+    // For more details: https://authjs.dev/reference/core/types#cookies
   },
-  trustHost: true, // Necessary for some environments, generally safe for localhost
+  trustHost: true, // Important for development, especially with proxies or non-standard hostnames
 } satisfies NextAuthConfig;
-
-    
