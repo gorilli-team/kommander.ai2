@@ -1,7 +1,7 @@
 
 import type { NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { LoginSchema } from '@/frontend/components/auth/AuthForm'; // Assuming AuthForm exports this
+import { LoginSchema } from '@/frontend/lib/schemas/auth.schemas'; // Updated import
 import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
 import type { UserDocument } from '@/backend/schemas/user';

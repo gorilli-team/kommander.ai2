@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { connectToDatabase } from '@/backend/lib/mongodb';
-import { RegisterSchema } from '@/frontend/components/auth/AuthForm'; // Assuming AuthForm exports this
+import { RegisterSchema } from '@/frontend/lib/schemas/auth.schemas'; // Updated import
 import type { UserDocument } from '@/backend/schemas/user';
 
 export async function registerUser(values: unknown) {

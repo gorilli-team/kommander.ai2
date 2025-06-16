@@ -4,7 +4,7 @@
 import React, { useState, useTransition } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { LoginSchema, RegisterSchema, type LoginFormData, type RegisterFormData } from '@/frontend/lib/schemas/auth.schemas'; // Updated import
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { Label } from '@/frontend/components/ui/label';
@@ -16,23 +16,6 @@ import { signIn } from 'next-auth/react';
 import { registerUser } from '@/app/actions/auth.actions';
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
-
-export const LoginSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(1, { message: "Password is required." }),
-});
-export type LoginFormData = z.infer<typeof LoginSchema>;
-
-export const RegisterSchema = z.object({
-  name: z.string().optional(),
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match.",
-  path: ["confirmPassword"],
-});
-export type RegisterFormData = z.infer<typeof RegisterSchema>;
 
 type FormData = LoginFormData | RegisterFormData;
 
@@ -59,8 +42,6 @@ export default function AuthForm() {
   });
 
   React.useEffect(() => {
-    // When switching views, reset all form fields to their initial empty, defined state.
-    // This prevents the "uncontrolled to controlled" warning.
     form.reset({
       name: '',
       email: '',
@@ -70,7 +51,7 @@ export default function AuthForm() {
     setError(null);
     setSuccess(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoginView]); // form.reset is stable, so only isLoginView is needed as a dependency
+  }, [isLoginView]);
 
 
   const onSubmit: SubmitHandler<FormData> = (data) => {
@@ -97,7 +78,7 @@ export default function AuthForm() {
           setError(result.error);
         } else if (result.success) {
           setSuccess(result.success);
-          form.reset(); 
+          form.reset({ name: '', email: '', password: '', confirmPassword: '' }); 
         }
       }
     });
