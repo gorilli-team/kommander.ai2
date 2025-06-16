@@ -13,7 +13,7 @@ import mammoth from 'mammoth';
 
 // Per l'utilizzo lato server (Node.js) di pdfjs-dist, è spesso meglio non impostare workerSrc
 // e lasciare che la build legacy usi il suo 'fake worker' o l'elaborazione interna del flusso.
-console.log(`[chatbot/actions.ts] pdfjs-dist version: ${pdfjsVersion}`);
+console.log(`[src/app/chatbot/actions.ts] pdfjs-dist version: ${pdfjsVersion}`);
 
 
 interface UploadedFileInfoForPrompt {
@@ -23,7 +23,7 @@ interface UploadedFileInfoForPrompt {
 }
 
 async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileName: string): Promise<string> {
-  console.log(`[chatbot/actions.ts] extractTextFromFileBuffer: Inizio estrazione testo per ${fileName}, tipo: ${fileType}, dimensione buffer: ${buffer.length}`);
+  console.log(`[src/app/chatbot/actions.ts] extractTextFromFileBuffer: Inizio estrazione testo per ${fileName}, tipo: ${fileType}, dimensione buffer: ${buffer.length}`);
   let rawText = '';
   try {
     if (fileType === 'application/pdf') {
@@ -31,30 +31,31 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
       const data = new Uint8Array(buffer);
       // useWorkerFetch: false e isEvalSupported: false sono raccomandati per ambienti non browser/Node.js ristretti
       const pdfDoc = await getDocument({ data, useWorkerFetch: false, isEvalSupported: false }).promise;
-      console.log(`[chatbot/actions.ts] Documento PDF caricato per ${fileName} con ${pdfDoc.numPages} pagine.`);
+      console.log(`[src/app/chatbot/actions.ts] Documento PDF caricato per ${fileName} con ${pdfDoc.numPages} pagine.`);
       for (let i = 1; i <= pdfDoc.numPages; i++) {
         const page = await pdfDoc.getPage(i);
         const textContent = await page.getTextContent();
         rawText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n';
       }
-      console.log(`[chatbot/actions.ts] Estrazione testo PDF completata con successo per ${fileName}. Lunghezza: ${rawText.length}`);
+      console.log(`[src/app/chatbot/actions.ts] Estrazione testo PDF completata con successo per ${fileName}. Lunghezza: ${rawText.length}`);
     } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const result = await mammoth.extractRawText({ buffer });
       rawText = result.value;
-      console.log(`[chatbot/actions.ts] Estrazione testo DOCX completata con successo per ${fileName}. Lunghezza: ${rawText.length}`);
+      console.log(`[src/app/chatbot/actions.ts] Estrazione testo DOCX completata con successo per ${fileName}. Lunghezza: ${rawText.length}`);
     } else if (fileType === 'text/plain') {
       rawText = buffer.toString('utf-8');
-      console.log(`[chatbot/actions.ts] Estrazione testo TXT completata con successo per ${fileName}. Lunghezza: ${rawText.length}`);
+      console.log(`[src/app/chatbot/actions.ts] Estrazione testo TXT completata con successo per ${fileName}. Lunghezza: ${rawText.length}`);
     } else {
-      console.warn(`[chatbot/actions.ts] Tipo file non supportato per estrazione testo: ${fileType} per ${fileName}`);
+      console.warn(`[src/app/chatbot/actions.ts] Tipo file non supportato per estrazione testo: ${fileType} per ${fileName}`);
       return `Impossibile estrarre il testo dal file ${fileName} (tipo: ${fileType}) poiché il tipo di file non è supportato per l'estrazione del contenuto.`;
     }
   } catch (error: any) {
-    console.error(`[chatbot/actions.ts] Errore durante l'estrazione del testo da ${fileName} (tipo: ${fileType}):`, error.message);
-    console.error(`[chatbot/actions.ts] Stack trace errore estrazione:`, error.stack);
+    console.error(`[src/app/chatbot/actions.ts] Errore durante l'estrazione del testo da ${fileName} (tipo: ${fileType}):`, error.message);
+    console.error(`[src/app/chatbot/actions.ts] Stack trace errore estrazione:`, error.stack);
     let detailedErrorMessage = error.message;
-    if (error.message && (error.message.toLowerCase().includes("cannot find module './pdf.worker.js'") || error.message.toLowerCase().includes("libuuid.so.1") || error.message.toLowerCase().includes("setting up fake worker failed"))) {
-        detailedErrorMessage = "PDF processing failed due to an issue with the server environment's PDF rendering capabilities. This might be due to missing system libraries (e.g., libuuid) or internal worker script issues for pdfjs-dist.";
+    if (fileType === 'application/pdf' && error.message && (error.message.toLowerCase().includes("cannot find module './pdf.worker.js'") || error.message.toLowerCase().includes("libuuid.so.1") || error.message.toLowerCase().includes("setting up fake worker failed"))) {
+        detailedErrorMessage = "Spiacenti, l'elaborazione dei file PDF è temporaneamente non disponibile a causa di limitazioni dell'ambiente server. Prova con un file TXT o DOCX, oppure contatta il supporto se il problema persiste.";
+        console.warn(`[src/app/chatbot/actions.ts] Specific PDF processing environment error for ${fileName}: ${error.message}`);
     }
     return `Errore durante l'estrazione del testo dal file ${fileName}. Dettagli: ${detailedErrorMessage}`;
   }
@@ -119,8 +120,8 @@ export async function generateChatResponse(
           console.log(`[src/app/chatbot/actions.ts] Testo estratto per ${mostRecentFileMeta.fileName} troncato a ${MAX_TEXT_LENGTH} caratteri.`);
         }
         console.log(`[src/app/chatbot/actions.ts] Testo estratto da ${mostRecentFileMeta.fileName} per il prompt. Lunghezza: ${extractedTextContentForPrompt.length}`);
-        if (extractedTextContentForPrompt.startsWith("Errore durante l'estrazione") || extractedTextContentForPrompt.startsWith("Impossibile estrarre il testo")) {
-            console.warn(`[src/app/chatbot/actions.ts] Estrazione testo per ${mostRecentFileMeta.fileName} ha restituito un messaggio di errore: ${extractedTextContentForPrompt}`);
+        if (extractedTextContentForPrompt.startsWith("Errore durante l'estrazione") || extractedTextContentForPrompt.startsWith("Impossibile estrarre il testo") || extractedTextContentForPrompt.startsWith("Spiacenti, l'elaborazione dei file PDF")) {
+            console.warn(`[src/app/chatbot/actions.ts] Estrazione testo per ${mostRecentFileMeta.fileName} ha restituito un messaggio di errore/avviso: ${extractedTextContentForPrompt}`);
         }
       }
     } else {

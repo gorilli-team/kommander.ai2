@@ -44,16 +44,17 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
       console.log(`[app/chatbot/actions.ts] TXT text extraction successful for ${fileName}. Length: ${rawText.length}`);
     } else {
       console.warn(`[app/chatbot/actions.ts] Unsupported file type for text extraction: ${fileType} for ${fileName}`);
-      return `Cannot extract text from file ${fileName} (type: ${fileType}) as file type is not supported for content extraction.`;
+      return `Impossibile estrarre il testo dal file ${fileName} (tipo: ${fileType}) poiché il tipo di file non è supportato per l'estrazione del contenuto.`;
     }
   } catch (error: any) {
     console.error(`[app/chatbot/actions.ts] Error during text extraction from ${fileName} (type: ${fileType}):`, error.message);
     console.error(`[app/chatbot/actions.ts] Extraction error stack:`, error.stack);
     let detailedErrorMessage = error.message;
-    if (error.message && (error.message.toLowerCase().includes("cannot find module './pdf.worker.js'") || error.message.toLowerCase().includes("libuuid.so.1") || error.message.toLowerCase().includes("setting up fake worker failed"))) {
-        detailedErrorMessage = "PDF processing failed due to an issue with the server environment's PDF rendering capabilities. This might be due to missing system libraries (e.g., libuuid) or internal worker script issues for pdfjs-dist.";
+    if (fileType === 'application/pdf' && error.message && (error.message.toLowerCase().includes("cannot find module './pdf.worker.js'") || error.message.toLowerCase().includes("libuuid.so.1") || error.message.toLowerCase().includes("setting up fake worker failed"))) {
+        detailedErrorMessage = "Spiacenti, l'elaborazione dei file PDF è temporaneamente non disponibile a causa di limitazioni dell'ambiente server. Prova con un file TXT o DOCX, oppure contatta il supporto se il problema persiste.";
+         console.warn(`[app/chatbot/actions.ts] Specific PDF processing environment error for ${fileName}: ${error.message}`);
     }
-    return `Error extracting text from file ${fileName}. Details: ${detailedErrorMessage}`;
+    return `Errore durante l'estrazione del testo dal file ${fileName}. Dettagli: ${detailedErrorMessage}`;
   }
   return rawText.trim();
 }
@@ -119,8 +120,8 @@ export async function generateChatResponse(
           console.log(`[app/chatbot/actions.ts] Extracted text for ${mostRecentFileMeta.fileName} truncated to ${MAX_TEXT_LENGTH} characters.`);
         }
         console.log(`[app/chatbot/actions.ts] Extracted text from ${mostRecentFileMeta.fileName} for prompt. Final length: ${extractedTextContentForPrompt.length}`);
-        if (extractedTextContentForPrompt.startsWith("Error extracting text") || extractedTextContentForPrompt.startsWith("Cannot extract text")) {
-            console.warn(`[app/chatbot/actions.ts] Text extraction for ${mostRecentFileMeta.fileName} returned an error message: ${extractedTextContentForPrompt}`);
+        if (extractedTextContentForPrompt.startsWith("Errore durante l'estrazione") || extractedTextContentForPrompt.startsWith("Impossibile estrarre il testo") || extractedTextContentForPrompt.startsWith("Spiacenti, l'elaborazione dei file PDF")) {
+            console.warn(`[app/chatbot/actions.ts] Text extraction for ${mostRecentFileMeta.fileName} returned an error/warning message: ${extractedTextContentForPrompt}`);
         }
       }
     } else {
