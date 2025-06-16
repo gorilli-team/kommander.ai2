@@ -11,8 +11,19 @@ import { getFileContent } from '@/app/training/actions'; // DocumentDisplayItem 
 import { getDocument, GlobalWorkerOptions, version as pdfjsVersion } from 'pdfjs-dist/legacy/build/pdf.js';
 import mammoth from 'mammoth';
 
-// Per l'utilizzo lato server (Node.js) di pdfjs-dist, è spesso meglio non impostare workerSrc
-// e lasciare che la build legacy usi il suo 'fake worker' o l'elaborazione interna del flusso.
+// Configure pdf.js worker. This needs to be done once.
+// require.resolve should give the absolute path to the worker file in node_modules.
+// This tells pdf.js where to load the worker script from, even for its "fake worker" setup.
+try {
+    const workerSrcPath = require.resolve('pdfjs-dist/legacy/build/pdf.worker.js');
+    if (GlobalWorkerOptions.workerSrc !== workerSrcPath) { // Avoid re-setting if already set
+        GlobalWorkerOptions.workerSrc = workerSrcPath;
+        console.log(`[src/app/chatbot/actions.ts] pdfjs-dist GlobalWorkerOptions.workerSrc configured to: ${workerSrcPath}`);
+    }
+} catch (error) {
+    console.error('[src/app/chatbot/actions.ts] CRITICAL: Failed to resolve pdf.worker.js path. PDF processing will likely fail.', error);
+}
+
 console.log(`[src/app/chatbot/actions.ts] pdfjs-dist version: ${pdfjsVersion}`);
 
 
@@ -53,8 +64,6 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
     console.error(`[src/app/chatbot/actions.ts] Errore durante l'estrazione del testo da ${fileName} (tipo: ${fileType}):`, error.message);
     console.error(`[src/app/chatbot/actions.ts] Stack trace errore estrazione:`, error.stack);
     let detailedErrorMessage = error.message;
-    // Se è un PDF e si verifica ancora un errore relativo al worker, fornire un messaggio specifico.
-    // Il controllo libuuid.so.1 viene rimosso poiché è stato segnalato come risolto.
     if (fileType === 'application/pdf' && error.message && (error.message.toLowerCase().includes("cannot find module './pdf.worker.js'") || error.message.toLowerCase().includes("setting up fake worker failed"))) {
         detailedErrorMessage = "Si è verificato un problema con l'inizializzazione del componente di elaborazione PDF. L'estrazione del testo potrebbe non riuscire. Prova con un file TXT o DOCX, o contatta il supporto se il problema persiste con i PDF.";
         console.warn(`[src/app/chatbot/actions.ts] PDF processing component initialization error for ${fileName}: ${error.message}`);
