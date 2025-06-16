@@ -51,25 +51,26 @@ export default function AuthForm() {
   const form = useForm<FormData>({
     resolver: zodResolver(currentSchema),
     defaultValues: {
-      name: '', // Initialize all fields to prevent uncontrolled -> controlled warning
+      name: '',
       email: '',
       password: '',
-      confirmPassword: '', // Initialize all fields
+      confirmPassword: '',
     },
   });
 
   React.useEffect(() => {
-    // When switching views, reset the form with appropriate values.
-    // react-hook-form will only validate against the currentSchema.
+    // When switching views, reset all form fields to their initial empty, defined state.
+    // This prevents the "uncontrolled to controlled" warning.
     form.reset({
+      name: '',
       email: '',
       password: '',
-      ...(isLoginView ? { name: undefined, confirmPassword: undefined } : { name: '', confirmPassword: '' }),
+      confirmPassword: '',
     });
     setError(null);
     setSuccess(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoginView, form.reset]);
+  }, [isLoginView]); // form.reset is stable, so only isLoginView is needed as a dependency
 
 
   const onSubmit: SubmitHandler<FormData> = (data) => {
