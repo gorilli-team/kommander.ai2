@@ -1,5 +1,5 @@
 
-import type { NextAuthConfig } from 'next-auth';
+import type { NextAuthConfig, User } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { LoginSchema } from '@/frontend/lib/schemas/auth.schemas';
 import { connectToDatabase } from '@/backend/lib/mongodb';
@@ -12,7 +12,7 @@ export const authConfig = {
   },
   providers: [
     Credentials({
-      async authorize(credentials) {
+      async authorize(credentials): Promise<User | null> {
         console.log('[auth.config.ts] Authorize function ENTERED. Credentials received:', 
           credentials ? { email: (credentials as any).email, hasPassword: !!(credentials as any).password } : 'null'
         );
@@ -28,27 +28,28 @@ export const authConfig = {
             const { db } = await connectToDatabase(); 
             console.log('[auth.config.ts] Successfully connected to database. Searching for user:', email);
             
-            const user = await db.collection<UserDocument>('users').findOne({ email });
+            const userDoc = await db.collection<UserDocument>('users').findOne({ email });
 
-            if (!user) {
+            if (!userDoc) {
               console.log('[auth.config.ts] No user found for email:', email, '. Authorize FAILED (user not found).');
               return null; 
             }
-            console.log('[auth.config.ts] User found for email:', email, 'User ID:', user._id);
+            console.log('[auth.config.ts] User found for email:', email, 'User ID:', userDoc._id);
 
-            if (!user.hashedPassword) {
-              console.log('[auth.config.ts] User found but no hashed password for email:', email, '(User ID:', user._id, '). Authorize FAILED (no password).');
+            if (!userDoc.hashedPassword) {
+              console.log('[auth.config.ts] User found but no hashed password for email:', email, '(User ID:', userDoc._id, '). Authorize FAILED (no password).');
               return null; 
             }
             
             console.log('[auth.config.ts] Comparing passwords for user:', email);
-            const passwordsMatch = await bcrypt.compare(password, user.hashedPassword);
+            const passwordsMatch = await bcrypt.compare(password, userDoc.hashedPassword);
 
             if (passwordsMatch) {
-              console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', user._id, '). Authorize SUCCESS.');
-              return { id: user._id.toString(), email: user.email, name: user.name };
+              console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', userDoc._id, '). Authorize SUCCESS.');
+              // Return a user object that NextAuth expects
+              return { id: userDoc._id.toString(), email: userDoc.email, name: userDoc.name || null };
             } else {
-              console.log('[auth.config.ts] Passwords do NOT match for user:', email, '(User ID:', user._id, '). Authorize FAILED (password mismatch).');
+              console.log('[auth.config.ts] Passwords do NOT match for user:', email, '(User ID:', userDoc._id, '). Authorize FAILED (password mismatch).');
               return null; 
             }
           } catch (dbError: any) {
@@ -73,8 +74,9 @@ export const authConfig = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id; 
+      if (user) { // user object comes from authorize callback
+        token.id = user.id;
+        // You can add other properties from `user` to `token` here if needed
       }
       return token;
     },
@@ -82,8 +84,28 @@ export const authConfig = {
       if (session.user && token.id) {
         session.user.id = token.id as string;
       }
+      // Ensure session.user.name is correctly populated if it exists on the token
+      if (session.user && token.name) {
+        session.user.name = token.name as string;
+      }
+       if (session.user && token.email) { // Ensure email is also passed if present
+        session.user.email = token.email as string;
+      }
       return session;
     },
   },
-  trustHost: true, // Important for development environments
+  cookies: { // Explicit cookie configuration might sometimes help with CSRF issues
+    // csrfToken: { // This is an example, defaults are usually fine if AUTH_SECRET is strong
+    //   name: process.env.NODE_ENV === 'production' ? '__Host-authjs.csrf-token' : 'authjs.csrf-token',
+    //   options: {
+    //     httpOnly: true,
+    //     sameSite: 'lax',
+    //     path: '/',
+    //     secure: process.env.NODE_ENV === 'production',
+    //   },
+    // },
+  },
+  trustHost: true, // Important for development environments, especially with proxies or custom domains
+  secret: process.env.AUTH_SECRET, // Explicitly set the secret
 } satisfies NextAuthConfig;
+

@@ -4,7 +4,7 @@
 import React, { useState, useTransition } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LoginSchema, RegisterSchema, type LoginFormData, type RegisterFormData } from '@/frontend/lib/schemas/auth.schemas'; // Updated import
+import { LoginSchema, RegisterSchema, type LoginFormData, type RegisterFormData } from '@/frontend/lib/schemas/auth.schemas';
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { Label } from '@/frontend/components/ui/label';
@@ -59,21 +59,25 @@ export default function AuthForm() {
     setSuccess(null);
     startTransition(async () => {
       if (isLoginView) {
+        console.log('[AuthForm.tsx] Attempting login with credentials:', { email: (data as LoginFormData).email, passwordExists: !!(data as LoginFormData).password });
         const result = await signIn('credentials', {
           redirect: false,
           email: (data as LoginFormData).email,
           password: (data as LoginFormData).password,
         });
+        console.log('[AuthForm.tsx] signIn result:', result);
         if (result?.error) {
-          setError('Invalid email or password.');
+          setError(`Login failed: ${result.error}`);
         } else if (result?.ok) {
           router.push(callbackUrl); 
           router.refresh(); 
         } else {
-           setError('An unknown error occurred during login.');
+           setError('An unknown error occurred during login. Check server logs.');
         }
       } else { 
+        console.log('[AuthForm.tsx] Attempting registration with data:', data);
         const result = await registerUser(data as RegisterFormData);
+        console.log('[AuthForm.tsx] registerUser result:', result);
         if (result.error) {
           setError(result.error);
         } else if (result.success) {
@@ -106,7 +110,7 @@ export default function AuthForm() {
                   <FormItem>
                     <Label htmlFor="name">Name (Optional)</Label>
                     <FormControl>
-                      <Input id="name" placeholder="Your Name" {...field} disabled={isPending} />
+                      <Input id="name" placeholder="Your Name" {...field} value={field.value || ''} disabled={isPending} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -120,7 +124,7 @@ export default function AuthForm() {
                 <FormItem>
                   <Label htmlFor="email">Email</Label>
                   <FormControl>
-                    <Input id="email" type="email" placeholder="you@example.com" {...field} disabled={isPending}/>
+                    <Input id="email" type="email" placeholder="you@example.com" {...field} value={field.value || ''} disabled={isPending}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -133,7 +137,7 @@ export default function AuthForm() {
                 <FormItem>
                   <Label htmlFor="password">Password</Label>
                   <FormControl>
-                    <Input id="password" type="password" placeholder="••••••••" {...field} disabled={isPending}/>
+                    <Input id="password" type="password" placeholder="••••••••" {...field} value={field.value || ''} disabled={isPending}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -147,7 +151,7 @@ export default function AuthForm() {
                   <FormItem>
                     <Label htmlFor="confirmPassword">Confirm Password</Label>
                     <FormControl>
-                      <Input id="confirmPassword" type="password" placeholder="••••••••" {...field} disabled={isPending}/>
+                      <Input id="confirmPassword" type="password" placeholder="••••••••" {...field} value={field.value || ''} disabled={isPending}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

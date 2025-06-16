@@ -10,5 +10,4 @@ export interface SessionUser {
   name?: string | null;
   email?: string | null;
   image?: string | null;
-  // Add any other custom fields you might add to the session user
 }

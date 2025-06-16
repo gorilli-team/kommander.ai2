@@ -1,4 +1,8 @@
 
-import { handlers } from '../../../../auth'; // Ensure this relative path is correct to the root auth.ts
-export const { GET, POST } = handlers;
-// export const runtime = "edge"; // Consider if your auth providers are edge compatible if you enable this
+import NextAuth from 'next-auth';
+import { authConfig } from '../../../../auth.config'; // Adjusted path if auth.config.ts is in root
+
+const handler = NextAuth(authConfig);
+
+export { handler as GET, handler as POST };
+// export const runtime = "edge"; // Consider if your auth providers are edge compatible
