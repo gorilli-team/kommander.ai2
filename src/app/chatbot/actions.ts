@@ -13,10 +13,6 @@ import mammoth from 'mammoth';
 
 // Per l'utilizzo lato server (Node.js) di pdfjs-dist, è spesso meglio non impostare workerSrc
 // e lasciare che la build legacy usi il suo 'fake worker' o l'elaborazione interna del flusso.
-// Se sorgono problemi, potremmo aver bisogno di:
-// if (typeof window === 'undefined') { // Assicurati che questo venga eseguito solo sul server
-//   GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/legacy/build/pdf.worker.js');
-// }
 console.log(`[chatbot/actions.ts] pdfjs-dist version: ${pdfjsVersion}`);
 
 
@@ -56,7 +52,11 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
   } catch (error: any) {
     console.error(`[chatbot/actions.ts] Errore durante l'estrazione del testo da ${fileName} (tipo: ${fileType}):`, error.message);
     console.error(`[chatbot/actions.ts] Stack trace errore estrazione:`, error.stack);
-    return `Errore durante l'estrazione del testo dal file ${fileName}. Dettagli: ${error.message}`;
+    let detailedErrorMessage = error.message;
+    if (error.message && (error.message.toLowerCase().includes("cannot find module './pdf.worker.js'") || error.message.toLowerCase().includes("libuuid.so.1") || error.message.toLowerCase().includes("setting up fake worker failed"))) {
+        detailedErrorMessage = "PDF processing failed due to an issue with the server environment's PDF rendering capabilities. This might be due to missing system libraries (e.g., libuuid) or internal worker script issues for pdfjs-dist.";
+    }
+    return `Errore durante l'estrazione del testo dal file ${fileName}. Dettagli: ${detailedErrorMessage}`;
   }
   return rawText.trim();
 }

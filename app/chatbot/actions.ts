@@ -13,9 +13,6 @@ import mammoth from 'mammoth';
 
 // Configurazione di pdfjs-dist per l'ambiente server
 // È spesso meglio NON impostare workerSrc per la build legacy in Node.js
-// se (typeof window === 'undefined') {
-//   GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/legacy/build/pdf.worker.js');
-// }
 console.log(`[app/chatbot/actions.ts] Initialized. pdfjs-dist version: ${pdfjsVersion}`);
 
 interface UploadedFileInfoForPrompt {
@@ -52,7 +49,11 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
   } catch (error: any) {
     console.error(`[app/chatbot/actions.ts] Error during text extraction from ${fileName} (type: ${fileType}):`, error.message);
     console.error(`[app/chatbot/actions.ts] Extraction error stack:`, error.stack);
-    return `Error extracting text from file ${fileName}. Details: ${error.message}`;
+    let detailedErrorMessage = error.message;
+    if (error.message && (error.message.toLowerCase().includes("cannot find module './pdf.worker.js'") || error.message.toLowerCase().includes("libuuid.so.1") || error.message.toLowerCase().includes("setting up fake worker failed"))) {
+        detailedErrorMessage = "PDF processing failed due to an issue with the server environment's PDF rendering capabilities. This might be due to missing system libraries (e.g., libuuid) or internal worker script issues for pdfjs-dist.";
+    }
+    return `Error extracting text from file ${fileName}. Details: ${detailedErrorMessage}`;
   }
   return rawText.trim();
 }
@@ -157,5 +158,4 @@ export async function generateChatResponse(
     return { error: `Failed to generate chat response due to a server error. ${error.message}` };
   }
 }
-
     
