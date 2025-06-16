@@ -1,7 +1,7 @@
+
 // import type {NextConfig} from 'next'; // Rimosso per evitare potenziali conflitti di tipo con versioni canary
 
 const nextConfig = {
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -18,9 +18,11 @@ const nextConfig = {
       },
     ],
   },
-  serverActions: {
-    bodySizeLimit: '10mb', // Aumentato il limite di dimensione del corpo per le Server Actions
-  },
+  experimental: { // Spostato serverActions qui
+    serverActions: {
+      bodySizeLimit: '10mb', 
+    },
+  }
 };
 
 export default nextConfig;
