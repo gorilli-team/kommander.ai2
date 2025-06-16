@@ -69,11 +69,10 @@ export const authConfig = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user, account, profile }) {
-      // console.log('[auth.config.ts] JWT callback:', { token, user, account, profile });
+    async jwt({ token, user }) {
+      // console.log('[auth.config.ts] JWT callback:', { token, user });
       if (user) {
         token.id = user.id; 
-        // if (user.name) token.name = user.name; // Already handled by NextAuth default
       }
       return token;
     },
@@ -81,11 +80,16 @@ export const authConfig = {
       // console.log('[auth.config.ts] Session callback:', { session, token });
       if (session.user && token.id) {
         session.user.id = token.id as string;
-        // if (token.name) session.user.name = token.name as string; // Already handled
       }
       return session;
     },
   },
-  // secret: process.env.AUTH_SECRET, // Handled by NextAuth automatically if AUTH_SECRET is set
+  cookies: {
+    // Explicitly adding an empty cookies configuration.
+    // This is speculative and aims to ensure default CSRF cookie settings
+    // are not inadvertently affected by the absence of this block in beta versions.
+  },
   trustHost: true, // Necessary for some environments, generally safe for localhost
 } satisfies NextAuthConfig;
+
+    
