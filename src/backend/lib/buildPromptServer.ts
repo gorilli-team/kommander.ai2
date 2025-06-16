@@ -6,16 +6,17 @@ export interface ChatMessage {
   content: string;
 }
 
-// Updated to reflect raw file info, not summaries
-interface UploadedFileInfo {
+interface UploadedFileInfoForPromptContext {
   fileName: string;
   originalFileType: string;
+  // extractedText is now passed as a separate argument to buildPromptServer
 }
 
 export function buildPromptServer(
   userMessage: string,
   faqs: Faq[],
-  uploadedFiles: UploadedFileInfo[], // Changed from docSummaries
+  uploadedFilesInfo: UploadedFileInfoForPromptContext[],
+  extractedTextFromRecentFile: string | undefined, // New parameter
   history: ChatMessage[] = [] 
 ): ChatMessage[] {
   
@@ -29,16 +30,25 @@ export function buildPromptServer(
     context += "\n";
   }
 
-  // Updated to list uploaded files
-  if (uploadedFiles.length > 0) {
-    context += "The user has uploaded the following files which you can refer to by name if relevant:\n";
-    uploadedFiles.forEach(file => {
+  if (uploadedFilesInfo.length > 0) {
+    context += "The user has uploaded the following files:\n";
+    uploadedFilesInfo.forEach(file => {
       context += `- File Name: "${file.fileName}", Type: ${file.originalFileType}\n`;
     });
     context += "\n";
+
+    if (extractedTextFromRecentFile && extractedTextFromRecentFile.trim() !== '') {
+      // Assuming extractedTextFromRecentFile is for the most recent file for now
+      const recentFileName = uploadedFilesInfo[0]?.fileName || "a recently uploaded file";
+      context += `Content from ${recentFileName}:\n"""\n${extractedTextFromRecentFile}\n"""\n\n`;
+    } else if (uploadedFilesInfo.length > 0 && (!extractedTextFromRecentFile || extractedTextFromRecentFile.trim() === '')) {
+      context += `Note: Could not extract or no text content found in the most recent file, but be aware it exists.\n\n`;
+    }
   }
 
+
   if (context === "You are Kommander.ai, a helpful AI assistant. Use the following information to answer the user's query.\n\n") {
+    // If no FAQs and no files, provide a simpler default context
     context = "You are Kommander.ai, a helpful AI assistant. Answer the user's query.\n\n"
   }
   
