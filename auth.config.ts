@@ -1,7 +1,7 @@
 
 import type { NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { LoginSchema } from '@/frontend/lib/schemas/auth.schemas'; // Updated import
+import { LoginSchema } from '@/frontend/lib/schemas/auth.schemas';
 import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
 import type { UserDocument } from '@/backend/schemas/user';
@@ -67,5 +67,5 @@ export const authConfig = {
     },
   },
   // secret: process.env.AUTH_SECRET, // Handled by NextAuth automatically if AUTH_SECRET is set
-  trustHost: true, // Necessary for some environments, consider if needed for Firebase Studio
+  trustHost: true, // Necessary for some environments, consider if needed
 } satisfies NextAuthConfig;
