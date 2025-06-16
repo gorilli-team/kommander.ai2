@@ -51,17 +51,20 @@ export default function AuthForm() {
   const form = useForm<FormData>({
     resolver: zodResolver(currentSchema),
     defaultValues: {
+      name: '', // Initialize all fields to prevent uncontrolled -> controlled warning
       email: '',
       password: '',
-      ...(isLoginView ? {} : { name: '', confirmPassword: '' }),
+      confirmPassword: '', // Initialize all fields
     },
   });
 
   React.useEffect(() => {
+    // When switching views, reset the form with appropriate values.
+    // react-hook-form will only validate against the currentSchema.
     form.reset({
       email: '',
       password: '',
-      ...(isLoginView ? {} : { name: '', confirmPassword: '' }),
+      ...(isLoginView ? { name: undefined, confirmPassword: undefined } : { name: '', confirmPassword: '' }),
     });
     setError(null);
     setSuccess(null);
@@ -82,20 +85,18 @@ export default function AuthForm() {
         if (result?.error) {
           setError('Invalid email or password.');
         } else if (result?.ok) {
-          router.push(callbackUrl); // Redirect to training or intended page
-          router.refresh(); // Ensure layout re-renders with session
+          router.push(callbackUrl); 
+          router.refresh(); 
         } else {
            setError('An unknown error occurred during login.');
         }
-      } else { // Registration
+      } else { 
         const result = await registerUser(data as RegisterFormData);
         if (result.error) {
           setError(result.error);
         } else if (result.success) {
           setSuccess(result.success);
-          // Optional: automatically sign in the user or prompt them to login
-          // For now, just show success and let them switch to login view
-          form.reset(); // Clear form on successful registration
+          form.reset(); 
         }
       }
     });
