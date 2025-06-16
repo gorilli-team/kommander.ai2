@@ -4,10 +4,11 @@ import { authConfig } from './auth.config';
  
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
-// Helper type for session user
+// Helper type for session user, if needed beyond default NextAuth types
 export interface SessionUser {
   id?: string;
   name?: string | null;
   email?: string | null;
   image?: string | null;
+  // Add any other custom fields you might add to the session user
 }

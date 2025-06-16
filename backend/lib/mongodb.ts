@@ -24,13 +24,17 @@ let cachedBucket: GridFSBucket | null = null;
 
 export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db }> {
   if (cachedClient && cachedDb) {
+    console.log("[backend/lib/mongodb.ts] Using cached MongoDB client and DB connection.");
     return { client: cachedClient, db: cachedDb };
   }
 
   try {
     if (!cachedClient) {
+      console.log("[backend/lib/mongodb.ts] No cached client, attempting to connect...");
       cachedClient = await client.connect();
       console.log("[backend/lib/mongodb.ts] Successfully connected to MongoDB client.");
+    } else {
+      console.log("[backend/lib/mongodb.ts] Using existing cached client instance.");
     }
     
     const dbNameFromUri = uri.split('/').pop()?.split('?')[0];
@@ -39,7 +43,7 @@ export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db
       console.warn(`[backend/lib/mongodb.ts] Database name not found in MONGODB_URI, defaulting to '${dbName}'. It's recommended to specify the database name in the URI.`);
     }
     cachedDb = cachedClient.db(dbName);
-    console.log(`[backend/lib/mongodb.ts] Using database: ${dbName}`);
+    console.log(`[backend/lib/mongodb.ts] Using database: ${cachedDb.databaseName}`); // Log the actual DB name being used
     
     return { client: cachedClient, db: cachedDb };
   } catch (error: any) {
@@ -47,7 +51,8 @@ export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db
     console.error('[backend/lib/mongodb.ts] MongoDB Connection Error Name:', error.name);
     console.error('[backend/lib/mongodb.ts] MongoDB Connection Error Message:', error.message);
     console.error('[backend/lib/mongodb.ts] MongoDB Connection Error Stack:', error.stack);
-    cachedClient = null;
+    // Important: Invalidate cache on error to force re-attempt on next call
+    cachedClient = null; 
     cachedDb = null;
     throw new Error(`Failed to connect to the database: ${error.message}`);
   }
@@ -55,10 +60,11 @@ export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db
 
 export async function getGridFSBucket(): Promise<GridFSBucket> {
   if (cachedBucket) {
+    console.log("[backend/lib/mongodb.ts] Using cached GridFSBucket.");
     return cachedBucket;
   }
   const { db } = await connectToDatabase(); 
-  cachedBucket = new GridFSBucket(db, { bucketName: 'file_uploads' }); // Using 'file_uploads' as bucket name
+  cachedBucket = new GridFSBucket(db, { bucketName: 'file_uploads' }); 
   console.log("[backend/lib/mongodb.ts] GridFSBucket initialized for 'file_uploads'.");
   return cachedBucket;
 }

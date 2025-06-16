@@ -9,7 +9,7 @@ import type { UserDocument } from '@/backend/schemas/user';
 export const authConfig = {
   pages: {
     signIn: '/login',
-    // error: '/login', // Optionally, define an error page
+    // error: '/login', // Optionally, define an error page for auth errors
   },
   providers: [
     Credentials({
@@ -24,19 +24,21 @@ export const authConfig = {
           try {
             console.log('[auth.config.ts] Attempting to connect to database...');
             const { db } = await connectToDatabase();
-            console.log('[auth.config.ts] Connected to database. Searching for user:', email);
+            console.log('[auth.config.ts] Successfully connected to database. Searching for user:', email);
             const user = await db.collection<UserDocument>('users').findOne({ email });
 
             if (!user) {
               console.log('[auth.config.ts] No user found for email:', email);
-              return null;
+              return null; // User not found
             }
+            console.log('[auth.config.ts] User found for email:', email, 'User ID:', user._id);
+
             if (!user.hashedPassword) {
               console.log('[auth.config.ts] User found but no hashed password for email:', email);
-              return null;
+              return null; // User exists but has no password (should not happen in normal flow)
             }
             
-            console.log('[auth.config.ts] User found. Comparing passwords for user:', email);
+            console.log('[auth.config.ts] Comparing passwords for user:', email);
             const passwordsMatch = await bcrypt.compare(password, user.hashedPassword);
 
             if (passwordsMatch) {
@@ -44,17 +46,18 @@ export const authConfig = {
               // Return a user object that will be encoded in the JWT
               return { id: user._id.toString(), email: user.email, name: user.name };
             } else {
-              console.log('[auth.config.ts] Passwords do not match for user:', email);
-              return null; // Explicitly return null if passwords don't match
+              console.log('[auth.config.ts] Passwords do NOT match for user:', email);
+              return null; // Passwords don't match
             }
           } catch (dbError: any) {
-            console.error('[auth.config.ts] Database error during authorization:', dbError.message, dbError.stack);
-            return null; // Or throw an error to display a generic message
+            console.error('[auth.config.ts] Database error during authorization for email:', email, dbError.message);
+            console.error('[auth.config.ts] Database error stack:', dbError.stack);
+            return null; // Or throw an error to display a generic message to the user via error page
           }
         } else {
-          console.log('[auth.config.ts] Invalid credentials or Zod validation failed:', validatedFields.error?.flatten());
+          console.log('[auth.config.ts] Invalid credentials (Zod validation failed):', validatedFields.error?.flatten().fieldErrors);
         }
-        console.log('[auth.config.ts] Authorization failed, returning null.');
+        console.log('[auth.config.ts] Authorization failed (did not meet conditions or error occurred), returning null.');
         return null;
       },
     }),
@@ -63,21 +66,23 @@ export const authConfig = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile }) {
+      // console.log('[auth.config.ts] JWT callback:', { token, user, account, profile });
       if (user) {
-        token.id = user.id; // Add user ID to the JWT token
-        // token.name = user.name; // If you have name
+        token.id = user.id; 
+        // if (user.name) token.name = user.name; // Already handled by NextAuth default
       }
       return token;
     },
     async session({ session, token }) {
+      // console.log('[auth.config.ts] Session callback:', { session, token });
       if (session.user && token.id) {
         session.user.id = token.id as string;
-        // session.user.name = token.name as string; // If you have name
+        // if (token.name) session.user.name = token.name as string; // Already handled
       }
       return session;
     },
   },
   // secret: process.env.AUTH_SECRET, // Handled by NextAuth automatically if AUTH_SECRET is set
-  trustHost: true, // Necessary for some environments, consider if needed
+  trustHost: true, // Necessary for some environments, generally safe for localhost
 } satisfies NextAuthConfig;
