@@ -5,16 +5,16 @@ import { connectToDatabase } from '@/backend/lib/mongodb';
 import openai from '@/backend/lib/openai';
 import { buildPromptServer, type ChatMessage } from '@/backend/lib/buildPromptServer';
 import type { Faq } from '@/backend/schemas/faq';
-import { getFileContent, type DocumentDisplayItem } from '@/app/training/actions'; // Assuming getFileContent is exported and DocumentDisplayItem includes gridFsFileId
+import { getFileContent } from '@/app/training/actions'; // DocumentDisplayItem non è necessario qui
 
 // Import text extraction libraries
 import { getDocument, GlobalWorkerOptions, version as pdfjsVersion } from 'pdfjs-dist/legacy/build/pdf.js';
 import mammoth from 'mammoth';
 
-// For server-side (Node.js) execution of pdfjs-dist, it's often best to not set workerSrc
-// and let the legacy build use its 'fake worker' or internal stream processing.
-// If issues arise, we might need:
-// if (typeof window === 'undefined') {
+// Per l'utilizzo lato server (Node.js) di pdfjs-dist, è spesso meglio non impostare workerSrc
+// e lasciare che la build legacy usi il suo 'fake worker' o l'elaborazione interna del flusso.
+// Se sorgono problemi, potremmo aver bisogno di:
+// if (typeof window === 'undefined') { // Assicurati che questo venga eseguito solo sul server
 //   GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/legacy/build/pdf.worker.js');
 // }
 console.log(`[chatbot/actions.ts] pdfjs-dist version: ${pdfjsVersion}`);
@@ -23,37 +23,40 @@ console.log(`[chatbot/actions.ts] pdfjs-dist version: ${pdfjsVersion}`);
 interface UploadedFileInfoForPrompt {
   fileName: string;
   originalFileType: string;
-  extractedText?: string; // To hold the extracted text
+  // extractedText è passato separatamente a buildPromptServer
 }
 
 async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileName: string): Promise<string> {
-  console.log(`[chatbot/actions.ts] extractTextFromFileBuffer: Starting text extraction for ${fileName}, type: ${fileType}`);
+  console.log(`[chatbot/actions.ts] extractTextFromFileBuffer: Inizio estrazione testo per ${fileName}, tipo: ${fileType}, dimensione buffer: ${buffer.length}`);
   let rawText = '';
   try {
     if (fileType === 'application/pdf') {
+      // Converti Buffer Node.js in Uint8Array per pdfjs-dist
       const data = new Uint8Array(buffer);
+      // useWorkerFetch: false e isEvalSupported: false sono raccomandati per ambienti non browser/Node.js ristretti
       const pdfDoc = await getDocument({ data, useWorkerFetch: false, isEvalSupported: false }).promise;
-      console.log(`[chatbot/actions.ts] PDF document loaded for ${fileName} with ${pdfDoc.numPages} pages.`);
+      console.log(`[chatbot/actions.ts] Documento PDF caricato per ${fileName} con ${pdfDoc.numPages} pagine.`);
       for (let i = 1; i <= pdfDoc.numPages; i++) {
         const page = await pdfDoc.getPage(i);
         const textContent = await page.getTextContent();
         rawText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n';
       }
-      console.log(`[chatbot/actions.ts] Successfully extracted text from PDF ${fileName}. Length: ${rawText.length}`);
+      console.log(`[chatbot/actions.ts] Estrazione testo PDF completata con successo per ${fileName}. Lunghezza: ${rawText.length}`);
     } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const result = await mammoth.extractRawText({ buffer });
       rawText = result.value;
-      console.log(`[chatbot/actions.ts] Successfully extracted text from DOCX ${fileName}. Length: ${rawText.length}`);
+      console.log(`[chatbot/actions.ts] Estrazione testo DOCX completata con successo per ${fileName}. Lunghezza: ${rawText.length}`);
     } else if (fileType === 'text/plain') {
       rawText = buffer.toString('utf-8');
-      console.log(`[chatbot/actions.ts] Successfully extracted text from TXT ${fileName}. Length: ${rawText.length}`);
+      console.log(`[chatbot/actions.ts] Estrazione testo TXT completata con successo per ${fileName}. Lunghezza: ${rawText.length}`);
     } else {
-      console.warn(`[chatbot/actions.ts] Unsupported file type for text extraction: ${fileType} for ${fileName}`);
-      return `Content of file ${fileName} (type: ${fileType}) is not directly viewable in this chat.`;
+      console.warn(`[chatbot/actions.ts] Tipo file non supportato per estrazione testo: ${fileType} per ${fileName}`);
+      return `Impossibile estrarre il testo dal file ${fileName} (tipo: ${fileType}) poiché il tipo di file non è supportato per l'estrazione del contenuto.`;
     }
   } catch (error: any) {
-    console.error(`[chatbot/actions.ts] Error extracting text from ${fileName} (type: ${fileType}):`, error.message, error.stack);
-    return `Error extracting text from file ${fileName}.`;
+    console.error(`[chatbot/actions.ts] Errore durante l'estrazione del testo da ${fileName} (tipo: ${fileType}):`, error.message);
+    console.error(`[chatbot/actions.ts] Stack trace errore estrazione:`, error.stack);
+    return `Errore durante l'estrazione del testo dal file ${fileName}. Dettagli: ${error.message}`;
   }
   return rawText.trim();
 }
@@ -63,96 +66,96 @@ export async function generateChatResponse(
   userMessage: string,
   history: ChatMessage[]
 ): Promise<{ response?: string; error?: string }> {
-  console.log('[src/app/chatbot/actions.ts] generateChatResponse: Received message:', userMessage, 'History length:', history.length);
+  console.log('[src/app/chatbot/actions.ts] generateChatResponse: Messaggio ricevuto:', userMessage, 'Lunghezza cronologia:', history.length);
   if (!userMessage.trim()) {
-    return { error: 'Message cannot be empty.' };
+    return { error: 'Il messaggio non può essere vuoto.' };
   }
 
   try {
     const { db } = await connectToDatabase();
-    console.log('[src/app/chatbot/actions.ts] generateChatResponse: Connected to database.');
+    console.log('[src/app/chatbot/actions.ts] generateChatResponse: Connesso al database.');
     
     const faqsCursor = await db.collection('faqs').find({}).limit(10).toArray(); 
     const faqs: Faq[] = faqsCursor.map(doc => ({
         id: doc._id.toString(),
         question: doc.question,
         answer: doc.answer,
-        // createdAt and updatedAt might not be present or could be strings if not properly deserialized,
-        // ensure Faq type and mapping handle this. For the prompt, only Q&A are vital.
         createdAt: doc.createdAt ? new Date(doc.createdAt) : undefined,
         updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : undefined,
     }));
-    console.log(`[src/app/chatbot/actions.ts] generateChatResponse: Fetched ${faqs.length} FAQs.`);
+    console.log(`[src/app/chatbot/actions.ts] generateChatResponse: Recuperate ${faqs.length} FAQ.`);
 
-    // Fetch metadata for all uploaded files, sorted by most recent
     const allUploadedFilesMeta = await db.collection('raw_files_meta')
       .find({})
-      .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 }) // Ensure gridFsFileId is fetched
+      .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
       .sort({ uploadedAt: -1 })
       .toArray();
     
-    console.log(`[src/app/chatbot/actions.ts] generateChatResponse: Fetched metadata for ${allUploadedFilesMeta.length} uploaded files from 'raw_files_meta'.`);
+    console.log(`[src/app/chatbot/actions.ts] generateChatResponse: Recuperati metadati per ${allUploadedFilesMeta.length} file caricati da 'raw_files_meta'.`);
 
-    const filesForPrompt: UploadedFileInfoForPrompt[] = [];
-    let extractedTextContent = '';
+    const filesForPromptContext: UploadedFileInfoForPrompt[] = allUploadedFilesMeta.map(doc => ({
+        fileName: doc.fileName,
+        originalFileType: doc.originalFileType,
+    }));
+    
+    let extractedTextContentForPrompt: string | undefined = undefined;
 
     if (allUploadedFilesMeta.length > 0) {
-      // For now, let's try to "read" the most recently uploaded file.
-      const mostRecentFileMeta = allUploadedFilesMeta[0]; // The list is sorted by uploadedAt descending
-      
-      console.log(`[src/app/chatbot/actions.ts] Processing most recent file: ${mostRecentFileMeta.fileName} (GridFS ID: ${mostRecentFileMeta.gridFsFileId})`);
+      const mostRecentFileMeta = allUploadedFilesMeta[0];
+      console.log(`[src/app/chatbot/actions.ts] Tentativo di elaborazione del file più recente: ${mostRecentFileMeta.fileName} (GridFS ID: ${mostRecentFileMeta.gridFsFileId.toString()})`);
       
       const fileBufferResult = await getFileContent(mostRecentFileMeta.gridFsFileId.toString());
 
       if ('error' in fileBufferResult) {
-        console.error(`[src/app/chatbot/actions.ts] Error getting content for file ${mostRecentFileMeta.fileName}: ${fileBufferResult.error}`);
-        extractedTextContent = `Could not retrieve content for file: ${mostRecentFileMeta.fileName}. Error: ${fileBufferResult.error}`;
+        console.error(`[src/app/chatbot/actions.ts] Errore nel recupero del contenuto per il file ${mostRecentFileMeta.fileName}: ${fileBufferResult.error}`);
+        extractedTextContentForPrompt = `Impossibile recuperare il contenuto per il file: ${mostRecentFileMeta.fileName}. Errore: ${fileBufferResult.error}`;
       } else {
-        extractedTextContent = await extractTextFromFileBuffer(fileBufferResult, mostRecentFileMeta.originalFileType, mostRecentFileMeta.fileName);
-         // Truncate if too long to avoid excessive prompt length, adjust limit as needed
-        const MAX_TEXT_LENGTH = 10000; // Example limit, can be adjusted
-        if (extractedTextContent.length > MAX_TEXT_LENGTH) {
-          extractedTextContent = extractedTextContent.substring(0, MAX_TEXT_LENGTH) + "\n[...content truncated due to length...]";
-          console.log(`[src/app/chatbot/actions.ts] Extracted text for ${mostRecentFileMeta.fileName} was truncated.`);
+        console.log(`[src/app/chatbot/actions.ts] Buffer del file ${mostRecentFileMeta.fileName} recuperato con successo. Dimensione: ${fileBufferResult.length}. Inizio estrazione testo.`);
+        extractedTextContentForPrompt = await extractTextFromFileBuffer(fileBufferResult, mostRecentFileMeta.originalFileType, mostRecentFileMeta.fileName);
+        
+        const MAX_TEXT_LENGTH = 10000; 
+        if (extractedTextContentForPrompt.length > MAX_TEXT_LENGTH) {
+          extractedTextContentForPrompt = extractedTextContentForPrompt.substring(0, MAX_TEXT_LENGTH) + "\n[...contenuto troncato a causa della lunghezza...]";
+          console.log(`[src/app/chatbot/actions.ts] Testo estratto per ${mostRecentFileMeta.fileName} troncato a ${MAX_TEXT_LENGTH} caratteri.`);
+        }
+        console.log(`[src/app/chatbot/actions.ts] Testo estratto da ${mostRecentFileMeta.fileName} per il prompt. Lunghezza: ${extractedTextContentForPrompt.length}`);
+        if (extractedTextContentForPrompt.startsWith("Errore durante l'estrazione") || extractedTextContentForPrompt.startsWith("Impossibile estrarre il testo")) {
+            console.warn(`[src/app/chatbot/actions.ts] Estrazione testo per ${mostRecentFileMeta.fileName} ha restituito un messaggio di errore: ${extractedTextContentForPrompt}`);
         }
       }
-      // Add all files to the prompt context (even if only one is read for now, AI knows about others)
-       allUploadedFilesMeta.forEach(doc => {
-        filesForPrompt.push({
-            fileName: doc.fileName,
-            originalFileType: doc.originalFileType,
-        });
-      });
+    } else {
+        console.log('[src/app/chatbot/actions.ts] Nessun file caricato trovato per fornire contesto aggiuntivo.');
     }
 
-
-    const messages = buildPromptServer(userMessage, faqs, filesForPrompt, extractedTextContent, history);
-    console.log('[src/app/chatbot/actions.ts] generateChatResponse: Prompt built for OpenAI.');
-    // console.log('Prompt Messages:', JSON.stringify(messages, null, 2)); // For debugging the prompt
+    const messages = buildPromptServer(userMessage, faqs, filesForPromptContext, extractedTextContentForPrompt, history);
+    console.log('[src/app/chatbot/actions.ts] generateChatResponse: Prompt costruito per OpenAI.');
+    // console.log('Prompt Messages:', JSON.stringify(messages, null, 2)); // Decommenta per debug dettagliato del prompt
     
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo', 
       messages: messages,
       temperature: 0.7,
-      max_tokens: 1000, // Increased max_tokens slightly to accommodate potentially larger context
+      max_tokens: 1000,
     });
-    console.log('[src/app/chatbot/actions.ts] generateChatResponse: OpenAI completion received.');
+    console.log('[src/app/chatbot/actions.ts] generateChatResponse: Completamento OpenAI ricevuto.');
 
     const assistantResponse = completion.choices[0]?.message?.content;
 
     if (!assistantResponse) {
-      console.error('[src/app/chatbot/actions.ts] generateChatResponse: AI did not return a response.');
-      return { error: 'AI did not return a response.' };
+      console.error('[src/app/chatbot/actions.ts] generateChatResponse: AI non ha restituito una risposta.');
+      return { error: 'AI non ha restituito una risposta.' };
     }
 
-    console.log('[src/app/chatbot/actions.ts] generateChatResponse: Success, returning AI response.');
+    console.log('[src/app/chatbot/actions.ts] generateChatResponse: Successo, restituzione risposta AI.');
     return { response: assistantResponse.trim() };
 
   } catch (error: any) {
-    console.error('[src/app/chatbot/actions.ts] generateChatResponse: Error generating chat response:', error);
-    console.error('[src/app/chatbot/actions.ts] generateChatResponse: Error name:', error.name);
-    console.error('[src/app/chatbot/actions.ts] generateChatResponse: Error message:', error.message);
-    console.error('[src/app/chatbot/actions.ts] generateChatResponse: Error stack:', error.stack);
-    return { error: `Failed to generate chat response due to a server error. ${error.message}` };
+    console.error('[src/app/chatbot/actions.ts] generateChatResponse: Errore durante la generazione della risposta della chat:', error);
+    console.error('[src/app/chatbot/actions.ts] generateChatResponse: Nome errore:', error.name);
+    console.error('[src/app/chatbot/actions.ts] generateChatResponse: Messaggio errore:', error.message);
+    console.error('[src/app/chatbot/actions.ts] generateChatResponse: Stack errore:', error.stack);
+    return { error: `Impossibile generare la risposta della chat a causa di un errore del server. ${error.message}` };
   }
 }
+
+    

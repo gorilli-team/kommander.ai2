@@ -1,55 +1,62 @@
 
-import type { Faq } from '@/backend/schemas/faq';
+import type { Faq } from '@/backend/schemas/faq'; // Assicurati che questo percorso sia corretto per la tua struttura
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
+// Questa interfaccia descrive le informazioni sui file che passiamo per costruire il contesto del prompt
 interface UploadedFileInfoForPromptContext {
   fileName: string;
   originalFileType: string;
-  // extractedText is now passed as a separate argument to buildPromptServer
 }
 
 export function buildPromptServer(
   userMessage: string,
   faqs: Faq[],
-  uploadedFilesInfo: UploadedFileInfoForPromptContext[],
-  extractedTextFromRecentFile: string | undefined, // New parameter
+  uploadedFilesInfo: UploadedFileInfoForPromptContext[], // Array di metadati di TUTTI i file
+  extractedTextFromRecentFile: string | undefined,    // Testo estratto SOLO dal file più recente (o un messaggio di errore se l'estrazione fallisce)
   history: ChatMessage[] = [] 
 ): ChatMessage[] {
   
-  let context = "You are Kommander.ai, a helpful AI assistant. Use the following information to answer the user's query.\n\n";
+  let context = "Sei Kommander.ai, un assistente AI utile. Usa le seguenti informazioni per rispondere alla query dell'utente.\n\n";
 
   if (faqs.length > 0) {
-    context += "Relevant FAQs:\n";
+    context += "FAQ Rilevanti:\n";
     faqs.forEach(faq => {
-      context += `- Q: ${faq.question}\n  A: ${faq.answer}\n`;
+      context += `- D: ${faq.question}\n  R: ${faq.answer}\n`;
     });
     context += "\n";
   }
 
   if (uploadedFilesInfo.length > 0) {
-    context += "The user has uploaded the following files:\n";
+    context += "L'utente ha caricato i seguenti file a cui puoi fare riferimento per nome, se pertinente:\n";
     uploadedFilesInfo.forEach(file => {
-      context += `- File Name: "${file.fileName}", Type: ${file.originalFileType}\n`;
+      context += `- Nome File: "${file.fileName}", Tipo: ${file.originalFileType}\n`;
     });
     context += "\n";
 
+    // Se è stato fornito del testo estratto (dal file più recente)
     if (extractedTextFromRecentFile && extractedTextFromRecentFile.trim() !== '') {
-      // Assuming extractedTextFromRecentFile is for the most recent file for now
-      const recentFileName = uploadedFilesInfo[0]?.fileName || "a recently uploaded file";
-      context += `Content from ${recentFileName}:\n"""\n${extractedTextFromRecentFile}\n"""\n\n`;
+      const recentFileName = uploadedFilesInfo[0]?.fileName || "un file caricato di recente"; // Nome del file più recente
+      if (extractedTextFromRecentFile.startsWith("Errore durante l'estrazione") || extractedTextFromRecentFile.startsWith("Impossibile estrarre il testo")) {
+        // Se l'estrazione è fallita, informa l'AI dell'errore invece di inviare il messaggio di errore come contenuto
+        context += `Nota: Si è verificato un problema durante il tentativo di leggere il contenuto del file più recente (${recentFileName}): "${extractedTextFromRecentFile}". Non puoi visualizzare il suo contenuto testuale, ma sii consapevole della sua esistenza.\n\n`;
+      } else {
+        context += `Contenuto dal file più recente, "${recentFileName}":\n"""\n${extractedTextFromRecentFile}\n"""\n\n`;
+      }
     } else if (uploadedFilesInfo.length > 0 && (!extractedTextFromRecentFile || extractedTextFromRecentFile.trim() === '')) {
-      context += `Note: Could not extract or no text content found in the most recent file, but be aware it exists.\n\n`;
+      // Se non c'è testo estratto ma ci sono file, informa l'AI
+       const recentFileName = uploadedFilesInfo[0]?.fileName || "un file caricato di recente";
+      context += `Nota: Non è stato possibile estrarre o non è stato trovato alcun contenuto testuale nel file più recente (${recentFileName}), ma sii consapevole che esiste.\n\n`;
     }
   }
 
 
-  if (context === "You are Kommander.ai, a helpful AI assistant. Use the following information to answer the user's query.\n\n") {
-    // If no FAQs and no files, provide a simpler default context
-    context = "You are Kommander.ai, a helpful AI assistant. Answer the user's query.\n\n"
+  if (context === "Sei Kommander.ai, un assistente AI utile. Usa le seguenti informazioni per rispondere alla query dell'utente.\n\n") {
+    // Se non ci sono FAQ né file, fornisci un contesto predefinito più semplice
+    context = "Sei Kommander.ai, un assistente AI utile. Rispondi alla query dell'utente.\n\n"
   }
   
   const messages: ChatMessage[] = [{ role: 'system', content: context.trim() }];
@@ -60,3 +67,5 @@ export function buildPromptServer(
 
   return messages;
 }
+
+    
