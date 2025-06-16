@@ -9,12 +9,14 @@ import type { UserDocument } from '@/backend/schemas/user';
 export const authConfig = {
   pages: {
     signIn: '/login',
-    // error: '/login', // Optionally, define an error page for auth errors
   },
   providers: [
     Credentials({
       async authorize(credentials) {
-        console.log('[auth.config.ts] Authorize function called with credentials:', credentials ? { email: (credentials as any).email } : 'null');
+        console.log('[auth.config.ts] Authorize function ENTERED. Credentials received:', 
+          credentials ? { email: (credentials as any).email, hasPassword: !!(credentials as any).password } : 'null'
+        );
+
         const validatedFields = LoginSchema.safeParse(credentials);
 
         if (validatedFields.success) {
@@ -29,13 +31,13 @@ export const authConfig = {
             const user = await db.collection<UserDocument>('users').findOne({ email });
 
             if (!user) {
-              console.log('[auth.config.ts] No user found for email:', email);
+              console.log('[auth.config.ts] No user found for email:', email, '. Authorize FAILED (user not found).');
               return null; 
             }
             console.log('[auth.config.ts] User found for email:', email, 'User ID:', user._id);
 
             if (!user.hashedPassword) {
-              console.log('[auth.config.ts] User found but no hashed password for email:', email, '(User ID:', user._id, ')');
+              console.log('[auth.config.ts] User found but no hashed password for email:', email, '(User ID:', user._id, '). Authorize FAILED (no password).');
               return null; 
             }
             
@@ -43,10 +45,10 @@ export const authConfig = {
             const passwordsMatch = await bcrypt.compare(password, user.hashedPassword);
 
             if (passwordsMatch) {
-              console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', user._id, ')');
+              console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', user._id, '). Authorize SUCCESS.');
               return { id: user._id.toString(), email: user.email, name: user.name };
             } else {
-              console.log('[auth.config.ts] Passwords do NOT match for user:', email, '(User ID:', user._id, ')');
+              console.log('[auth.config.ts] Passwords do NOT match for user:', email, '(User ID:', user._id, '). Authorize FAILED (password mismatch).');
               return null; 
             }
           } catch (dbError: any) {
@@ -54,12 +56,14 @@ export const authConfig = {
             console.error('[auth.config.ts] Error Name:', dbError.name);
             console.error('[auth.config.ts] Error Message:', dbError.message);
             console.error('[auth.config.ts] Error Stack:', dbError.stack);
+            console.log('[auth.config.ts] Authorize FAILED (database error).');
             return null; 
           }
         } else {
           console.log('[auth.config.ts] Invalid credentials (Zod validation failed):', validatedFields.error?.flatten().fieldErrors);
+          console.log('[auth.config.ts] Authorize FAILED (validation).');
         }
-        console.log('[auth.config.ts] Authorization failed (did not meet conditions or error occurred), returning null.');
+        console.log('[auth.config.ts] Authorize function EXITING (default path - should ideally not be reached if logic is complete). Returning null.');
         return null;
       },
     }),
@@ -81,10 +85,5 @@ export const authConfig = {
       return session;
     },
   },
-  cookies: {
-    // Explicitly adding an empty cookies configuration.
-    // This ensures default CSRF cookie settings are applied.
-    // For more details: https://authjs.dev/reference/core/types#cookies
-  },
-  trustHost: true, // Important for development, especially with proxies or non-standard hostnames
+  trustHost: true, // Important for development environments
 } satisfies NextAuthConfig;
