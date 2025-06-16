@@ -14,20 +14,29 @@ export const authConfig = {
   providers: [
     Credentials({
       async authorize(credentials) {
+        console.log('[auth.config.ts] Authorize function called with credentials:', credentials);
         const validatedFields = LoginSchema.safeParse(credentials);
 
         if (validatedFields.success) {
           const { email, password } = validatedFields.data;
+          console.log('[auth.config.ts] Credentials validated for email:', email);
           
           try {
+            console.log('[auth.config.ts] Attempting to connect to database...');
             const { db } = await connectToDatabase();
+            console.log('[auth.config.ts] Connected to database. Searching for user:', email);
             const user = await db.collection<UserDocument>('users').findOne({ email });
 
-            if (!user || !user.hashedPassword) {
-              console.log('[auth.config.ts] No user found or no hashed password for email:', email);
+            if (!user) {
+              console.log('[auth.config.ts] No user found for email:', email);
+              return null;
+            }
+            if (!user.hashedPassword) {
+              console.log('[auth.config.ts] User found but no hashed password for email:', email);
               return null;
             }
             
+            console.log('[auth.config.ts] User found. Comparing passwords for user:', email);
             const passwordsMatch = await bcrypt.compare(password, user.hashedPassword);
 
             if (passwordsMatch) {
@@ -36,13 +45,16 @@ export const authConfig = {
               return { id: user._id.toString(), email: user.email, name: user.name };
             } else {
               console.log('[auth.config.ts] Passwords do not match for user:', email);
+              return null; // Explicitly return null if passwords don't match
             }
-          } catch (dbError) {
-            console.error('[auth.config.ts] Database error during authorization:', dbError);
+          } catch (dbError: any) {
+            console.error('[auth.config.ts] Database error during authorization:', dbError.message, dbError.stack);
             return null; // Or throw an error to display a generic message
           }
+        } else {
+          console.log('[auth.config.ts] Invalid credentials or Zod validation failed:', validatedFields.error?.flatten());
         }
-        console.log('[auth.config.ts] Invalid credentials or validation failed.');
+        console.log('[auth.config.ts] Authorization failed, returning null.');
         return null;
       },
     }),
