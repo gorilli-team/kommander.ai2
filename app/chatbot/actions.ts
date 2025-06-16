@@ -11,17 +11,11 @@ import { getFileContent } from '@/app/training/actions'; // Alias dovrebbe punta
 import { getDocument, GlobalWorkerOptions, version as pdfjsVersion } from 'pdfjs-dist/legacy/build/pdf.js';
 import mammoth from 'mammoth';
 
-// Configura pdf.js worker. Questo deve essere fatto una volta.
-// require.resolve dovrebbe fornire il percorso assoluto al file del worker in node_modules.
-// Questo dice a pdf.js da dove caricare lo script del worker, anche per la sua configurazione "fake worker".
-try {
-    const workerSrcPath = require.resolve('pdfjs-dist/legacy/build/pdf.worker.js');
-    if (GlobalWorkerOptions.workerSrc !== workerSrcPath) { // Evita di reimpostare se già impostato
-        GlobalWorkerOptions.workerSrc = workerSrcPath;
-        console.log(`[app/chatbot/actions.ts] pdfjs-dist GlobalWorkerOptions.workerSrc configurato a: ${workerSrcPath}`);
-    }
-} catch (error) {
-    console.error('[app/chatbot/actions.ts] CRITICO: Impossibile risolvere il percorso di pdf.worker.js. L elaborazione dei PDF probabilmente fallirà.', error);
+// Configura pdf.js worker per usare una CDN. Questo è spesso più affidabile in ambienti server/Next.js.
+const PDF_JS_WORKER_SRC = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsVersion}/pdf.worker.min.js`;
+if (GlobalWorkerOptions.workerSrc !== PDF_JS_WORKER_SRC) {
+    GlobalWorkerOptions.workerSrc = PDF_JS_WORKER_SRC;
+    console.log(`[app/chatbot/actions.ts] pdfjs-dist GlobalWorkerOptions.workerSrc configurato a CDN: ${PDF_JS_WORKER_SRC}`);
 }
 console.log(`[app/chatbot/actions.ts] Inizializzato. versione pdfjs-dist: ${pdfjsVersion}`);
 
@@ -37,7 +31,6 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
   try {
     if (fileType === 'application/pdf') {
       const data = new Uint8Array(buffer);
-      // Opzioni raccomandate per ambienti Node.js/non-browser ristretti
       const pdfDoc = await getDocument({ data, useWorkerFetch: false, isEvalSupported: false }).promise;
       console.log(`[app/chatbot/actions.ts] Documento PDF caricato per ${fileName} con ${pdfDoc.numPages} pagine.`);
       for (let i = 1; i <= pdfDoc.numPages; i++) {
@@ -94,7 +87,6 @@ export async function generateChatResponse(
     }));
     console.log(`[app/chatbot/actions.ts] generateChatResponse: Recuperate ${faqs.length} FAQ.`);
 
-    // Recupera metadati di TUTTI i file, ordinati per data di caricamento decrescente
     const allUploadedFilesMeta = await db.collection('raw_files_meta')
       .find({})
       .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
@@ -103,7 +95,6 @@ export async function generateChatResponse(
     
     console.log(`[app/chatbot/actions.ts] generateChatResponse: Recuperati metadati per ${allUploadedFilesMeta.length} file caricati da 'raw_files_meta'.`);
 
-    // Queste sono le informazioni di base su tutti i file da passare al prompt builder
     const filesForPromptContext: UploadedFileInfoForPrompt[] = allUploadedFilesMeta.map(doc => ({
         fileName: doc.fileName,
         originalFileType: doc.originalFileType,
@@ -112,7 +103,7 @@ export async function generateChatResponse(
     let extractedTextContentForPrompt: string | undefined = undefined;
 
     if (allUploadedFilesMeta.length > 0) {
-      const mostRecentFileMeta = allUploadedFilesMeta[0]; // Prende il file più recente
+      const mostRecentFileMeta = allUploadedFilesMeta[0]; 
       console.log(`[app/chatbot/actions.ts] Tentativo di elaborazione del file più recente: ${mostRecentFileMeta.fileName} (GridFS ID: ${mostRecentFileMeta.gridFsFileId.toString()})`);
       
       console.log(`[app/chatbot/actions.ts] Chiamata a getFileContent per GridFS ID: ${mostRecentFileMeta.gridFsFileId.toString()}`);
@@ -125,7 +116,7 @@ export async function generateChatResponse(
         console.log(`[app/chatbot/actions.ts] Buffer del file ${mostRecentFileMeta.fileName} recuperato con successo. Dimensione: ${fileBufferResult.length}. Inizio estrazione testo.`);
         extractedTextContentForPrompt = await extractTextFromFileBuffer(fileBufferResult, mostRecentFileMeta.originalFileType, mostRecentFileMeta.fileName);
         
-        const MAX_TEXT_LENGTH = 10000; // Limita la lunghezza del testo per il prompt
+        const MAX_TEXT_LENGTH = 10000; 
         if (extractedTextContentForPrompt.length > MAX_TEXT_LENGTH) {
           extractedTextContentForPrompt = extractedTextContentForPrompt.substring(0, MAX_TEXT_LENGTH) + "\n[...contenuto troncato a causa della lunghezza...]";
           console.log(`[app/chatbot/actions.ts] Testo estratto per ${mostRecentFileMeta.fileName} troncato a ${MAX_TEXT_LENGTH} caratteri.`);
@@ -139,16 +130,14 @@ export async function generateChatResponse(
         console.log('[app/chatbot/actions.ts] Nessun file caricato trovato per fornire contesto aggiuntivo.');
     }
 
-    // Passa il testo estratto (o il messaggio di errore dell'estrazione) a buildPromptServer
     const messages = buildPromptServer(userMessage, faqs, filesForPromptContext, extractedTextContentForPrompt, history);
     console.log('[app/chatbot/actions.ts] generateChatResponse: Prompt costruito per OpenAI.');
-    // Per debug: console.log('Prompt Messages:', JSON.stringify(messages, null, 2));
-    
+        
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo', 
       messages: messages,
       temperature: 0.7,
-      max_tokens: 1000, // Potrebbe essere necessario aumentarlo se le risposte sono troncate
+      max_tokens: 1000, 
     });
     console.log('[app/chatbot/actions.ts] generateChatResponse: Completamento OpenAI ricevuto.');
 

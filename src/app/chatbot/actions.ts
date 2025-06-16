@@ -11,26 +11,18 @@ import { getFileContent } from '@/app/training/actions'; // DocumentDisplayItem 
 import { getDocument, GlobalWorkerOptions, version as pdfjsVersion } from 'pdfjs-dist/legacy/build/pdf.js';
 import mammoth from 'mammoth';
 
-// Configure pdf.js worker. This needs to be done once.
-// require.resolve should give the absolute path to the worker file in node_modules.
-// This tells pdf.js where to load the worker script from, even for its "fake worker" setup.
-try {
-    const workerSrcPath = require.resolve('pdfjs-dist/legacy/build/pdf.worker.js');
-    if (GlobalWorkerOptions.workerSrc !== workerSrcPath) { // Avoid re-setting if already set
-        GlobalWorkerOptions.workerSrc = workerSrcPath;
-        console.log(`[src/app/chatbot/actions.ts] pdfjs-dist GlobalWorkerOptions.workerSrc configured to: ${workerSrcPath}`);
-    }
-} catch (error) {
-    console.error('[src/app/chatbot/actions.ts] CRITICAL: Failed to resolve pdf.worker.js path. PDF processing will likely fail.', error);
+// Configura pdf.js worker per usare una CDN.
+const PDF_JS_WORKER_SRC = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsVersion}/pdf.worker.min.js`;
+if (GlobalWorkerOptions.workerSrc !== PDF_JS_WORKER_SRC) {
+    GlobalWorkerOptions.workerSrc = PDF_JS_WORKER_SRC;
+    console.log(`[src/app/chatbot/actions.ts] pdfjs-dist GlobalWorkerOptions.workerSrc configurato a CDN: ${PDF_JS_WORKER_SRC}`);
 }
-
 console.log(`[src/app/chatbot/actions.ts] pdfjs-dist version: ${pdfjsVersion}`);
 
 
 interface UploadedFileInfoForPrompt {
   fileName: string;
   originalFileType: string;
-  // extractedText è passato separatamente a buildPromptServer
 }
 
 async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileName: string): Promise<string> {
@@ -38,9 +30,7 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
   let rawText = '';
   try {
     if (fileType === 'application/pdf') {
-      // Converti Buffer Node.js in Uint8Array per pdfjs-dist
       const data = new Uint8Array(buffer);
-      // useWorkerFetch: false e isEvalSupported: false sono raccomandati per ambienti non browser/Node.js ristretti
       const pdfDoc = await getDocument({ data, useWorkerFetch: false, isEvalSupported: false }).promise;
       console.log(`[src/app/chatbot/actions.ts] Documento PDF caricato per ${fileName} con ${pdfDoc.numPages} pagine.`);
       for (let i = 1; i <= pdfDoc.numPages; i++) {
@@ -64,9 +54,9 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
     console.error(`[src/app/chatbot/actions.ts] Errore durante l'estrazione del testo da ${fileName} (tipo: ${fileType}):`, error.message);
     console.error(`[src/app/chatbot/actions.ts] Stack trace errore estrazione:`, error.stack);
     let detailedErrorMessage = error.message;
-    if (fileType === 'application/pdf' && error.message && (error.message.toLowerCase().includes("cannot find module './pdf.worker.js'") || error.message.toLowerCase().includes("setting up fake worker failed"))) {
+    if (fileType === 'application/pdf' && error.message && (error.message.toLowerCase().includes("cannot find module './pdf.worker.js'") || error.message.toLowerCase().includes("setting up fake worker failed") || error.message.toLowerCase().includes("libuuid"))) {
         detailedErrorMessage = "Si è verificato un problema con l'inizializzazione del componente di elaborazione PDF. L'estrazione del testo potrebbe non riuscire. Prova con un file TXT o DOCX, o contatta il supporto se il problema persiste con i PDF.";
-        console.warn(`[src/app/chatbot/actions.ts] PDF processing component initialization error for ${fileName}: ${error.message}`);
+        console.warn(`[src/app/chatbot/actions.ts] Errore inizializzazione componente elaborazione PDF per ${fileName}: ${error.message}`);
     }
     return `Errore durante l'estrazione del testo dal file ${fileName}. Dettagli: ${detailedErrorMessage}`;
   }
@@ -141,7 +131,6 @@ export async function generateChatResponse(
 
     const messages = buildPromptServer(userMessage, faqs, filesForPromptContext, extractedTextContentForPrompt, history);
     console.log('[src/app/chatbot/actions.ts] generateChatResponse: Prompt costruito per OpenAI.');
-    // console.log('Prompt Messages:', JSON.stringify(messages, null, 2)); // Decommenta per debug dettagliato del prompt
     
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo', 
