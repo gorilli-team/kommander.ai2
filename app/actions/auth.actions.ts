@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { connectToDatabase } from '@/backend/lib/mongodb';
-import { RegisterSchema } from '@/frontend/lib/schemas/auth.schemas'; // Updated import
+import { RegisterSchema } from '@/frontend/lib/schemas/auth.schemas';
 import type { UserDocument } from '@/backend/schemas/user';
 
 export async function registerUser(values: unknown): Promise<{ success?: string; error?: string; details?: any }> {
@@ -12,8 +12,9 @@ export async function registerUser(values: unknown): Promise<{ success?: string;
   const validatedFields = RegisterSchema.safeParse(values);
 
   if (!validatedFields.success) {
-    console.error('[auth.actions.ts] Registration validation failed:', validatedFields.error.flatten().fieldErrors);
-    return { error: 'Invalid fields.', details: validatedFields.error.flatten().fieldErrors };
+    const fieldErrors = validatedFields.error.flatten().fieldErrors;
+    console.error('[auth.actions.ts] Registration validation failed:', fieldErrors);
+    return { error: 'Invalid fields.', details: fieldErrors };
   }
 
   const { email, password, name } = validatedFields.data;
@@ -31,18 +32,18 @@ export async function registerUser(values: unknown): Promise<{ success?: string;
     }
     console.log('[auth.actions.ts] Email available. Hashing password...');
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    console.log('[auth.actions.ts] Password hashed. Creating new user document...');
+    const hashedPassword = await bcrypt.hash(password, 10); // Salt rounds = 10
+    console.log('[auth.actions.ts] Password hashed.');
 
     const newUser: Omit<UserDocument, '_id'> = {
       email,
-      name: name || undefined, // Store name if provided, otherwise undefined
+      name: name || undefined, // Store name if provided, otherwise undefined (MongoDB will omit it)
       hashedPassword,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    const result = await db.collection('users').insertOne(newUser as UserDocument); // Type assertion to satisfy MongoDB
+    const result = await db.collection('users').insertOne(newUser as UserDocument); // Type assertion needed for MongoDB driver
 
     if (result.insertedId) {
       console.log('[auth.actions.ts] User created successfully with ID:', result.insertedId);
