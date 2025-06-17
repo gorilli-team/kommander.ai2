@@ -21,14 +21,15 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/app/*": ["app/*"],
       "@/frontend/*": ["frontend/*"],
       "@/backend/*": ["backend/*"],
+      "@/app/*": ["frontend/app/*"],
       "@/components/*": ["frontend/components/*"],
+      "@/ui/*": ["frontend/components/ui/*"],
       "@/hooks/*": ["frontend/hooks/*"],
       "@/lib/*": ["frontend/lib/*"],
-      "@/auth": ["auth.ts"],
-      "@/auth.config": ["auth.config.ts"]
+      "@/auth": ["frontend/auth.ts"],
+      "@/auth.config": ["frontend/auth.config.ts"]
     }
   },
   "include": [
@@ -36,14 +37,10 @@
     ".next/types/**/*.ts",
     "*.ts",
     "*.tsx",
-    "app/**/*.ts",
-    "app/**/*.tsx",
     "frontend/**/*.ts",
     "frontend/**/*.tsx",
     "backend/**/*.ts",
-    "backend/**/*.tsx",
-    "src/**/*.ts", 
-    "src/**/*.tsx"
+    "backend/**/*.tsx"
   ],
   "exclude": ["node_modules"]
 }

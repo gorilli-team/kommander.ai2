@@ -4,7 +4,7 @@ import type {Config} from 'tailwindcss';
 export default {
   darkMode: ['class'],
   content: [
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    // Scan only the frontend directory now
     './frontend/**/*.{js,ts,jsx,tsx,mdx}', 
   ],
   theme: {

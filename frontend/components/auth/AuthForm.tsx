@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/frontend/
 import { useRouter, useSearchParams } from 'next/navigation';
 import KommanderIcon from '@/frontend/components/layout/KommanderIcon';
 import { signIn } from 'next-auth/react';
-import { registerUser } from '@/app/actions/auth.actions';
+import { registerUser } from '@/app/actions/auth.actions'; // This path now resolves to frontend/app/actions/auth.actions.ts
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
@@ -67,6 +67,7 @@ export default function AuthForm() {
             redirect: false, 
             email: loginData.email,
             password: loginData.password,
+            // callbackUrl // No need to specify callbackUrl here if redirect is false; handled by router.push
           });
 
           console.log('[AuthForm.tsx CLIENT] signIn result object from server:', result);
@@ -99,6 +100,7 @@ export default function AuthForm() {
       } else { // Registration logic
         const registerData = data as RegisterFormData;
         console.log('[AuthForm.tsx CLIENT] Attempting registration with data:', {name: registerData.name, email: registerData.email, passwordLength: registerData.password.length});
+        // The import for registerUser will now point to frontend/app/actions/auth.actions.ts
         const result = await registerUser(registerData); 
         console.log('[AuthForm.tsx CLIENT] registerUser result:', result);
         if (result.error) {
