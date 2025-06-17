@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Faq } from '@/backend/schemas/faq';
-import { getFaqs, deleteFaq, type FaqDisplayItem } from '@/app/training/actions';
+import { getFaqs, deleteFaq, type FaqDisplayItem } from '@/app/training/actions'; // Alias @/app/* now points to frontend/app/*
 import { Button } from '@/frontend/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/frontend/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/frontend/components/ui/accordion';

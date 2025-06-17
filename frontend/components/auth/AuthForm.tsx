@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/frontend/
 import { useRouter, useSearchParams } from 'next/navigation';
 import KommanderIcon from '@/frontend/components/layout/KommanderIcon';
 import { signIn } from 'next-auth/react';
-import { registerUser } from '@/app/actions/auth.actions'; // This path now resolves to frontend/app/actions/auth.actions.ts
+import { registerUser } from '@/app/actions/auth.actions'; // Alias @/app/* now points to frontend/app/*
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
@@ -23,7 +23,7 @@ export default function AuthForm() {
   const [isLoginView, setIsLoginView] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/training'; // Default redirect
+  const callbackUrl = searchParams.get('callbackUrl') || '/training';
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -58,49 +58,40 @@ export default function AuthForm() {
     startTransition(async () => {
       if (isLoginView) {
         const loginData = data as LoginFormData;
-        console.log('[AuthForm.tsx CLIENT] Attempting signIn with credentials:', { email: loginData.email, passwordLength: loginData.password.length });
-        console.log(`[AuthForm.tsx CLIENT] Target NextAuth.js API endpoint (approx): /api/auth/callback/credentials`);
-        console.log(`[AuthForm.tsx CLIENT] Target redirect callbackUrl: ${callbackUrl}`);
-
+        console.log('[AuthForm.tsx CLIENT] Attempting signIn with credentials:', { email: loginData.email });
         try {
           const result = await signIn('credentials', {
             redirect: false, 
             email: loginData.email,
             password: loginData.password,
-            // callbackUrl // No need to specify callbackUrl here if redirect is false; handled by router.push
           });
 
           console.log('[AuthForm.tsx CLIENT] signIn result object from server:', result);
 
           if (result?.error) {
-            let errorMessage = 'Login failed. Please check your credentials or server logs.';
+            let errorMessage = 'Login failed. Please check your credentials.';
             if (result.error === "CredentialsSignin") {
                errorMessage = 'Invalid email or password. Please try again.';
-            } else if (result.error.includes("CSRF") || result.error.includes("MissingCSRF")) {
-               errorMessage = `Login failed: Security token issue. Please clear browser cookies and try again. (Error: ${result.error})`;
+            } else if (result.error.includes("CSRF")) {
+               errorMessage = `Login failed: Security token issue. (Error: ${result.error})`;
             } else {
-               errorMessage = `Login error: ${result.error}. Please check server logs for details.`;
+               errorMessage = `Login error: ${result.error}.`;
             }
             setError(errorMessage);
-            console.error('[AuthForm.tsx CLIENT] signIn error string from result.error:', result.error);
-            console.error('[AuthForm.tsx CLIENT] signIn error details (full result object):', result);
           } else if (result?.ok && !result.error) {
             setSuccess('Login successful! Redirecting...');
-            console.log('[AuthForm.tsx CLIENT] Login successful, redirecting to:', callbackUrl);
             router.push(callbackUrl); 
             router.refresh(); 
           } else {
-             setError('An unknown error occurred during login. Please try again.');
-             console.error('[AuthForm.tsx CLIENT] Unknown signIn result structure or unexpected non-error state:', result);
+             setError('An unknown error occurred during login.');
           }
         } catch (clientError: any) {
             console.error('[AuthForm.tsx CLIENT] Client-side exception during signIn call:', clientError);
-            setError(`Client exception: ${clientError.message || 'Failed to process login request.'} Is the server running and reachable?`);
+            setError(`Client exception: ${clientError.message || 'Failed to process login request.'}`);
         }
-      } else { // Registration logic
+      } else { 
         const registerData = data as RegisterFormData;
-        console.log('[AuthForm.tsx CLIENT] Attempting registration with data:', {name: registerData.name, email: registerData.email, passwordLength: registerData.password.length});
-        // The import for registerUser will now point to frontend/app/actions/auth.actions.ts
+        console.log('[AuthForm.tsx CLIENT] Attempting registration with data:', {name: registerData.name, email: registerData.email });
         const result = await registerUser(registerData); 
         console.log('[AuthForm.tsx CLIENT] registerUser result:', result);
         if (result.error) {

@@ -32,18 +32,18 @@ export async function registerUser(values: unknown): Promise<{ success?: string;
     }
     console.log('[frontend/app/actions/auth.actions.ts] Email available. Hashing password...');
 
-    const hashedPassword = await bcrypt.hash(password, 10); // Salt rounds = 10
+    const hashedPassword = await bcrypt.hash(password, 10);
     console.log('[frontend/app/actions/auth.actions.ts] Password hashed.');
 
     const newUser: Omit<UserDocument, '_id'> = {
       email,
-      name: name || undefined, // Store name if provided, otherwise undefined (MongoDB will omit it)
+      name: name || undefined,
       hashedPassword,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    const result = await db.collection('users').insertOne(newUser as UserDocument); // Type assertion needed for MongoDB driver
+    const result = await db.collection('users').insertOne(newUser as UserDocument);
 
     if (result.insertedId) {
       console.log('[frontend/app/actions/auth.actions.ts] User created successfully with ID:', result.insertedId);

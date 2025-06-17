@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { generateChatResponse } from '@/app/chatbot/actions';
+import { generateChatResponse } from '@/app/chatbot/actions'; // Alias @/app/* now points to frontend/app/*
 import { useToast } from '@/frontend/hooks/use-toast';
 
 export interface Message {

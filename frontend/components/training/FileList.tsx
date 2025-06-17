@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { getUploadedFiles, deleteDocument, type DocumentDisplayItem } from '@/app/training/actions';
+import { getUploadedFiles, deleteDocument, type DocumentDisplayItem } from '@/app/training/actions'; // Alias @/app/* now points to frontend/app/*
 import FileUploader from '@/frontend/components/training/FileUploader';
 import { Button } from '@/frontend/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/frontend/components/ui/card';
