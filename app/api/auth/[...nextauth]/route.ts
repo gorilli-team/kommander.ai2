@@ -1,4 +1,7 @@
 
-import { handlers } from '@/auth'; // Ensure this path points to your root auth.ts
+import { handlers } from '@/auth'; // Assumes auth.ts is in the project root
 export const { GET, POST } = handlers;
-// export const runtime = "edge"; // Only if all your providers and DB are edge-compatible. For Credentials, 'nodejs' (default) is safer.
+
+// For Credentials provider, 'nodejs' (default) runtime is generally safer.
+// 'edge' runtime might have limitations with certain Node.js APIs or database drivers.
+// export const runtime = "edge";

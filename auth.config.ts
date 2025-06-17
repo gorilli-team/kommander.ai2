@@ -6,23 +6,17 @@ import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
 import type { UserDocument } from '@/backend/schemas/user';
 
-// Temporary log to check if AUTH_SECRET is loaded at module evaluation
-console.log('[auth.config.ts] Evaluating auth.config.ts module...');
-if (process.env.AUTH_SECRET) {
-  console.log('[auth.config.ts] AUTH_SECRET is loaded, length:', process.env.AUTH_SECRET.length);
-} else {
-  console.error('[auth.config.ts] CRITICAL ERROR: AUTH_SECRET is undefined or empty at module evaluation!');
-}
-if (process.env.NEXTAUTH_URL) {
-  console.log('[auth.config.ts] NEXTAUTH_URL is loaded:', process.env.NEXTAUTH_URL);
-} else {
-  console.warn('[auth.config.ts] WARNING: NEXTAUTH_URL is undefined or empty at module evaluation.');
-}
+// Log all environment variables that Auth.js might use (for debugging purposes)
+// In a real production environment, be careful about logging sensitive information.
+console.log('[auth.config.ts] Initializing...');
+console.log('[auth.config.ts] NEXTAUTH_URL from env:', process.env.NEXTAUTH_URL);
+console.log('[auth.config.ts] AUTH_SECRET from env is set:', !!process.env.AUTH_SECRET);
 
 
 export const authConfig = {
   pages: {
     signIn: '/login',
+    // error: '/login', // Optionally define an error page
   },
   providers: [
     Credentials({
@@ -31,16 +25,10 @@ export const authConfig = {
           credentials ? { email: (credentials as any).email, hasPassword: !!(credentials as any).password } : 'null'
         );
 
-        if (!process.env.AUTH_SECRET) {
-          console.error('[auth.config.ts] CRITICAL: AUTH_SECRET is not available within authorize function. This will cause CSRF/session errors.');
-          // Consider throwing an error or returning null immediately if AUTH_SECRET is vital here for some pre-check (though usually not directly used in authorize)
-        }
-
         const validatedFields = LoginSchema.safeParse(credentials);
-
         if (!validatedFields.success) {
           console.error('[auth.config.ts] Zod validation FAILED for credentials:', validatedFields.error?.flatten().fieldErrors);
-          return null;
+          return null; // Validation failed
         }
 
         const { email, password } = validatedFields.data;
@@ -53,8 +41,9 @@ export const authConfig = {
           db = connection.db;
           console.log('[auth.config.ts] Successfully connected to database. DB Name:', db.databaseName);
         } catch (dbConnectError: any) {
-          console.error('[auth.config.ts] CRITICAL: Database connection FAILED during authorize:', dbConnectError.message, dbConnectError.stack);
-          return null;
+          console.error('[auth.config.ts] CRITICAL: Database connection FAILED during authorize:', dbConnectError.message);
+          console.error('[auth.config.ts] DB Connect Error Stack:', dbConnectError.stack);
+          return null; // Cannot proceed without DB
         }
 
         let userDoc: UserDocument | null = null;
@@ -62,8 +51,9 @@ export const authConfig = {
           console.log('[auth.config.ts] Searching for user in database with email:', email);
           userDoc = await db.collection<UserDocument>('users').findOne({ email });
         } catch (dbFindError: any) {
-          console.error('[auth.config.ts] CRITICAL: Error finding user in database:', dbFindError.message, dbFindError.stack);
-          return null;
+          console.error('[auth.config.ts] CRITICAL: Error finding user in database:', dbFindError.message);
+          console.error('[auth.config.ts] DB Find Error Stack:', dbFindError.stack);
+          return null; // Error during DB query
         }
 
         if (!userDoc) {
@@ -82,7 +72,8 @@ export const authConfig = {
           console.log('[auth.config.ts] Comparing passwords for user:', email);
           passwordsMatch = await bcrypt.compare(password, userDoc.hashedPassword);
         } catch (bcryptError: any) {
-          console.error('[auth.config.ts] CRITICAL: Error comparing passwords with bcrypt:', bcryptError.message, bcryptError.stack);
+          console.error('[auth.config.ts] CRITICAL: Error comparing passwords with bcrypt:', bcryptError.message);
+          console.error('[auth.config.ts] Bcrypt Error Stack:', bcryptError.stack);
           return null; // Error during password comparison
         }
 
@@ -105,13 +96,14 @@ export const authConfig = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user }) {
-      // console.log('[auth.config.ts] JWT callback. User:', user, 'Token:', token);
-      if (user && user.id) {
+    async jwt({ token, user, account, profile }) {
+      // console.log('[auth.config.ts] JWT callback. User:', user, 'Token:', token, 'Account:', account);
+      if (user && user.id) { // Persist the user ID from User object to the token
         token.id = user.id;
       }
       if (user?.name) token.name = user.name;
       if (user?.email) token.email = user.email;
+      // if (user?.image) token.picture = user.image; // if you have images
       return token;
     },
     async session({ session, token }) {
@@ -120,13 +112,13 @@ export const authConfig = {
         if (token.id) session.user.id = token.id as string;
         if (token.name) session.user.name = token.name;
         if (token.email) session.user.email = token.email;
+        // if (token.picture) session.user.image = token.picture as string | null; // if you have images
       }
       return session;
     },
   },
-  secret: process.env.AUTH_SECRET,
-  trustHost: true, // Recommended for development environments
-  // cookies: {}, // Explicitly setting cookies (even if empty) can sometimes influence behavior.
-                 // Removing this for now to rely on NextAuth.js defaults which should be fine
-                 // if AUTH_SECRET and NEXTAUTH_URL are correctly set.
+  secret: process.env.AUTH_SECRET, // Crucial for JWT signing and cookie encryption
+  trustHost: true, // Recommended for development environments, especially with proxies or containers
+  // cookies: {}, // Relying on NextAuth.js defaults unless specific overrides are needed
+  debug: process.env.NODE_ENV === 'development', // Enable more verbose logging in development
 } satisfies NextAuthConfig;
