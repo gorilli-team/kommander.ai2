@@ -6,22 +6,19 @@ import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
 import type { UserDocument } from '@/backend/schemas/user';
 
-// Log all environment variables that Auth.js might use (for debugging purposes)
-// In a real production environment, be careful about logging sensitive information.
-console.log('[auth.config.ts] Initializing...');
-console.log('[auth.config.ts] NEXTAUTH_URL from env:', process.env.NEXTAUTH_URL);
-console.log('[auth.config.ts] AUTH_SECRET from env is set:', !!process.env.AUTH_SECRET);
-
+// TEMPORARY LOG FOR DEBUGGING - REMOVE IN PRODUCTION
+console.log('[auth.config.ts] Initializing... Value of AUTH_SECRET being read by NextAuth config:', process.env.AUTH_SECRET);
+console.log('[auth.config.ts] Value of NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
 
 export const authConfig = {
   pages: {
     signIn: '/login',
-    // error: '/login', // Optionally define an error page
+    // error: '/login', // You can uncomment and define an error page if needed
   },
   providers: [
     Credentials({
       async authorize(credentials): Promise<User | null> {
-        console.log('[auth.config.ts] Authorize function ENTERED. Credentials received:',
+        console.log('[auth.config.ts] Authorize function ENTERED. Credentials received:', 
           credentials ? { email: (credentials as any).email, hasPassword: !!(credentials as any).password } : 'null'
         );
 
@@ -30,6 +27,7 @@ export const authConfig = {
           console.error('[auth.config.ts] Zod validation FAILED for credentials:', validatedFields.error?.flatten().fieldErrors);
           return null; // Validation failed
         }
+        console.log('[auth.config.ts] Zod validation SUCCESS for credentials.');
 
         const { email, password } = validatedFields.data;
         console.log('[auth.config.ts] Credentials validated for email:', email);
@@ -43,7 +41,9 @@ export const authConfig = {
         } catch (dbConnectError: any) {
           console.error('[auth.config.ts] CRITICAL: Database connection FAILED during authorize:', dbConnectError.message);
           console.error('[auth.config.ts] DB Connect Error Stack:', dbConnectError.stack);
-          return null; // Cannot proceed without DB
+          // Returning null here will lead to a generic credentials error on the client.
+          // It's crucial to check server logs for this.
+          return null; 
         }
 
         let userDoc: UserDocument | null = null;
@@ -66,11 +66,13 @@ export const authConfig = {
           console.log('[auth.config.ts] User found but NO HASHED PASSWORD for email:', email, '(User ID:', userDoc._id.toString(), '). Authorize FAILED (no password).');
           return null;
         }
+        console.log('[auth.config.ts] User has a hashed password.');
 
         let passwordsMatch = false;
         try {
           console.log('[auth.config.ts] Comparing passwords for user:', email);
           passwordsMatch = await bcrypt.compare(password, userDoc.hashedPassword);
+          console.log('[auth.config.ts] Password comparison result:', passwordsMatch);
         } catch (bcryptError: any) {
           console.error('[auth.config.ts] CRITICAL: Error comparing passwords with bcrypt:', bcryptError.message);
           console.error('[auth.config.ts] Bcrypt Error Stack:', bcryptError.stack);
@@ -79,7 +81,7 @@ export const authConfig = {
 
         if (passwordsMatch) {
           console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', userDoc._id.toString(), '). Authorize SUCCESS.');
-          return {
+          return { // This is the User object NextAuth expects
             id: userDoc._id.toString(),
             email: userDoc.email,
             name: userDoc.name || null,
@@ -93,17 +95,17 @@ export const authConfig = {
     }),
   ],
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt', // Using JWT for session strategy
   },
   callbacks: {
-    async jwt({ token, user, account, profile }) {
-      // console.log('[auth.config.ts] JWT callback. User:', user, 'Token:', token, 'Account:', account);
-      if (user && user.id) { // Persist the user ID from User object to the token
+    async jwt({ token, user }) {
+      // console.log('[auth.config.ts] JWT callback. User:', user, 'Token:', token);
+      if (user) { // user object is only passed on first sign-in
         token.id = user.id;
+        token.name = user.name;
+        token.email = user.email;
+        // token.picture = user.image; // If you have user images
       }
-      if (user?.name) token.name = user.name;
-      if (user?.email) token.email = user.email;
-      // if (user?.image) token.picture = user.image; // if you have images
       return token;
     },
     async session({ session, token }) {
@@ -112,13 +114,13 @@ export const authConfig = {
         if (token.id) session.user.id = token.id as string;
         if (token.name) session.user.name = token.name;
         if (token.email) session.user.email = token.email;
-        // if (token.picture) session.user.image = token.picture as string | null; // if you have images
+        // if (token.picture) session.user.image = token.picture as string | null;
       }
       return session;
     },
   },
-  secret: process.env.AUTH_SECRET, // Crucial for JWT signing and cookie encryption
-  trustHost: true, // Recommended for development environments, especially with proxies or containers
-  // cookies: {}, // Relying on NextAuth.js defaults unless specific overrides are needed
+  secret: process.env.AUTH_SECRET, // Explicitly set for clarity, NextAuth.js might infer it but being explicit is good.
+  trustHost: true, // Important for development environments, especially with proxies or containers
+  // cookies: {}, // Relying on NextAuth.js defaults unless specific overrides are needed for CSRF token names etc.
   debug: process.env.NODE_ENV === 'development', // Enable more verbose logging in development
 } satisfies NextAuthConfig;

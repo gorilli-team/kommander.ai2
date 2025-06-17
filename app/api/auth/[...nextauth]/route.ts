@@ -1,5 +1,6 @@
 
-import { handlers } from '@/auth'; // Assumes auth.ts is in the project root
+// app/api/auth/[...nextauth]/route.ts
+import { handlers } from '@/auth'; // Ensure this path points to your root auth.ts
 export const { GET, POST } = handlers;
 
 // For Credentials provider, 'nodejs' (default) runtime is generally safer.
