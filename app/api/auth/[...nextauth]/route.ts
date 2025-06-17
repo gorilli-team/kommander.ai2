@@ -1,4 +1,4 @@
 
-import { handlers } from '@/auth'; // This path should now resolve correctly
+import { handlers } from '@/auth'; // Ensure this path points to your root auth.ts
 export const { GET, POST } = handlers;
 // export const runtime = "edge"; // Only if all your providers and DB are edge-compatible. For Credentials, 'nodejs' (default) is safer.

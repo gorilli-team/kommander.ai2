@@ -39,9 +39,13 @@ export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db
   }
 
   try {
-    console.log("[backend/lib/mongodb.ts] No valid cached client/DB, attempting to connect...");
-    cachedClient = await client.connect();
-    console.log("[backend/lib/mongodb.ts] Successfully connected to MongoDB client.");
+    console.log("[backend/lib/mongodb.ts] No valid cached client/DB, attempting to connect to MongoDB client...");
+    if (!cachedClient) { // Ensure client is connected only once
+        cachedClient = await client.connect();
+        console.log("[backend/lib/mongodb.ts] Successfully connected to MongoDB client instance.");
+    } else {
+        console.log("[backend/lib/mongodb.ts] MongoDB client instance already connected, reusing.");
+    }
     
     const dbNameFromUri = uri.split('/').pop()?.split('?')[0];
     const dbName = dbNameFromUri || 'kommander_ai_prototype'; // Default DB name if not in URI
@@ -49,7 +53,7 @@ export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db
       console.warn(`[backend/lib/mongodb.ts] Database name not found in MONGODB_URI, defaulting to '${dbName}'. It is recommended to specify the database name in the URI like: ...mongodb.net/YOUR_DB_NAME?retryWrites=true`);
     }
     cachedDb = cachedClient.db(dbName);
-    console.log(`[backend/lib/mongodb.ts] Using database: ${cachedDb.databaseName}`); // Log the actual DB name being used
+    console.log(`[backend/lib/mongodb.ts] Using database: ${cachedDb.databaseName}`);
     
     // Attempt a ping to confirm connection and auth
     await cachedDb.command({ ping: 1 });
@@ -62,7 +66,8 @@ export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db
     console.error('[backend/lib/mongodb.ts] MongoDB Connection Error Message:', error.message);
     console.error('[backend/lib/mongodb.ts] MongoDB Connection Error Stack:', error.stack);
     // Important: Invalidate cache on error to force re-attempt on next call
-    cachedClient = null; 
+    // No need to close client here as it's a singleton; allow re-connection attempts.
+    cachedClient = null; // Reset client if connection was established but ping failed or other error
     cachedDb = null;
     throw new Error(`Failed to connect to the database: ${error.message}`);
   }

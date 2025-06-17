@@ -58,43 +58,47 @@ export default function AuthForm() {
     startTransition(async () => {
       if (isLoginView) {
         const loginData = data as LoginFormData;
-        console.log('[AuthForm.tsx] Attempting login with credentials:', { email: loginData.email, passwordPresent: !!loginData.password });
+        console.log('[AuthForm.tsx CLIENT] Attempting login with credentials:', { email: loginData.email, passwordPresent: !!loginData.password });
         try {
           const result = await signIn('credentials', {
             redirect: false,
             email: loginData.email,
             password: loginData.password,
+            // callbackUrl: callbackUrl // NextAuth.js v5 handles callbackUrl redirection more automatically based on middleware or protected pages
           });
-          console.log('[AuthForm.tsx] signIn result:', result);
+          console.log('[AuthForm.tsx CLIENT] signIn result:', result);
           if (result?.error) {
             if (result.error === "CredentialsSignin") {
                setError('Login failed: Invalid email or password.');
             } else {
-              setError(`Login failed: ${result.error}`);
+              setError(`Login error: ${result.error}`); // More generic error for other cases
             }
+             console.error('[AuthForm.tsx CLIENT] signIn error:', result.error);
           } else if (result?.ok && !result.error) {
             setSuccess('Login successful! Redirecting...');
             router.push(callbackUrl); 
-            router.refresh();
+            router.refresh(); // Important to refresh server components and session state
           } else {
-             setError('An unknown error occurred during login. Please try again.');
+             setError('An unknown error occurred during login. Please check server logs.');
+             console.error('[AuthForm.tsx CLIENT] Unknown signIn result:', result);
           }
         } catch (clientError: any) {
-            console.error('[AuthForm.tsx] Client-side error during signIn:', clientError);
-            setError(`Client error: ${clientError.message || 'Failed to process login.'}`);
+            console.error('[AuthForm.tsx CLIENT] Client-side exception during signIn:', clientError);
+            setError(`Client exception: ${clientError.message || 'Failed to process login.'}`);
         }
       } else { 
         const registerData = data as RegisterFormData;
-        console.log('[AuthForm.tsx] Attempting registration with data:', {name: registerData.name, email: registerData.email, passwordPresent: !!registerData.password});
+        console.log('[AuthForm.tsx CLIENT] Attempting registration with data:', {name: registerData.name, email: registerData.email, passwordPresent: !!registerData.password});
         const result = await registerUser(registerData);
-        console.log('[AuthForm.tsx] registerUser result:', result);
+        console.log('[AuthForm.tsx CLIENT] registerUser result:', result);
         if (result.error) {
           let displayError = result.error;
           if (result.details) {
             const fieldErrors = Object.values(result.details).flat().join(' ');
-            displayError += ` ${fieldErrors}`;
+            displayError += ` Details: ${fieldErrors}`;
           }
           setError(displayError);
+          console.error('[AuthForm.tsx CLIENT] registerUser error:', displayError);
         } else if (result.success) {
           setSuccess(result.success + " Please log in.");
           setIsLoginView(true);
