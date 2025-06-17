@@ -6,7 +6,18 @@ import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
 import type { UserDocument } from '@/backend/schemas/user';
 
-console.log('[auth.config.ts] File loaded. Initializing NextAuth config.');
+// TEMPORARY LOG FOR DEBUGGING - REMOVE AFTER CHECKING SERVER LOGS
+console.log('[auth.config.ts] Raw process.env.AUTH_SECRET:', process.env.AUTH_SECRET);
+if (process.env.AUTH_SECRET) {
+  console.log('[auth.config.ts] Length of AUTH_SECRET:', process.env.AUTH_SECRET.length);
+  if (process.env.AUTH_SECRET.includes('"') || process.env.AUTH_SECRET.includes("'")) {
+    console.warn('[auth.config.ts] WARNING: AUTH_SECRET appears to contain quotes. This is likely incorrect.');
+  }
+} else {
+  console.error('[auth.config.ts] CRITICAL: AUTH_SECRET is undefined or empty!');
+}
+console.log('[auth.config.ts] Raw process.env.NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+
 
 export const authConfig = {
   pages: {
@@ -15,7 +26,7 @@ export const authConfig = {
   providers: [
     Credentials({
       async authorize(credentials): Promise<User | null> {
-        console.log('[auth.config.ts] Authorize function ENTERED. Credentials received:', 
+        console.log('[auth.config.ts] Authorize function ENTERED. Credentials received:',
           credentials ? { email: (credentials as any).email, hasPassword: !!(credentials as any).password } : 'null'
         );
 
@@ -71,12 +82,11 @@ export const authConfig = {
 
         if (passwordsMatch) {
           console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', userDoc._id.toString(), '). Authorize SUCCESS.');
-          // Return the user object in the format NextAuth expects
           return { 
             id: userDoc._id.toString(), 
             email: userDoc.email, 
-            name: userDoc.name || null, // Ensure name is null if undefined
-            image: null // Or userDoc.image if you have it
+            name: userDoc.name || null,
+            image: null 
           };
         } else {
           console.log('[auth.config.ts] Passwords do NOT match for user:', email, '(User ID:', userDoc._id.toString(), '). Authorize FAILED (password mismatch).');
@@ -89,12 +99,11 @@ export const authConfig = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user, account, profile }) {
-      // console.log('[auth.config.ts] JWT callback. User:', user, 'Token:', token, 'Account:', account);
+    async jwt({ token, user }) {
+      // console.log('[auth.config.ts] JWT callback. User:', user, 'Token:', token);
       if (user && user.id) { 
         token.id = user.id;
       }
-      // Persist name and email from user object to token if they exist
       if (user?.name) token.name = user.name;
       if (user?.email) token.email = user.email;
       return token;
@@ -109,21 +118,8 @@ export const authConfig = {
       return session;
     },
   },
-  cookies: {
-    // Default cookie names and options are usually fine if AUTH_SECRET is strong and unique.
-    // Explicitly defining them can sometimes help in complex proxy or domain setups.
-    // For CSRF token cookie:
-    // csrfToken: {
-    //   name: process.env.NODE_ENV === 'production' ? '__Host-authjs.csrf-token' : 'authjs.csrf-token',
-    //   options: {
-    //     httpOnly: true,
-    //     sameSite: 'lax',
-    //     path: '/',
-    //     secure: process.env.NODE_ENV === 'production',
-    //   },
-    // },
-  },
-  trustHost: true, // Recommended for development, especially if behind a proxy or custom domain. For production, review carefully.
-  // secret: process.env.AUTH_SECRET, // NextAuth v5 automatically picks this up from process.env.AUTH_SECRET
-  // debug: process.env.NODE_ENV === 'development', // Enable debug logs in development
+  trustHost: true, // Recommended for development, especially if behind a proxy or custom domain.
+  // Using default cookie settings by not specifying the cookies block explicitly,
+  // NextAuth.js should infer secure based on NEXTAUTH_URL (http -> secure: false)
+  // and set SameSite=lax for CSRF token cookie.
 } satisfies NextAuthConfig;

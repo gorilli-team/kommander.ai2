@@ -59,25 +59,27 @@ export default function AuthForm() {
       if (isLoginView) {
         const loginData = data as LoginFormData;
         console.log('[AuthForm.tsx CLIENT] Attempting login with credentials:', { email: loginData.email, passwordPresent: !!loginData.password });
+        console.log(`[AuthForm.tsx CLIENT] NEXTAUTH_URL from client (not directly accessible, but signIn will use it implicitly): ${process.env.NEXTAUTH_URL || 'Using default or relative path'}`);
+        
         try {
           const result = await signIn('credentials', {
             redirect: false,
             email: loginData.email,
             password: loginData.password,
-            // callbackUrl: callbackUrl // NextAuth.js v5 handles callbackUrl redirection more automatically based on middleware or protected pages
           });
           console.log('[AuthForm.tsx CLIENT] signIn result:', result);
           if (result?.error) {
             if (result.error === "CredentialsSignin") {
                setError('Login failed: Invalid email or password.');
             } else {
-              setError(`Login error: ${result.error}`); // More generic error for other cases
+               // For other errors like CSRF, etc., it might be more generic from the client's perspective
+               setError(`Login error: ${result.error}. Please check server logs for details.`);
             }
-             console.error('[AuthForm.tsx CLIENT] signIn error:', result.error);
+             console.error('[AuthForm.tsx CLIENT] signIn error details:', result);
           } else if (result?.ok && !result.error) {
             setSuccess('Login successful! Redirecting...');
             router.push(callbackUrl); 
-            router.refresh(); // Important to refresh server components and session state
+            router.refresh();
           } else {
              setError('An unknown error occurred during login. Please check server logs.');
              console.error('[AuthForm.tsx CLIENT] Unknown signIn result:', result);
@@ -194,14 +196,6 @@ export default function AuthForm() {
               </Alert>
             )}
             
-            {isLoginView && (
-              <div className="text-sm">
-                {/* "Forgot password" functionality can be added later */}
-                {/* <Button variant="link" type="button" className="p-0 h-auto font-normal text-primary hover:underline" disabled={isPending}>
-                  Forgot your password?
-                </Button> */}
-              </div>
-            )}
             {!isLoginView && (
                  <div className="text-xs text-muted-foreground">
                     By signing up, you agree to our <a href="#" className="text-primary hover:underline">Terms of Service</a> and <a href="#" className="text-primary hover:underline">Privacy Policy</a>.

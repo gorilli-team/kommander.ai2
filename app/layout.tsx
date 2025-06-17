@@ -1,9 +1,9 @@
 
 import type { Metadata } from 'next';
-import './globals.css'; // Assuming src/app/globals.css or app/globals.css based on your structure
+import './globals.css'; 
 import { Inter } from 'next/font/google';
-import AppLayout from '@/frontend/components/layout/AppLayout'; // Adjusted alias
-import { Toaster } from "@/frontend/components/ui/toaster"; // Adjusted alias
+import AppLayout from '@/frontend/components/layout/AppLayout'; 
+import { Toaster } from "@/frontend/components/ui/toaster"; 
 import { SessionProvider } from 'next-auth/react';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
