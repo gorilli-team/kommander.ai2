@@ -1,30 +1,31 @@
 
 import NextAuth from 'next-auth';
-import { authConfig } from './auth.config'; // Assuming auth.config.ts is in the same root directory
+import { authConfig } from './auth.config';
 
-console.log('[auth.ts] Initializing NextAuth with authConfig...');
+// console.log('[auth.ts] Initializing NextAuth with authConfig...');
+// console.log('[auth.ts] AUTH_SECRET (first few chars):', process.env.AUTH_SECRET?.substring(0,5));
+// console.log('[auth.ts] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+
 
 if (!process.env.AUTH_SECRET) {
-  // This check runs at build time and server start. The one in auth.config.ts runs when config is evaluated.
-  console.error("[auth.ts] CRITICAL ERROR: AUTH_SECRET is not set in environment variables when auth.ts is evaluated. This will cause NextAuth to fail.");
+  console.error("[auth.ts] CRITICAL ERROR: AUTH_SECRET is not set in environment variables. NextAuth will fail.");
+  // throw new Error("AUTH_SECRET is not set. This will cause NextAuth to fail."); // Optionally throw to halt execution
 }
 if (!process.env.NEXTAUTH_URL) {
-  console.warn("[auth.ts] WARNING: NEXTAUTH_URL is not set. This might lead to issues, especially in production or with OAuth providers.");
+  console.warn("[auth.ts] WARNING: NEXTAUTH_URL is not set. This might lead to issues, especially in production or with OAuth providers that require a callback URL.");
 }
 
-export const { 
-  handlers, // Includes GET and POST handlers for /api/auth/*
-  auth,     // For accessing session server-side (e.g., in Server Components, Route Handlers)
-  signIn,   // For initiating sign-in flow (client or server-side)
-  signOut   // For initiating sign-out flow (client or server-side)
+
+export const {
+  handlers,
+  auth,
+  signIn,
+  signOut,
 } = NextAuth(authConfig);
 
-// Optional: Define a more specific user type for your session if needed for type safety in your app
-// This helps if you add custom properties to session.user via callbacks.
 export interface SessionUser {
   id?: string;
   name?: string | null;
   email?: string | null;
   image?: string | null;
-  // Add any other custom fields you expect in session.user
 }

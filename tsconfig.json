@@ -27,7 +27,8 @@
       "@/components/*": ["frontend/components/*"],
       "@/hooks/*": ["frontend/hooks/*"],
       "@/lib/*": ["frontend/lib/*"],
-      "@/auth": ["auth.ts"]
+      "@/auth": ["auth.ts"],
+      "@/auth.config": ["auth.config.ts"]
     }
   },
   "include": [
@@ -41,7 +42,7 @@
     "frontend/**/*.tsx",
     "backend/**/*.ts",
     "backend/**/*.tsx",
-    "src/**/*.ts",
+    "src/**/*.ts", 
     "src/**/*.tsx"
   ],
   "exclude": ["node_modules"]
