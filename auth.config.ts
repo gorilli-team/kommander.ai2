@@ -6,13 +6,12 @@ import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
 import type { UserDocument } from '@/backend/schemas/user';
 
-// console.log('[auth.config.ts] Evaluating. AUTH_SECRET (first few chars):', process.env.AUTH_SECRET?.substring(0, 5));
-// console.log('[auth.config.ts] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+// console.log('[auth.config.ts] Value of AUTH_SECRET being read by NextAuth config (first 5 chars):', process.env.AUTH_SECRET?.substring(0,5)); // Temporary: For debugging AUTH_SECRET issues
+// console.log('[auth.config.ts] Value of NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
 
 export const authConfig = {
   pages: {
     signIn: '/login',
-    // error: '/auth/error', // Optional: Define a custom error page
   },
   providers: [
     Credentials({
@@ -38,7 +37,7 @@ export const authConfig = {
         } catch (dbConnectError: any) {
           console.error('[auth.config.ts] CRITICAL: Database connection FAILED during authorize:', dbConnectError.message);
           console.error('[auth.config.ts] DB Connect Error Stack:', dbConnectError.stack);
-          return null;
+          return null; 
         }
 
         let userDoc: UserDocument | null = null;
@@ -69,8 +68,9 @@ export const authConfig = {
           passwordsMatch = await bcrypt.compare(password, userDoc.hashedPassword);
           console.log('[auth.config.ts] Password comparison result for user', email, ':', passwordsMatch);
         } catch (bcryptError: any) {
-          console.error('[auth.config.ts] CRITICAL: Error comparing passwords with bcrypt:', bcryptError.message, bcryptError.stack);
-          return null; // Error during password comparison
+          console.error('[auth.config.ts] CRITICAL: Error comparing passwords with bcrypt:', bcryptError.message);
+          console.error('[auth.config.ts] BCrypt Error Stack:', bcryptError.stack);
+          return null; 
         }
 
         if (passwordsMatch) {
@@ -93,7 +93,7 @@ export const authConfig = {
   callbacks: {
     async jwt({ token, user }) {
       // console.log('[auth.config.ts] JWT callback. User:', user, 'Token:', token);
-      if (user) {
+      if (user) { // User object is only passed on first sign-in
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
@@ -109,7 +109,7 @@ export const authConfig = {
       return session;
     },
   },
-  secret: process.env.AUTH_SECRET,
-  trustHost: true, // Important for some environments, review for production if not using Vercel/Next.js standard hosting
-  debug: process.env.NODE_ENV === 'development',
+  secret: process.env.AUTH_SECRET, // Explicitly set
+  trustHost: true, // Recommended for some environments, review for production if not using Vercel/Next.js standard hosting
+  debug: process.env.NODE_ENV === 'development', // Enable NextAuth.js debug messages in development
 } satisfies NextAuthConfig;
