@@ -19,7 +19,6 @@ const exampleFaqs = [
     createdAt: new Date(),
     updatedAt: new Date(),
   },
-  // ... (rest of the exampleFaqs array remains the same)
   {
     _id: new ObjectId(),
     question: "Cosa sono i Movimenti non produttivi",
@@ -52,7 +51,7 @@ async function seedDatabase() {
     console.log(`[backend/scripts/seed.ts] Deleted ${deleteResult.deletedCount} existing FAQs.`);
 
     if (exampleFaqs.length > 0) {
-      const insertResult = await faqsCollection.insertMany(exampleFaqs as any[]); // Added 'as any[]' to bypass potential _id type issues with older MongoDB drivers if any
+      const insertResult = await faqsCollection.insertMany(exampleFaqs as any[]); 
       console.log(`[backend/scripts/seed.ts] Successfully seeded ${insertResult.insertedCount} FAQs.`);
     } else {
       console.log("[backend/scripts/seed.ts] No FAQs to seed.");

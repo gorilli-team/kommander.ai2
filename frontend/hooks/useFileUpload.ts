@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import { uploadFileAndProcess } from '@/app/training/actions'; // Alias @/app/* now points to frontend/app/*
+import { uploadFileAndProcess } from '@/app/training/actions'; 
 import { useToast } from '@/frontend/hooks/use-toast';
 
 interface UseFileUploadOptions {

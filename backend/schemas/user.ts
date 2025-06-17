@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { ObjectId } from 'mongodb';
 
 export const UserSchema = z.object({
-  _id: z.custom<ObjectId>((val) => ObjectId.isValid(val as string) || typeof val === 'object' ), // Allow ObjectId or its string representation for validation
+  _id: z.custom<ObjectId>((val) => ObjectId.isValid(val as string) || typeof val === 'object' ),
   email: z.string().email(),
   name: z.string().optional(),
   hashedPassword: z.string(),
@@ -13,7 +13,6 @@ export const UserSchema = z.object({
 
 export type UserDocument = z.infer<typeof UserSchema>;
 
-// For client-side representation or when converting from DB
 export type ClientUser = Omit<UserDocument, '_id' | 'hashedPassword' | 'createdAt' | 'updatedAt'> & {
   id: string;
   createdAt?: string;

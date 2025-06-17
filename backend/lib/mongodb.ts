@@ -24,16 +24,13 @@ let cachedBucket: GridFSBucket | null = null;
 
 export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db }> {
   if (cachedClient && cachedDb) {
-    // Optional: Ping to check if connection is still alive
     try {
         await cachedDb.command({ ping: 1 });
-        // console.log("[backend/lib/mongodb.ts] Using cached MongoDB client and DB connection (ping successful).");
         return { client: cachedClient, db: cachedDb };
     } catch (pingError: any) {
         console.warn("[backend/lib/mongodb.ts] Cached MongoDB connection failed ping. Reconnecting...", pingError.message);
         cachedClient = null;
         cachedDb = null;
-        // Fall through to reconnect
     }
   }
 
@@ -54,7 +51,6 @@ export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db
     cachedDb = cachedClient.db(dbName);
     console.log(`[backend/lib/mongodb.ts] Using database: ${dbName}`);
     
-    // Ping the database to confirm connection
     await cachedDb.command({ ping: 1 });
     console.log("[backend/lib/mongodb.ts] Pinged your deployment. You successfully connected to MongoDB!");
     
@@ -64,7 +60,7 @@ export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db
     console.error('[backend/lib/mongodb.ts] MongoDB Connection Error Name:', error.name);
     console.error('[backend/lib/mongodb.ts] MongoDB Connection Error Message:', error.message);
     console.error('[backend/lib/mongodb.ts] MongoDB Connection Error Stack:', error.stack);
-    cachedClient = null; // Reset cache on failure
+    cachedClient = null; 
     cachedDb = null;
     throw new Error(`Failed to connect to the database: ${error.message}`);
   }
@@ -72,8 +68,6 @@ export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db
 
 export async function getGridFSBucket(): Promise<GridFSBucket> {
   if (cachedBucket) {
-    // Consider if a "ping" or check is needed for the bucket's DB connection if it could go stale
-    console.log("[backend/lib/mongodb.ts] Using cached GridFSBucket.");
     return cachedBucket;
   }
   const { db } = await connectToDatabase(); 

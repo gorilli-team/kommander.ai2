@@ -8,24 +8,21 @@ import { FaqSchema, type Faq } from '@/backend/schemas/faq';
 import { ObjectId, type GridFSFile } from 'mongodb';
 import { Readable } from 'stream';
 
-// FAQ Types
 export type FaqDisplayItem = Omit<Faq, 'createdAt' | 'updatedAt'> & {
   createdAt?: string;
   updatedAt?: string;
 };
 
-// Raw File Metadata Type for GridFS
 export type DocumentDisplayItem = {
-  id: string; // MongoDB _id of the metadata document
+  id: string; 
   fileName: string;
   originalFileType: string;
   uploadedAt?: string;
-  gridFsFileId: string; // ObjectId of the file in GridFS, as string
-  length: number; // File size
+  gridFsFileId: string; 
+  length: number; 
 };
 
 
-// FAQ Actions
 export async function createFaq(data: unknown) {
   console.log('[frontend/app/training/actions.ts] createFaq: Received data:', data);
   const validatedFields = FaqSchema.safeParse(data);
@@ -140,8 +137,7 @@ export async function deleteFaq(id: string) {
   }
 }
 
-// Document Actions - GridFS based
-const MaxFileSize = 5 * 1024 * 1024; // 5MB
+const MaxFileSize = 5 * 1024 * 1024; 
 const AcceptedFileTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
 
 export async function uploadFileAndProcess(formData: FormData): Promise<{ success?: string; error?: string; fileId?: string }> {
@@ -182,7 +178,7 @@ export async function uploadFileAndProcess(formData: FormData): Promise<{ succes
     console.log(`[frontend/app/training/actions.ts] uploadFileAndProcess (GridFS): Opening GridFS upload stream for ${file.name}...`);
     const uploadStream = bucket.openUploadStream(file.name, {
       contentType: file.type,
-      metadata: { originalName: file.name, uploadedBy: 'system_training_actions' } // updated user
+      metadata: { originalName: file.name, uploadedBy: 'system_training_actions' } 
     });
     console.log(`[frontend/app/training/actions.ts] uploadFileAndProcess (GridFS): GridFS upload stream opened with ID: ${uploadStream.id}. Piping data...`);
     
@@ -207,7 +203,7 @@ export async function uploadFileAndProcess(formData: FormData): Promise<{ succes
         fileName: file.name,
         originalFileType: file.type,
         length: file.size,
-        gridFsFileId: uploadStream.id, // Storing ObjectId directly
+        gridFsFileId: uploadStream.id, 
         uploadedAt: new Date(),
     };
 
@@ -225,7 +221,7 @@ export async function uploadFileAndProcess(formData: FormData): Promise<{ succes
     console.error('Error Name:', error.name);
     console.error('Error Message:', errorMessage);
     console.error('Error Stack:', error.stack);
-    console.error('Full Error Object:', error); // Log the full error object
+    console.error('Full Error Object:', error); 
     console.log('[frontend/app/training/actions.ts] uploadFileAndProcess (GridFS): END - Error.');
     return { error: `Server error processing ${file?.name || 'unknown file'}: ${errorMessage}` };
   }
@@ -247,7 +243,7 @@ export async function getUploadedFiles(): Promise<DocumentDisplayItem[]> {
       fileName: doc.fileName,
       originalFileType: doc.originalFileType,
       uploadedAt: doc.uploadedAt instanceof Date ? doc.uploadedAt.toISOString() : undefined,
-      gridFsFileId: doc.gridFsFileId.toString(), // Convert ObjectId to string for client
+      gridFsFileId: doc.gridFsFileId.toString(), 
       length: doc.length,
     }));
   } catch (error: any) {

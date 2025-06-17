@@ -1,10 +1,6 @@
 
 import NextAuth from 'next-auth';
-import { authConfig } from '@/frontend/auth.config'; // Updated path
-
-// console.log('[frontend/auth.ts] Initializing NextAuth with authConfig...');
-// console.log('[frontend/auth.ts] AUTH_SECRET (first few chars from env):', process.env.AUTH_SECRET?.substring(0,5));
-// console.log('[frontend/auth.ts] NEXTAUTH_URL (from env):', process.env.NEXTAUTH_URL);
+import { authConfig } from '@/frontend/auth.config';
 
 if (!process.env.AUTH_SECRET) {
   console.error("[frontend/auth.ts] CRITICAL ERROR: AUTH_SECRET is not set in environment variables. NextAuth will fail.");

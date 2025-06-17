@@ -1,15 +1,15 @@
 
 import type { NextAuthConfig, User } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { LoginSchema } from '@/frontend/lib/schemas/auth.schemas'; // Path should be correct with @/frontend alias
-import { connectToDatabase } from '@/backend/lib/mongodb'; // Path should be correct with @/backend alias
+import { LoginSchema } from '@/frontend/lib/schemas/auth.schemas';
+import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
-import type { UserDocument } from '@/backend/schemas/user'; // Path should be correct with @/backend alias
+import type { UserDocument } from '@/backend/schemas/user';
 
 
 export const authConfig = {
   pages: {
-    signIn: '/login', // This will map to frontend/app/login/page.tsx
+    signIn: '/login', 
   },
   providers: [
     Credentials({

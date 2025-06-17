@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/frontend/
 import { useRouter, useSearchParams } from 'next/navigation';
 import KommanderIcon from '@/frontend/components/layout/KommanderIcon';
 import { signIn } from 'next-auth/react';
-import { registerUser } from '@/app/actions/auth.actions'; // Alias @/app/* now points to frontend/app/*
+import { registerUser } from '@/app/actions/auth.actions'; 
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 

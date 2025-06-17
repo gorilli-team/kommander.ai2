@@ -7,11 +7,9 @@ import { buildPromptServer, type ChatMessage } from '@/backend/lib/buildPromptSe
 import type { Faq } from '@/backend/schemas/faq';
 import { getFileContent } from '@/app/training/actions';
 
-// Import text extraction libraries
 import { getDocument, GlobalWorkerOptions, version as pdfjsVersion } from 'pdfjs-dist/legacy/build/pdf.js';
 import mammoth from 'mammoth';
 
-// Configura pdf.js worker per usare una CDN.
 const PDF_JS_WORKER_SRC = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsVersion}/pdf.worker.min.js`;
 if (GlobalWorkerOptions.workerSrc !== PDF_JS_WORKER_SRC) {
     GlobalWorkerOptions.workerSrc = PDF_JS_WORKER_SRC;

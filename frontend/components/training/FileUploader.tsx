@@ -7,7 +7,7 @@ import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { Progress } from '@/frontend/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
-import { UploadCloud, FileText, XCircle } from 'lucide-react'; // AlertTriangle rimosso
+import { UploadCloud, FileText, XCircle } from 'lucide-react';
 
 interface FileUploaderProps {
   onUploadComplete?: () => void;
@@ -86,8 +86,6 @@ export default function FileUploader({ onUploadComplete }: FileUploaderProps) {
               className="hidden"
             />
           </div>
-
-          {/* L'Alert specifico per i problemi di elaborazione PDF è stato rimosso */}
 
           {selectedFile && (
             <div className="mt-4 p-4 border rounded-md bg-secondary/50">

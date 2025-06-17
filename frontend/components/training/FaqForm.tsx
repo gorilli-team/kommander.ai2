@@ -9,7 +9,7 @@ import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { Textarea } from '@/frontend/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/frontend/components/ui/form';
-import { createFaq, updateFaq } from '@/app/training/actions'; // Alias @/app/* now points to frontend/app/*
+import { createFaq, updateFaq } from '@/app/training/actions'; 
 import { useToast } from '@/frontend/hooks/use-toast';
 import React from 'react';
 

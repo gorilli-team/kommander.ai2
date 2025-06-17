@@ -12,12 +12,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.replace('/training'); // Default redirect to training after login
+      router.replace('/training'); 
     }
   }, [status, router]);
 
   if (status === 'loading' || status === 'authenticated') {
-    // Show a loading skeleton or a blank page while redirecting
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-md space-y-4">
