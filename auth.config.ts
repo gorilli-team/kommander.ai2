@@ -4,12 +4,11 @@ import Credentials from 'next-auth/providers/credentials';
 import { LoginSchema } from '@/frontend/lib/schemas/auth.schemas';
 import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
-import type { UserDocument } from '@/backend/schemas/user'; // Ensure this path is correct
+import type { UserDocument } from '@/backend/schemas/user';
 
 export const authConfig = {
   pages: {
     signIn: '/login',
-    // error: '/login', // Optionally, define an error page
   },
   providers: [
     Credentials({
@@ -20,53 +19,74 @@ export const authConfig = {
 
         const validatedFields = LoginSchema.safeParse(credentials);
 
-        if (validatedFields.success) {
-          const { email, password } = validatedFields.data;
-          console.log('[auth.config.ts] Credentials validated for email:', email);
-          
-          try {
-            console.log('[auth.config.ts] Attempting to connect to database...');
-            const { db } = await connectToDatabase(); // Ensure connectToDatabase doesn't throw unhandled errors
-            console.log('[auth.config.ts] Successfully connected to database. Searching for user:', email);
-            
-            const userDoc = await db.collection<UserDocument>('users').findOne({ email });
-
-            if (!userDoc) {
-              console.log('[auth.config.ts] No user found for email:', email, '. Authorize FAILED (user not found).');
-              return null; 
-            }
-            console.log('[auth.config.ts] User found for email:', email, 'User ID:', userDoc._id);
-
-            if (!userDoc.hashedPassword) {
-              console.log('[auth.config.ts] User found but no hashed password for email:', email, '(User ID:', userDoc._id, '). Authorize FAILED (no password).');
-              return null; 
-            }
-            
-            console.log('[auth.config.ts] Comparing passwords for user:', email);
-            const passwordsMatch = await bcrypt.compare(password, userDoc.hashedPassword);
-
-            if (passwordsMatch) {
-              console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', userDoc._id, '). Authorize SUCCESS.');
-              // Return a user object that NextAuth expects
-              return { id: userDoc._id.toString(), email: userDoc.email, name: userDoc.name || null, image: null };
-            } else {
-              console.log('[auth.config.ts] Passwords do NOT match for user:', email, '(User ID:', userDoc._id, '). Authorize FAILED (password mismatch).');
-              return null; 
-            }
-          } catch (dbError: any) {
-            console.error('[auth.config.ts] CRITICAL DATABASE/AUTHORIZATION ERROR for email:', email, dbError);
-            console.error('[auth.config.ts] Error Name:', dbError.name);
-            console.error('[auth.config.ts] Error Message:', dbError.message);
-            console.error('[auth.config.ts] Error Stack:', dbError.stack);
-            console.log('[auth.config.ts] Authorize FAILED (database error).');
-            return null; // Explicitly return null on database error
-          }
-        } else {
-          console.log('[auth.config.ts] Invalid credentials (Zod validation failed):', validatedFields.error?.flatten().fieldErrors);
+        if (!validatedFields.success) {
+          console.log('[auth.config.ts] Zod validation failed for credentials:', validatedFields.error?.flatten().fieldErrors);
           console.log('[auth.config.ts] Authorize FAILED (validation).');
+          return null; // Zod validation failed
         }
-        console.log('[auth.config.ts] Authorize function EXITING (default path - should ideally not be reached if logic is complete). Returning null.');
-        return null;
+        
+        const { email, password } = validatedFields.data;
+        console.log('[auth.config.ts] Credentials validated for email:', email);
+        
+        let db;
+        try {
+          console.log('[auth.config.ts] Attempting to connect to database...');
+          const connection = await connectToDatabase();
+          db = connection.db;
+          console.log('[auth.config.ts] Successfully connected to database. DB Name:', db.databaseName);
+        } catch (dbConnectError: any) {
+          console.error('[auth.config.ts] CRITICAL: Database connection FAILED:', dbConnectError);
+          console.error('[auth.config.ts] DB Connect Error Name:', dbConnectError.name);
+          console.error('[auth.config.ts] DB Connect Error Message:', dbConnectError.message);
+          console.error('[auth.config.ts] DB Connect Error Stack:', dbConnectError.stack);
+          console.log('[auth.config.ts] Authorize FAILED (database connection error).');
+          return null; // Database connection error
+        }
+
+        let userDoc: UserDocument | null = null;
+        try {
+          console.log('[auth.config.ts] Searching for user in database with email:', email);
+          userDoc = await db.collection<UserDocument>('users').findOne({ email });
+        } catch (dbFindError: any) {
+          console.error('[auth.config.ts] CRITICAL: Error finding user in database:', dbFindError);
+          console.error('[auth.config.ts] DB Find Error Name:', dbFindError.name);
+          console.error('[auth.config.ts] DB Find Error Message:', dbFindError.message);
+          console.error('[auth.config.ts] DB Find Error Stack:', dbFindError.stack);
+          console.log('[auth.config.ts] Authorize FAILED (database find user error).');
+          return null; // Database find user error
+        }
+
+        if (!userDoc) {
+          console.log('[auth.config.ts] No user found for email:', email, '. Authorize FAILED (user not found).');
+          return null;
+        }
+        console.log('[auth.config.ts] User found for email:', email, 'User ID:', userDoc._id.toString());
+
+        if (!userDoc.hashedPassword) {
+          console.log('[auth.config.ts] User found but NO HASHED PASSWORD for email:', email, '(User ID:', userDoc._id.toString(), '). Authorize FAILED (no password).');
+          return null;
+        }
+        
+        let passwordsMatch = false;
+        try {
+          console.log('[auth.config.ts] Comparing passwords for user:', email);
+          passwordsMatch = await bcrypt.compare(password, userDoc.hashedPassword);
+        } catch (bcryptError: any) {
+          console.error('[auth.config.ts] CRITICAL: Error comparing passwords with bcrypt:', bcryptError);
+          console.error('[auth.config.ts] Bcrypt Error Name:', bcryptError.name);
+          console.error('[auth.config.ts] Bcrypt Error Message:', bcryptError.message);
+          console.error('[auth.config.ts] Bcrypt Error Stack:', bcryptError.stack);
+          console.log('[auth.config.ts] Authorize FAILED (bcrypt compare error).');
+          return null; // Bcrypt compare error
+        }
+
+        if (passwordsMatch) {
+          console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', userDoc._id.toString(), '). Authorize SUCCESS.');
+          return { id: userDoc._id.toString(), email: userDoc.email, name: userDoc.name || null, image: null };
+        } else {
+          console.log('[auth.config.ts] Passwords do NOT match for user:', email, '(User ID:', userDoc._id.toString(), '). Authorize FAILED (password mismatch).');
+          return null;
+        }
       },
     }),
   ],
@@ -76,11 +96,10 @@ export const authConfig = {
   callbacks: {
     async jwt({ token, user }) {
       // console.log('[auth.config.ts] JWT callback. User:', user, 'Token:', token);
-      if (user) { // user object comes from authorize callback or OAuth provider
+      if (user) {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
-        // token.picture = user.image; // if you want to pass image
       }
       return token;
     },
@@ -90,13 +109,15 @@ export const authConfig = {
         session.user.id = token.id as string;
         session.user.name = token.name;
         session.user.email = token.email;
-        // session.user.image = token.picture; // if you want to pass image
       }
       return session;
     },
   },
-  cookies: { // Explicit cookie configuration might sometimes help with CSRF issues
-    // csrfToken: { // Example, defaults are usually fine if AUTH_SECRET is strong
+  cookies: {
+    // Default cookie names and options are usually fine if AUTH_SECRET is strong and unique.
+    // Explicitly setting them can sometimes help in complex setups or behind proxies.
+    // Example:
+    // csrfToken: {
     //   name: process.env.NODE_ENV === 'production' ? '__Host-authjs.csrf-token' : 'authjs.csrf-token',
     //   options: {
     //     httpOnly: true,
@@ -106,6 +127,6 @@ export const authConfig = {
     //   },
     // },
   },
-  trustHost: true, // Important for development environments, especially with proxies or custom domains
-  secret: process.env.AUTH_SECRET, // Explicitly set the secret
+  trustHost: true, // Recommended for development, especially if behind a proxy or custom domain.
+  secret: process.env.AUTH_SECRET, // Ensure AUTH_SECRET is correctly loaded from .env.local
 } satisfies NextAuthConfig;
