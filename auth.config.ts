@@ -6,26 +6,23 @@ import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
 import type { UserDocument } from '@/backend/schemas/user';
 
-// TEMPORARY LOG FOR DEBUGGING - REMOVE AFTER CHECKING SERVER LOGS
+// Temporary log to check if AUTH_SECRET is loaded at module evaluation
 console.log('[auth.config.ts] Evaluating auth.config.ts module...');
-console.log('[auth.config.ts] Raw process.env.AUTH_SECRET:', process.env.AUTH_SECRET);
 if (process.env.AUTH_SECRET) {
-  console.log('[auth.config.ts] Length of AUTH_SECRET:', process.env.AUTH_SECRET.length);
-  if (process.env.AUTH_SECRET.includes('"') || process.env.AUTH_SECRET.includes("'")) {
-    console.warn('[auth.config.ts] CRITICAL WARNING: AUTH_SECRET appears to contain quotes! This will likely cause CSRF/session errors. Remove them from your .env.local file.');
-  }
-  if (process.env.AUTH_SECRET.includes(' ') || process.env.AUTH_SECRET.includes('\n')) {
-    console.warn('[auth.config.ts] CRITICAL WARNING: AUTH_SECRET appears to contain spaces or newlines! This is incorrect.');
-  }
+  console.log('[auth.config.ts] AUTH_SECRET is loaded, length:', process.env.AUTH_SECRET.length);
 } else {
-  console.error('[auth.config.ts] CRITICAL ERROR: AUTH_SECRET is undefined or empty! Set it in .env.local.');
+  console.error('[auth.config.ts] CRITICAL ERROR: AUTH_SECRET is undefined or empty at module evaluation!');
 }
-console.log('[auth.config.ts] Raw process.env.NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+if (process.env.NEXTAUTH_URL) {
+  console.log('[auth.config.ts] NEXTAUTH_URL is loaded:', process.env.NEXTAUTH_URL);
+} else {
+  console.warn('[auth.config.ts] WARNING: NEXTAUTH_URL is undefined or empty at module evaluation.');
+}
 
 
 export const authConfig = {
   pages: {
-    signIn: '/login', // Redirect users to /login if they try to access protected pages
+    signIn: '/login',
   },
   providers: [
     Credentials({
@@ -34,11 +31,16 @@ export const authConfig = {
           credentials ? { email: (credentials as any).email, hasPassword: !!(credentials as any).password } : 'null'
         );
 
+        if (!process.env.AUTH_SECRET) {
+          console.error('[auth.config.ts] CRITICAL: AUTH_SECRET is not available within authorize function. This will cause CSRF/session errors.');
+          // Consider throwing an error or returning null immediately if AUTH_SECRET is vital here for some pre-check (though usually not directly used in authorize)
+        }
+
         const validatedFields = LoginSchema.safeParse(credentials);
 
         if (!validatedFields.success) {
           console.error('[auth.config.ts] Zod validation FAILED for credentials:', validatedFields.error?.flatten().fieldErrors);
-          return null; // Zod validation failed
+          return null;
         }
 
         const { email, password } = validatedFields.data;
@@ -52,7 +54,7 @@ export const authConfig = {
           console.log('[auth.config.ts] Successfully connected to database. DB Name:', db.databaseName);
         } catch (dbConnectError: any) {
           console.error('[auth.config.ts] CRITICAL: Database connection FAILED during authorize:', dbConnectError.message, dbConnectError.stack);
-          return null; // Cannot connect to DB
+          return null;
         }
 
         let userDoc: UserDocument | null = null;
@@ -61,40 +63,40 @@ export const authConfig = {
           userDoc = await db.collection<UserDocument>('users').findOne({ email });
         } catch (dbFindError: any) {
           console.error('[auth.config.ts] CRITICAL: Error finding user in database:', dbFindError.message, dbFindError.stack);
-          return null; // DB query error
+          return null;
         }
 
         if (!userDoc) {
           console.log('[auth.config.ts] No user found for email:', email, '. Authorize FAILED (user not found).');
-          return null; // User not found
+          return null;
         }
         console.log('[auth.config.ts] User found for email:', email, 'User ID:', userDoc._id.toString(), 'Name:', userDoc.name);
 
         if (!userDoc.hashedPassword) {
           console.log('[auth.config.ts] User found but NO HASHED PASSWORD for email:', email, '(User ID:', userDoc._id.toString(), '). Authorize FAILED (no password).');
-          return null; // User exists but has no password set (e.g. OAuth only account)
+          return null;
         }
 
         let passwordsMatch = false;
         try {
           console.log('[auth.config.ts] Comparing passwords for user:', email);
           passwordsMatch = await bcrypt.compare(password, userDoc.hashedPassword);
-        } catch (bcryptError: any)          console.error('[auth.config.ts] CRITICAL: Error comparing passwords with bcrypt:', bcryptError.message, bcryptError.stack);
+        } catch (bcryptError: any) {
+          console.error('[auth.config.ts] CRITICAL: Error comparing passwords with bcrypt:', bcryptError.message, bcryptError.stack);
           return null; // Error during password comparison
         }
 
         if (passwordsMatch) {
           console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', userDoc._id.toString(), '). Authorize SUCCESS.');
-          // Return the user object that NextAuth expects
           return {
             id: userDoc._id.toString(),
             email: userDoc.email,
-            name: userDoc.name || null, // Ensure name is null if undefined
-            image: null // Or userDoc.image if you have it
+            name: userDoc.name || null,
+            image: null, // Or userDoc.image if you implement it
           };
         } else {
           console.log('[auth.config.ts] Passwords do NOT match for user:', email, '(User ID:', userDoc._id.toString(), '). Authorize FAILED (password mismatch).');
-          return null; // Passwords don't match
+          return null;
         }
       },
     }),
@@ -105,12 +107,11 @@ export const authConfig = {
   callbacks: {
     async jwt({ token, user }) {
       // console.log('[auth.config.ts] JWT callback. User:', user, 'Token:', token);
-      if (user && user.id) { // user object is available on initial sign in
+      if (user && user.id) {
         token.id = user.id;
       }
       if (user?.name) token.name = user.name;
       if (user?.email) token.email = user.email;
-      // if (user?.image) token.picture = user.image; // if you use images
       return token;
     },
     async session({ session, token }) {
@@ -119,14 +120,13 @@ export const authConfig = {
         if (token.id) session.user.id = token.id as string;
         if (token.name) session.user.name = token.name;
         if (token.email) session.user.email = token.email;
-        // if (token.picture) session.user.image = token.picture; // if you use images
       }
       return session;
     },
   },
-  secret: process.env.AUTH_SECRET, // Explicitly set for clarity, though NextAuth.js picks it up
-  trustHost: true, // Often recommended for development, especially if behind a proxy.
-  // Using default cookie settings by not specifying the cookies block explicitly,
-  // NextAuth.js should infer secure based on NEXTAUTH_URL (http -> secure: false for dev)
-  // and set SameSite=lax for CSRF token cookie.
+  secret: process.env.AUTH_SECRET,
+  trustHost: true, // Recommended for development environments
+  // cookies: {}, // Explicitly setting cookies (even if empty) can sometimes influence behavior.
+                 // Removing this for now to rely on NextAuth.js defaults which should be fine
+                 // if AUTH_SECRET and NEXTAUTH_URL are correctly set.
 } satisfies NextAuthConfig;
