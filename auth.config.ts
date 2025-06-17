@@ -6,6 +6,8 @@ import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
 import type { UserDocument } from '@/backend/schemas/user';
 
+console.log('[auth.config.ts] File loaded by Next.js');
+
 export const authConfig = {
   pages: {
     signIn: '/login',
@@ -20,9 +22,9 @@ export const authConfig = {
         const validatedFields = LoginSchema.safeParse(credentials);
 
         if (!validatedFields.success) {
-          console.log('[auth.config.ts] Zod validation failed for credentials:', validatedFields.error?.flatten().fieldErrors);
-          console.log('[auth.config.ts] Authorize FAILED (validation).');
-          return null; // Zod validation failed
+          console.error('[auth.config.ts] Zod validation failed for credentials:', validatedFields.error?.flatten().fieldErrors);
+          console.log('[auth.config.ts] Authorize FAILED (Zod validation).');
+          return null;
         }
         
         const { email, password } = validatedFields.data;
@@ -35,12 +37,12 @@ export const authConfig = {
           db = connection.db;
           console.log('[auth.config.ts] Successfully connected to database. DB Name:', db.databaseName);
         } catch (dbConnectError: any) {
-          console.error('[auth.config.ts] CRITICAL: Database connection FAILED:', dbConnectError);
+          console.error('[auth.config.ts] CRITICAL: Database connection FAILED during authorize:', dbConnectError);
           console.error('[auth.config.ts] DB Connect Error Name:', dbConnectError.name);
           console.error('[auth.config.ts] DB Connect Error Message:', dbConnectError.message);
           console.error('[auth.config.ts] DB Connect Error Stack:', dbConnectError.stack);
           console.log('[auth.config.ts] Authorize FAILED (database connection error).');
-          return null; // Database connection error
+          return null; // Crucial to return null on DB connection failure
         }
 
         let userDoc: UserDocument | null = null;
@@ -53,7 +55,7 @@ export const authConfig = {
           console.error('[auth.config.ts] DB Find Error Message:', dbFindError.message);
           console.error('[auth.config.ts] DB Find Error Stack:', dbFindError.stack);
           console.log('[auth.config.ts] Authorize FAILED (database find user error).');
-          return null; // Database find user error
+          return null;
         }
 
         if (!userDoc) {
@@ -77,7 +79,7 @@ export const authConfig = {
           console.error('[auth.config.ts] Bcrypt Error Message:', bcryptError.message);
           console.error('[auth.config.ts] Bcrypt Error Stack:', bcryptError.stack);
           console.log('[auth.config.ts] Authorize FAILED (bcrypt compare error).');
-          return null; // Bcrypt compare error
+          return null;
         }
 
         if (passwordsMatch) {
@@ -96,7 +98,7 @@ export const authConfig = {
   callbacks: {
     async jwt({ token, user }) {
       // console.log('[auth.config.ts] JWT callback. User:', user, 'Token:', token);
-      if (user) {
+      if (user && user.id) { // Ensure user and user.id exist
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
@@ -105,7 +107,7 @@ export const authConfig = {
     },
     async session({ session, token }) {
       // console.log('[auth.config.ts] Session callback. Token:', token, 'Session:', session);
-      if (session.user) {
+      if (session.user && token.id) { // Ensure session.user and token.id exist
         session.user.id = token.id as string;
         session.user.name = token.name;
         session.user.email = token.email;
@@ -115,8 +117,8 @@ export const authConfig = {
   },
   cookies: {
     // Default cookie names and options are usually fine if AUTH_SECRET is strong and unique.
-    // Explicitly setting them can sometimes help in complex setups or behind proxies.
-    // Example:
+    // You can explicitly define them if needed for complex setups or proxy issues.
+    // Example for CSRF token cookie (NextAuth.js v5 beta might handle this slightly differently, but common structure):
     // csrfToken: {
     //   name: process.env.NODE_ENV === 'production' ? '__Host-authjs.csrf-token' : 'authjs.csrf-token',
     //   options: {
@@ -127,6 +129,6 @@ export const authConfig = {
     //   },
     // },
   },
-  trustHost: true, // Recommended for development, especially if behind a proxy or custom domain.
-  secret: process.env.AUTH_SECRET, // Ensure AUTH_SECRET is correctly loaded from .env.local
+  trustHost: true, // Recommended for development, especially if behind a proxy or custom domain. For production, review carefully.
+  // secret: process.env.AUTH_SECRET, // NextAuth automatically picks this up from process.env.AUTH_SECRET in v5
 } satisfies NextAuthConfig;

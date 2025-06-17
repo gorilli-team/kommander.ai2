@@ -26,18 +26,23 @@
       "@/backend/*": ["backend/*"],
       "@/components/*": ["frontend/components/*"],
       "@/hooks/*": ["frontend/hooks/*"],
-      "@/lib/*": ["frontend/lib/*"]
+      "@/lib/*": ["frontend/lib/*"],
+      "@/auth": ["auth.ts"]
     }
   },
   "include": [
     "next-env.d.ts",
     ".next/types/**/*.ts",
+    "*.ts",
+    "*.tsx",
     "app/**/*.ts",
     "app/**/*.tsx",
     "frontend/**/*.ts",
     "frontend/**/*.tsx",
     "backend/**/*.ts",
-    "backend/**/*.tsx"
+    "backend/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ],
-  "exclude": ["node_modules", "src"]
+  "exclude": ["node_modules"]
 }
