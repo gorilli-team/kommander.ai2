@@ -23,7 +23,7 @@ export default function AuthForm() {
   const [isLoginView, setIsLoginView] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/training';
+  const callbackUrl = searchParams.get('callbackUrl') || '/training'; // Default redirect after login
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -59,29 +59,43 @@ export default function AuthForm() {
     setSuccess(null);
     startTransition(async () => {
       if (isLoginView) {
-        console.log('[AuthForm.tsx] Attempting login with credentials:', { email: (data as LoginFormData).email, passwordExists: !!(data as LoginFormData).password });
+        console.log('[AuthForm.tsx] Attempting login with credentials:', { email: (data as LoginFormData).email });
         const result = await signIn('credentials', {
-          redirect: false,
+          redirect: false, // Handle redirect manually to show errors
           email: (data as LoginFormData).email,
           password: (data as LoginFormData).password,
         });
         console.log('[AuthForm.tsx] signIn result:', result);
         if (result?.error) {
-          setError(`Login failed: ${result.error}`);
-        } else if (result?.ok) {
+          // Error messages from NextAuth.js can be cryptic. We might want to map them.
+          // For "CredentialsSignin", it means the authorize callback returned null.
+          if (result.error === "CredentialsSignin") {
+             setError('Login failed: Invalid email or password.');
+          } else {
+            setError(`Login failed: ${result.error}`);
+          }
+        } else if (result?.ok && !result.error) { // result.ok is true on successful sign in
+          setSuccess('Login successful! Redirecting...');
           router.push(callbackUrl); 
-          router.refresh(); 
+          router.refresh(); // Important to refresh server components and session state
         } else {
-           setError('An unknown error occurred during login. Check server logs.');
+           setError('An unknown error occurred during login. Please try again.');
         }
       } else { 
-        console.log('[AuthForm.tsx] Attempting registration with data:', data);
+        console.log('[AuthForm.tsx] Attempting registration with data:', data as RegisterFormData);
         const result = await registerUser(data as RegisterFormData);
         console.log('[AuthForm.tsx] registerUser result:', result);
         if (result.error) {
-          setError(result.error);
+          let displayError = result.error;
+          if (result.details) {
+            // You could format details here if needed, e.g., joining multiple field errors
+            const fieldErrors = Object.values(result.details).flat().join(' ');
+            displayError += ` ${fieldErrors}`;
+          }
+          setError(displayError);
         } else if (result.success) {
-          setSuccess(result.success);
+          setSuccess(result.success + " Please log in."); // Guide user to log in
+          setIsLoginView(true); // Switch to login view
           form.reset({ name: '', email: '', password: '', confirmPassword: '' }); 
         }
       }

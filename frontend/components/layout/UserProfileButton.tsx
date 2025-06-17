@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/frontend/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/frontend/components/ui/avatar';
-import { UserCircle, LogOut, Settings } from 'lucide-react';
+import { UserCircle, LogOut } from 'lucide-react'; // Settings icon removed
 import { signOut, useSession } from 'next-auth/react';
 
 export default function UserProfileButton() {
@@ -24,15 +24,18 @@ export default function UserProfileButton() {
     await signOut({ redirect: true, callbackUrl: '/login' });
   };
 
-  const handleProfile = () => {
-    router.push('/profile');
-  };
+  // Profile handling temporarily removed to simplify
+  // const handleProfile = () => {
+  //   router.push('/profile');
+  // };
 
   if (status === 'loading') {
     return <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 animate-pulse bg-muted/50"></Button>;
   }
 
   if (status === 'unauthenticated') {
+    // This case should ideally not be hit if AppLayout correctly hides this button on /login
+    // But as a fallback:
     return (
       <Button onClick={() => router.push('/login')} variant="outline" size="sm">
         Log In
@@ -47,7 +50,6 @@ export default function UserProfileButton() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
           <Avatar className="h-9 w-9">
-            {/* Use a placeholder if no image, or first letter of name/email */}
             <AvatarImage src={session?.user?.image || `https://placehold.co/40x40/1a56db/FFFFFF.png?text=${userInitial}`} data-ai-hint="avatar placeholder" />
             <AvatarFallback>
               {userInitial}
@@ -65,11 +67,13 @@ export default function UserProfileButton() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {/* Profile link temporarily removed
         <DropdownMenuItem onClick={handleProfile} className="cursor-pointer">
           <Settings className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        */}
         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10">
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>

@@ -4,7 +4,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import AppLayout from '@/frontend/components/layout/AppLayout';
 import { Toaster } from "@/frontend/components/ui/toaster";
-import { SessionProvider } from 'next-auth/react'; // Import SessionProvider
+import { SessionProvider } from 'next-auth/react'; // Ensure SessionProvider is imported
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 

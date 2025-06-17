@@ -4,11 +4,12 @@ import Credentials from 'next-auth/providers/credentials';
 import { LoginSchema } from '@/frontend/lib/schemas/auth.schemas';
 import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
-import type { UserDocument } from '@/backend/schemas/user';
+import type { UserDocument } from '@/backend/schemas/user'; // Ensure this path is correct
 
 export const authConfig = {
   pages: {
     signIn: '/login',
+    // error: '/login', // Optionally, define an error page
   },
   providers: [
     Credentials({
@@ -25,7 +26,7 @@ export const authConfig = {
           
           try {
             console.log('[auth.config.ts] Attempting to connect to database...');
-            const { db } = await connectToDatabase(); 
+            const { db } = await connectToDatabase(); // Ensure connectToDatabase doesn't throw unhandled errors
             console.log('[auth.config.ts] Successfully connected to database. Searching for user:', email);
             
             const userDoc = await db.collection<UserDocument>('users').findOne({ email });
@@ -47,7 +48,7 @@ export const authConfig = {
             if (passwordsMatch) {
               console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', userDoc._id, '). Authorize SUCCESS.');
               // Return a user object that NextAuth expects
-              return { id: userDoc._id.toString(), email: userDoc.email, name: userDoc.name || null };
+              return { id: userDoc._id.toString(), email: userDoc.email, name: userDoc.name || null, image: null };
             } else {
               console.log('[auth.config.ts] Passwords do NOT match for user:', email, '(User ID:', userDoc._id, '). Authorize FAILED (password mismatch).');
               return null; 
@@ -58,7 +59,7 @@ export const authConfig = {
             console.error('[auth.config.ts] Error Message:', dbError.message);
             console.error('[auth.config.ts] Error Stack:', dbError.stack);
             console.log('[auth.config.ts] Authorize FAILED (database error).');
-            return null; 
+            return null; // Explicitly return null on database error
           }
         } else {
           console.log('[auth.config.ts] Invalid credentials (Zod validation failed):', validatedFields.error?.flatten().fieldErrors);
@@ -74,28 +75,28 @@ export const authConfig = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) { // user object comes from authorize callback
+      // console.log('[auth.config.ts] JWT callback. User:', user, 'Token:', token);
+      if (user) { // user object comes from authorize callback or OAuth provider
         token.id = user.id;
-        // You can add other properties from `user` to `token` here if needed
+        token.name = user.name;
+        token.email = user.email;
+        // token.picture = user.image; // if you want to pass image
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token.id) {
+      // console.log('[auth.config.ts] Session callback. Token:', token, 'Session:', session);
+      if (session.user) {
         session.user.id = token.id as string;
-      }
-      // Ensure session.user.name is correctly populated if it exists on the token
-      if (session.user && token.name) {
-        session.user.name = token.name as string;
-      }
-       if (session.user && token.email) { // Ensure email is also passed if present
-        session.user.email = token.email as string;
+        session.user.name = token.name;
+        session.user.email = token.email;
+        // session.user.image = token.picture; // if you want to pass image
       }
       return session;
     },
   },
   cookies: { // Explicit cookie configuration might sometimes help with CSRF issues
-    // csrfToken: { // This is an example, defaults are usually fine if AUTH_SECRET is strong
+    // csrfToken: { // Example, defaults are usually fine if AUTH_SECRET is strong
     //   name: process.env.NODE_ENV === 'production' ? '__Host-authjs.csrf-token' : 'authjs.csrf-token',
     //   options: {
     //     httpOnly: true,
@@ -108,4 +109,3 @@ export const authConfig = {
   trustHost: true, // Important for development environments, especially with proxies or custom domains
   secret: process.env.AUTH_SECRET, // Explicitly set the secret
 } satisfies NextAuthConfig;
-

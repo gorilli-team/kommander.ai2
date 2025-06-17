@@ -1,6 +1,6 @@
 
 import NextAuth from 'next-auth';
-import { authConfig } from './auth.config';
+import { authConfig } from './auth.config'; // Assuming auth.config.ts is in the root
  
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
