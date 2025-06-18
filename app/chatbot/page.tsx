@@ -8,7 +8,7 @@ export default function ChatbotPage() {
     // - flex flex-col: layout verticale.
     // - h-full: tenta di occupare l'intera altezza fornita dal genitore (<main> in AppLayout).
     // - space-y-4: spaziatura verticale tra l'header e il contenitore delle colonne.
-    // - overflow-hidden: per assicurare che questa pagina non causi scroll indesiderati se il contenuto interno è gestito male.
+    // - overflow-hidden: per assicurare che questa pagina non causi scroll indesiderati.
     <div className="flex flex-col h-full space-y-4 overflow-hidden">
       {/* Sezione Intestazione Pagina */}
       <div className="w-full text-left px-1 flex-shrink-0"> {/* px-1 per un minimo padding orizzontale, flex-shrink-0 per non comprimerla */}
@@ -23,12 +23,13 @@ export default function ChatbotPage() {
           - flex flex-col md:flex-row: stack verticale su mobile, row su desktop.
           - gap-6: spazio tra le colonne.
           - overflow-hidden: importante! Previene che questo contenitore venga espanso dal contenuto dei suoi figli.
+          - min-h-0: Aggiunto per aiutare con il dimensionamento flex in alcuni casi limite.
                            I figli (le colonne) devono gestire il proprio overflow.
       */}
-      <div className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden min-h-0">
         {/* Colonna Sinistra: Istruzioni
             - h-full: fa sì che questa colonna prenda l'intera altezza del suo genitore (il Contenitore delle Colonne).
-                      Questo è possibile perché il genitore ha una dimensione definita da flex-1.
+                      Questo è possibile perché il genitore ha una dimensione definita da flex-1 e min-h-0.
             - Le classi di larghezza (w-full md:w-1/3...) definiscono la sua porzione orizzontale.
         */}
         <div className="w-full md:w-1/3 lg:w-2/5 xl:w-1/3 h-full">
