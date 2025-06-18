@@ -57,9 +57,13 @@ export default function AuthForm() {
   useEffect(() => {
     setError(null);
     setSuccess(null);
+    // Resettare i form qui è ancora utile per pulire i valori
+    // se l'utente naviga avanti e indietro senza che la `key` cambi
+    // (ad esempio, se la key fosse basata su qualcos'altro)
+    // e per resettare gli errori di validazione specifici del form.
     loginForm.reset();
-    registerDetailsForm.reset(); // reset to default values
-    otpForm.reset(); // reset to default values
+    registerDetailsForm.reset(); 
+    otpForm.reset();
 
     if (view !== 'verifyOtp') {
         setRegistrationEmail(null);
@@ -147,7 +151,7 @@ export default function AuthForm() {
   const renderForm = () => {
     if (view === 'login') {
       return (
-        <Form {...loginForm}>
+        <Form {...loginForm} key="login-form">
           <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
             <FormField
               control={loginForm.control}
@@ -181,7 +185,7 @@ export default function AuthForm() {
 
     if (view === 'registerDetails') {
       return (
-        <Form {...registerDetailsForm}>
+        <Form {...registerDetailsForm} key="register-details-form">
           <form onSubmit={registerDetailsForm.handleSubmit(handleRegisterDetailsSubmit)} className="space-y-4">
             <FormField
               control={registerDetailsForm.control}
@@ -240,7 +244,7 @@ export default function AuthForm() {
 
     if (view === 'verifyOtp') {
       return (
-        <Form {...otpForm}>
+        <Form {...otpForm} key="otp-form">
           <form onSubmit={otpForm.handleSubmit(handleOtpSubmit)} className="space-y-4">
             <div className="text-center text-sm text-muted-foreground mb-4">
                 An OTP has been sent to <strong>{registrationEmail}</strong>. Please enter it below.
@@ -274,8 +278,9 @@ export default function AuthForm() {
                   const currentEmail = registrationEmail;
                   setView('registerDetails'); 
                   setRegistrationEmail(null); 
-                  otpForm.reset();
+                  // otpForm.reset(); // Il reset viene gestito dall'useEffect o dal remount
                   if (currentEmail) {
+                    // Ripopola l'email nel form dei dettagli se l'utente torna indietro
                     registerDetailsForm.setValue('email', currentEmail);
                   }
                 }}
@@ -355,6 +360,4 @@ export default function AuthForm() {
     </Card>
   );
 }
-    
-
     
