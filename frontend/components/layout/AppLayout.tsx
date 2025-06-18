@@ -13,7 +13,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const showAuthElements = pathname !== '/login'; 
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative flex flex-col min-h-screen bg-background">
       {showAuthElements && (
         <div className="fixed left-4 top-8 z-30 flex flex-col items-start space-y-3">
           <div className="flex-shrink-0 w-16 flex justify-center">
