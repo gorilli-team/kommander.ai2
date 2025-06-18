@@ -58,9 +58,10 @@ export default function AuthForm() {
     setError(null);
     setSuccess(null);
     loginForm.reset();
-    registerDetailsForm.reset();
-    otpForm.reset();
-    if (view !== 'verifyOtp') { // Keep registrationEmail if moving to OTP view
+    registerDetailsForm.reset(); // reset to default values
+    otpForm.reset(); // reset to default values
+
+    if (view !== 'verifyOtp') {
         setRegistrationEmail(null);
     }
   }, [view, loginForm, registerDetailsForm, otpForm]);
@@ -137,8 +138,8 @@ export default function AuthForm() {
       } else if (result.success) {
         setSuccess(result.success);
         setView('login'); 
-        loginForm.setValue('email', registrationEmail); // Pre-fill email for login
-        loginForm.setValue('password', ''); // Clear password for login
+        loginForm.setValue('email', registrationEmail); 
+        loginForm.setValue('password', ''); 
       }
     });
   };
@@ -274,13 +275,12 @@ export default function AuthForm() {
                   setView('registerDetails'); 
                   setRegistrationEmail(null); 
                   otpForm.reset();
-                  // Pre-fill email on registerDetails form if going back
                   if (currentEmail) {
                     registerDetailsForm.setValue('email', currentEmail);
                   }
                 }}
                 className="w-full p-0 h-auto font-normal text-primary hover:underline"
-                disabled={isOtpPending || isRegisterDetailsPending} // Disable if either OTP or register details is pending
+                disabled={isOtpPending || isRegisterDetailsPending}
               >
                 Entered wrong email or need new OTP? Go Back
               </Button>
@@ -355,5 +355,6 @@ export default function AuthForm() {
     </Card>
   );
 }
+    
 
     
