@@ -6,29 +6,26 @@ import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { 
   LoginSchema, 
-  RegisterDetailsSchema, 
-  OtpSchema,
+  RegisterSchema, // Usiamo RegisterSchema
   type LoginFormData, 
-  type RegisterDetailsFormData,
-  type OtpFormData
+  type RegisterFormData // Usiamo RegisterFormData
 } from '@/frontend/lib/schemas/auth.schemas';
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
-import { Label } from '@/frontend/components/ui/label';
+// Label non è più usato direttamente, RHFLabel si
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/frontend/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel as RHFLabel } from '@/frontend/components/ui/form';
 import { useRouter, useSearchParams } from 'next/navigation';
 import KommanderIcon from '@/frontend/components/layout/KommanderIcon';
 import { signIn } from 'next-auth/react';
-import { initiateRegistration, verifyOtpAndCompleteRegistration } from '@/app/actions/auth.actions';
+import { registerUser } from '@/app/actions/auth.actions'; // Chiamiamo registerUser
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
-import { AlertTriangle, CheckCircle2, MailCheck } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, UserPlus } from 'lucide-react'; // UserPlus per l'icona di registrazione
 
-type AuthView = 'login' | 'registerDetails' | 'verifyOtp';
+type AuthView = 'login' | 'register'; // Viste semplificate
 
 export default function AuthForm() {
   const [view, setView] = useState<AuthView>('login');
-  const [registrationEmail, setRegistrationEmail] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/training';
@@ -36,39 +33,24 @@ export default function AuthForm() {
   const [success, setSuccess] = useState<string | null>(null);
 
   const [isLoginPending, startLoginTransition] = useTransition();
-  const [isRegisterDetailsPending, startRegisterDetailsTransition] = useTransition();
-  const [isOtpPending, startOtpTransition] = useTransition();
+  const [isRegisterPending, startRegisterTransition] = useTransition();
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
     defaultValues: { email: '', password: '' },
   });
 
-  const registerDetailsForm = useForm<RegisterDetailsFormData>({
-    resolver: zodResolver(RegisterDetailsSchema),
+  const registerForm = useForm<RegisterFormData>({ // Usiamo RegisterFormData
+    resolver: zodResolver(RegisterSchema), // Usiamo RegisterSchema
     defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
-  });
-
-  const otpForm = useForm<OtpFormData>({
-    resolver: zodResolver(OtpSchema),
-    defaultValues: { otp: '' },
   });
   
   useEffect(() => {
     setError(null);
     setSuccess(null);
-    // Resettare i form qui è ancora utile per pulire i valori
-    // se l'utente naviga avanti e indietro senza che la `key` cambi
-    // (ad esempio, se la key fosse basata su qualcos'altro)
-    // e per resettare gli errori di validazione specifici del form.
     loginForm.reset();
-    registerDetailsForm.reset(); 
-    otpForm.reset();
-
-    if (view !== 'verifyOtp') {
-        setRegistrationEmail(null);
-    }
-  }, [view, loginForm, registerDetailsForm, otpForm]);
+    registerForm.reset(); 
+  }, [view, loginForm, registerForm]);
 
 
   const handleLoginSubmit: SubmitHandler<LoginFormData> = (data) => {
@@ -86,8 +68,8 @@ export default function AuthForm() {
           let errorMessage = 'Login failed. Please check your credentials.';
           if (result.error === "CredentialsSignin") {
              errorMessage = 'Invalid email or password.';
-          } else if (result.error.includes("Email not verified")) {
-             errorMessage = "Email not verified. Please check your email for the verification OTP/link or try registering again if the OTP expired.";
+          } else if (result.error.includes("Email not verified")) { // Questo potrebbe non accadere più se emailVerified è true di default
+             errorMessage = "Email not verified. Please verify your email first.";
           } else {
              errorMessage = `Login error: ${result.error}.`;
           }
@@ -105,11 +87,11 @@ export default function AuthForm() {
     });
   };
 
-  const handleRegisterDetailsSubmit: SubmitHandler<RegisterDetailsFormData> = (data) => {
+  const handleRegisterSubmit: SubmitHandler<RegisterFormData> = (data) => { // Usiamo RegisterFormData
     setError(null);
     setSuccess(null);
-    startRegisterDetailsTransition(async () => {
-      const result = await initiateRegistration(data);
+    startRegisterTransition(async () => {
+      const result = await registerUser(data); // Chiamiamo registerUser
       if (result.error) {
         let displayError = result.error;
         if (result.fieldErrors && typeof result.fieldErrors === 'object') {
@@ -119,34 +101,15 @@ export default function AuthForm() {
           displayError += ` Details: ${fieldErrors}`;
         }
         setError(displayError);
-      } else if (result.success && result.email) {
+      } else if (result.success) {
         setSuccess(result.success);
-        setRegistrationEmail(result.email);
-        setView('verifyOtp');
+        setView('login'); // Reindirizza al login dopo la registrazione
+        loginForm.setValue('email', data.email); // Precompila l'email nel form di login
+        loginForm.setValue('password', '');
       }
     });
   };
   
-  const handleOtpSubmit: SubmitHandler<OtpFormData> = (data) => {
-    setError(null);
-    setSuccess(null);
-    if (!registrationEmail) {
-      setError("An error occurred. Please try the registration process again.");
-      setView('registerDetails');
-      return;
-    }
-    startOtpTransition(async () => {
-      const result = await verifyOtpAndCompleteRegistration(registrationEmail, data.otp);
-      if (result.error) {
-        setError(result.error);
-      } else if (result.success) {
-        setSuccess(result.success);
-        setView('login'); 
-        loginForm.setValue('email', registrationEmail); 
-        loginForm.setValue('password', ''); 
-      }
-    });
-  };
 
   const renderForm = () => {
     if (view === 'login') {
@@ -183,50 +146,50 @@ export default function AuthForm() {
       );
     }
 
-    if (view === 'registerDetails') {
+    if (view === 'register') { // Vista per la registrazione diretta
       return (
-        <Form {...registerDetailsForm} key="register-details-form">
-          <form onSubmit={registerDetailsForm.handleSubmit(handleRegisterDetailsSubmit)} className="space-y-4">
+        <Form {...registerForm} key="register-form">
+          <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4">
             <FormField
-              control={registerDetailsForm.control}
+              control={registerForm.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
                   <RHFLabel>Name (Optional)</RHFLabel>
-                  <FormControl><Input placeholder="Your Name" {...field} value={field.value || ''} disabled={isRegisterDetailsPending} /></FormControl>
+                  <FormControl><Input placeholder="Your Name" {...field} value={field.value || ''} disabled={isRegisterPending} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <FormField
-              control={registerDetailsForm.control}
+              control={registerForm.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
                   <RHFLabel>Email</RHFLabel>
-                  <FormControl><Input type="email" placeholder="you@example.com" {...field} disabled={isRegisterDetailsPending} /></FormControl>
+                  <FormControl><Input type="email" placeholder="you@example.com" {...field} disabled={isRegisterPending} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <FormField
-              control={registerDetailsForm.control}
+              control={registerForm.control}
               name="password"
               render={({ field }) => (
                 <FormItem>
                   <RHFLabel>Password</RHFLabel>
-                  <FormControl><Input type="password" placeholder="•••••••• (min. 8 characters)" {...field} disabled={isRegisterDetailsPending} /></FormControl>
+                  <FormControl><Input type="password" placeholder="•••••••• (min. 8 characters)" {...field} disabled={isRegisterPending} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <FormField
-              control={registerDetailsForm.control}
+              control={registerForm.control}
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
                   <RHFLabel>Confirm Password</RHFLabel>
-                  <FormControl><Input type="password" placeholder="••••••••" {...field} disabled={isRegisterDetailsPending} /></FormControl>
+                  <FormControl><Input type="password" placeholder="••••••••" {...field} disabled={isRegisterPending} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -234,61 +197,9 @@ export default function AuthForm() {
             <div className="text-xs text-muted-foreground">
                By signing up, you agree to our Terms of Service and Privacy Policy.
             </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isRegisterDetailsPending}>
-              {isRegisterDetailsPending ? 'Processing...' : 'Continue'}
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isRegisterPending}>
+              {isRegisterPending ? 'Creating Account...' : 'Create Account'}
             </Button>
-          </form>
-        </Form>
-      );
-    }
-
-    if (view === 'verifyOtp') {
-      return (
-        <Form {...otpForm} key="otp-form">
-          <form onSubmit={otpForm.handleSubmit(handleOtpSubmit)} className="space-y-4">
-            <div className="text-center text-sm text-muted-foreground mb-4">
-                An OTP has been sent to <strong>{registrationEmail}</strong>. Please enter it below.
-            </div>
-            <FormField
-              control={otpForm.control}
-              name="otp"
-              render={({ field }) => (
-                <FormItem>
-                  <RHFLabel>Verification Code (OTP)</RHFLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Enter 6-digit OTP" 
-                      {...field} 
-                      disabled={isOtpPending}
-                      maxLength={6}
-                      className="text-center tracking-[0.3em]"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isOtpPending}>
-              {isOtpPending ? 'Verifying...' : 'Verify & Create Account'}
-            </Button>
-             <Button
-                variant="link"
-                type="button"
-                onClick={() => {
-                  const currentEmail = registrationEmail;
-                  setView('registerDetails'); 
-                  setRegistrationEmail(null); 
-                  // otpForm.reset(); // Il reset viene gestito dall'useEffect o dal remount
-                  if (currentEmail) {
-                    // Ripopola l'email nel form dei dettagli se l'utente torna indietro
-                    registerDetailsForm.setValue('email', currentEmail);
-                  }
-                }}
-                className="w-full p-0 h-auto font-normal text-primary hover:underline"
-                disabled={isOtpPending || isRegisterDetailsPending}
-              >
-                Entered wrong email or need new OTP? Go Back
-              </Button>
           </form>
         </Form>
       );
@@ -298,22 +209,20 @@ export default function AuthForm() {
 
   const getTitle = () => {
     if (view === 'login') return 'Welcome back to ';
-    if (view === 'registerDetails') return 'Create an account for ';
-    if (view === 'verifyOtp') return 'Verify your email for ';
+    if (view === 'register') return 'Create an account for ';
     return '';
   };
 
   const getDescription = () => {
     if (view === 'login') return 'Log in to your account';
-    if (view === 'registerDetails') return 'Enter your details to get started';
-    if (view === 'verifyOtp') return 'Check your inbox for the 6-digit code';
+    if (view === 'register') return 'Enter your details to get started';
     return '';
   };
 
   return (
     <Card className="w-full max-w-md shadow-xl">
       <CardHeader className="text-center">
-         {view === 'verifyOtp' && <MailCheck className="h-12 w-12 text-primary mx-auto mb-2" />}
+         {view === 'register' && <UserPlus className="h-12 w-12 text-primary mx-auto mb-2" />}
         <CardTitle className="text-2xl font-bold text-foreground mb-1">
           {getTitle()}
           <span className="text-primary"><KommanderIcon /></span> Kommander
@@ -342,15 +251,15 @@ export default function AuthForm() {
           {view === 'login' && (
             <>
               Don&apos;t have an account yet?{' '}
-              <Button variant="link" type="button" onClick={() => setView('registerDetails')} className="p-0 h-auto font-normal text-primary hover:underline" disabled={isLoginPending}>
+              <Button variant="link" type="button" onClick={() => setView('register')} className="p-0 h-auto font-normal text-primary hover:underline" disabled={isLoginPending}>
                 Sign up for free!
               </Button>
             </>
           )}
-          {view === 'registerDetails' && (
+          {view === 'register' && (
             <>
               Already have an account?{' '}
-              <Button variant="link" type="button" onClick={() => setView('login')} className="p-0 h-auto font-normal text-primary hover:underline" disabled={isRegisterDetailsPending}>
+              <Button variant="link" type="button" onClick={() => setView('login')} className="p-0 h-auto font-normal text-primary hover:underline" disabled={isRegisterPending}>
                 Log in
               </Button>
             </>
@@ -360,4 +269,3 @@ export default function AuthForm() {
     </Card>
   );
 }
-    

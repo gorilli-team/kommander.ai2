@@ -6,6 +6,16 @@ import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
 import type { UserDocument } from '@/backend/schemas/user';
 
+const MOCK_USER_ID = 'mock-user-id-for-arbi';
+const MOCK_USER_EMAIL = 'arbi@gorilli.io';
+const MOCK_USER_NAME = 'Arbi Gorilli (Bypass)';
+
+const mockUser: User = {
+  id: MOCK_USER_ID,
+  email: MOCK_USER_EMAIL,
+  name: MOCK_USER_NAME,
+};
+
 export const authConfig = {
   pages: {
     signIn: '/login',
@@ -13,6 +23,10 @@ export const authConfig = {
   providers: [
     Credentials({
       async authorize(credentials): Promise<User | null> {
+        if (process.env.BYPASS_AUTH === 'true') {
+          console.log('[auth.config.ts] BYPASS_AUTH active. Returning mock user.');
+          return mockUser;
+        }
         console.log('[auth.config.ts] Authorize function called. Validating credentials...');
 
         const validatedFields = LoginSchema.safeParse(credentials);
@@ -47,14 +61,11 @@ export const authConfig = {
           return null;
         }
         
+        // Con la registrazione diretta, emailVerified sarà true se l'utente è stato registrato correttamente.
+        // Se per qualche motivo fosse false, il login fallirebbe qui.
         if (!userDoc.emailVerified) {
           console.log('[auth.config.ts] User found but email NOT VERIFIED for:', email, 'User ID:', userDoc._id.toString());
-          // You might want to throw a specific error type or return an object that AuthForm can interpret
-          // For NextAuth, returning null or throwing an error results in a generic credentials error.
-          // To provide a custom message, you'd typically handle this in the signIn call on the client.
-          // However, for security, just denying access is standard.
-          // Throwing an error with a specific message can sometimes be caught by NextAuth and displayed.
-          throw new Error("Email not verified. Please check your email for the verification link/OTP.");
+          throw new Error("Email not verified. Please contact support or try registering again.");
         }
         console.log('[auth.config.ts] User found and email verified for:', email, 'User ID:', userDoc._id.toString());
 
@@ -86,6 +97,12 @@ export const authConfig = {
   },
   callbacks: {
     async jwt({ token, user }) {
+      if (process.env.BYPASS_AUTH === 'true') {
+        token.id = MOCK_USER_ID;
+        token.email = MOCK_USER_EMAIL;
+        token.name = MOCK_USER_NAME;
+        return token;
+      }
       if (user) { 
         token.id = user.id;
         // token.emailVerified = (user as any).emailVerified; // Pass custom props from authorize user object
@@ -93,6 +110,20 @@ export const authConfig = {
       return token;
     },
     async session({ session, token }) {
+      if (process.env.BYPASS_AUTH === 'true') {
+        if (session.user) {
+          session.user.id = MOCK_USER_ID;
+          session.user.email = MOCK_USER_EMAIL;
+          session.user.name = MOCK_USER_NAME;
+        } else {
+          session.user = {
+            id: MOCK_USER_ID,
+            email: MOCK_USER_EMAIL,
+            name: MOCK_USER_NAME,
+          };
+        }
+        return session;
+      }
       if (session.user && token.id) {
         session.user.id = token.id as string;
         // (session.user as any).emailVerified = token.emailVerified;
