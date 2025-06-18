@@ -1,20 +1,32 @@
 
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
-import { Lightbulb, ExternalLink, Copy, Share2, AlertTriangle } from 'lucide-react';
+import { Lightbulb, ExternalLink, Copy, Share2, AlertTriangle, Settings2 } from 'lucide-react';
 import { useToast } from '@/frontend/hooks/use-toast';
 
 const ChatbotIntegrationInstructions: React.FC = () => {
   const { toast } = useToast();
+  const [appUrl, setAppUrl] = useState('');
 
-  const chatbotId = "2fb74e4c-df2f-45ff-8c70-99d1eda132db"; // Example ID
-  const scriptSnippet = `<kepleroai-chat chatbot="${chatbotId}"></kepleroai-chat>\n<script src="https://cdn.keplero.ai/chatbot-loader.js" defer></script>`;
-  const iframeLink = `https://console.keplero.ai/chatbot-iframe/${chatbotId}`;
+  useEffect(() => {
+    // Assicurati che questo venga eseguito solo nel client
+    if (typeof window !== 'undefined') {
+      setAppUrl(window.location.origin);
+    }
+  }, []);
+
+  // Sostituisci con un ID cliente reale o un modo per ottenerlo dinamicamente
+  const exampleChatbotId = "CLIENTE_ID_UNIVOCO_DA_SOSTITUIRE"; 
+  
+  const scriptSnippet = `<kommanderai-chat chatbot-id="${exampleChatbotId}" data-app-url="${appUrl}"></kommanderai-chat>
+<script src="${appUrl}/chatbot-loader.js" defer></script>`;
+  
+  const iframeLink = `${appUrl}/widget/chat/${exampleChatbotId}`; // Link diretto per testare/condividere l'iframe
 
   const copyToClipboard = async (textToCopy: string, label: string) => {
     try {
@@ -37,65 +49,42 @@ const ChatbotIntegrationInstructions: React.FC = () => {
     <div className="space-y-6 h-full overflow-y-auto pr-2">
       <Alert className="bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300">
         <Lightbulb className="h-5 w-5 text-green-600 dark:text-green-400" />
-        <AlertTitle className="font-semibold">Il tuo Chatbot AI è pronto!</AlertTitle>
+        <AlertTitle className="font-semibold">Integra il tuo Chatbot AI!</AlertTitle>
         <AlertDescription>
-          Il tuo addestramento del Chatbot è completo: usa il link qui sotto per condividerlo sui social media, nelle app di messaggistica o nelle email.
+          Usa lo snippet qui sotto per aggiungere il chatbot al tuo sito web. Assicurati di sostituire <strong>${exampleChatbotId}</strong> con l'ID univoco del tuo chatbot/cliente.
         </AlertDescription>
       </Alert>
 
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center space-x-2">
-            <AlertTriangle className="h-5 w-5 text-amber-600" />
-            <CardTitle className="text-lg font-semibold">Alcune risposte non sono corrette?</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          <p>
-            Il chatbot può rispondere solo utilizzando le informazioni che hai fornito. Se alcune risposte non sono corrette, puoi perfezionare la sua knowledge base.
-          </p>
-          <a
-            href="/training" // Assuming training page is the place to refine
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-primary hover:underline mt-2"
-          >
-            Scopri come addestrare il tuo Chatbot <ExternalLink className="ml-1 h-4 w-4" />
-          </a>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3">
-           <div className="flex items-center space-x-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M12 22v-2M17 20v-4M5 20v-4M2 12H0M7 12H3M22 12h-2M17 12h4M12 7V5M12 2V0M12 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5Z"/><path d="M12 12c2.76 0 5 2.24 5 5s-2.24 5-5 5-5-2.24-5-5 2.24-5 5-5Z"/></svg> {/* Placeholder icon */}
-            <CardTitle className="text-lg font-semibold">Installa Chatbot</CardTitle>
+            <Settings2 className="h-5 w-5 text-primary" />
+            <CardTitle className="text-lg font-semibold">Installa Chatbot sul tuo Sito</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Il chatbot può rispondere solo utilizzando le informazioni che hai fornito. Se alcune risposte non sono corrette, puoi perfezionare la sua knowledge base.
+            Copia e incolla questo snippet nel tag `&lt;body&gt;` del tuo sito web. 
+            Il `data-app-url` dovrebbe puntare al dominio dove la tua app Kommander.ai è ospitata.
+            Sostituisci <strong>${exampleChatbotId}</strong> con l'ID del tuo cliente.
           </p>
-          <a
-            href="#" // Placeholder link
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-primary hover:underline text-sm"
-          >
-            Scopri come <ExternalLink className="ml-1 h-4 w-4" />
-          </a>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col space-y-2">
             <Input
               readOnly
               value={scriptSnippet}
               className="flex-1 bg-muted/50 border-dashed h-auto text-xs p-2 font-mono"
               rows={3}
-              as="textarea"
+              // @ts-ignore
+              as="textarea" // Cast necessario se Input non supporta nativamente 'as' con 'rows'
             />
-            <Button variant="outline" size="sm" onClick={() => copyToClipboard(scriptSnippet, 'Snippet di installazione')}>
-              <Copy className="mr-1.5 h-4 w-4" /> Copia
+            <Button variant="outline" size="sm" onClick={() => copyToClipboard(scriptSnippet, 'Snippet di installazione')} className="self-start">
+              <Copy className="mr-1.5 h-4 w-4" /> Copia Snippet
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground pt-2">
+            Nota: il `chatbot-id` è fondamentale per caricare le FAQ e i documenti specifici del cliente.
+            Il `data-app-url` dice allo script loader dove si trova la tua applicazione principale per caricare l'iframe. Se omesso, userà l'origine corrente.
+          </p>
         </CardContent>
       </Card>
 
@@ -103,12 +92,13 @@ const ChatbotIntegrationInstructions: React.FC = () => {
         <CardHeader className="pb-3">
           <div className="flex items-center space-x-2">
             <Share2 className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg font-semibold">Condividi Chatbot</CardTitle>
+            <CardTitle className="text-lg font-semibold">Link Diretto al Chatbot (per iframe/test)</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Usa questo link per condividere il tuo chatbot con chi vuoi.
+            Puoi usare questo link per testare direttamente l'interfaccia del chatbot in un iframe o per condividerla.
+            Ricorda di sostituire <strong>${exampleChatbotId}</strong>.
           </p>
           <div className="flex items-center space-x-2">
             <Input
@@ -116,12 +106,21 @@ const ChatbotIntegrationInstructions: React.FC = () => {
               value={iframeLink}
               className="flex-1 bg-muted/50 border-dashed h-10 text-xs p-2 font-mono"
             />
-            <Button variant="outline" size="sm" onClick={() => copyToClipboard(iframeLink, 'Link di condivisione')}>
-               <Copy className="mr-1.5 h-4 w-4" /> Copia
+            <Button variant="outline" size="sm" onClick={() => copyToClipboard(iframeLink, 'Link diretto al chatbot')}>
+               <Copy className="mr-1.5 h-4 w-4" /> Copia Link
             </Button>
           </div>
         </CardContent>
       </Card>
+      
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Importante per la Produzione</AlertTitle>
+        <AlertDescription>
+          Per un ambiente di produzione, assicurati che `data-app-url` nello snippet punti al dominio pubblico della tua applicazione Kommander.ai. 
+          Inoltre, considera meccanismi di autenticazione/autorizzazione più robusti per l'accesso ai dati del chatbot (es. token API per cliente) per prevenire accessi non autorizzati.
+        </AlertDescription>
+      </Alert>
     </div>
   );
 };

@@ -55,8 +55,13 @@ function ChatMessage({ message }: { message: Message }) {
   );
 }
 
-export default function ChatUI() {
-  const { messages, isLoading, sendMessage } = useChat();
+interface ChatUIProps {
+  chatbotOwnerId?: string; // Optional: For widget context
+  containerClassName?: string; // Optional: For custom styling of the main container
+}
+
+export default function ChatUI({ chatbotOwnerId, containerClassName }: ChatUIProps) {
+  const { messages, isLoading, sendMessage } = useChat({ chatbotOwnerId }); // Pass chatbotOwnerId to useChat
   const [inputValue, setInputValue] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -76,7 +81,10 @@ export default function ChatUI() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-card shadow-xl rounded-lg border border-border">
+    <div className={cn(
+        "flex flex-col h-full w-full bg-card shadow-xl rounded-lg border border-border",
+        containerClassName // Allows custom class for container if needed (e.g., widget specific)
+        )}>
       <div className="p-4 border-b border-border">
         <h2 className="text-xl font-semibold font-headline text-foreground">Kommander.ai Chat</h2>
       </div>

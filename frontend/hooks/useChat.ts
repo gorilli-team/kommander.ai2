@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { generateChatResponse } from '@/app/chatbot/actions'; // Keep this path as actions are now in root app dir
+import { generateChatResponse } from '@/app/chatbot/actions';
 import { useToast } from '@/frontend/hooks/use-toast';
 
 export interface Message {
@@ -12,7 +12,11 @@ export interface Message {
   timestamp: Date;
 }
 
-export function useChat() {
+interface UseChatOptions {
+  chatbotOwnerId?: string; // Optional: For widget context
+}
+
+export function useChat({ chatbotOwnerId }: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -35,7 +39,8 @@ export function useChat() {
       .map(msg => ({ role: msg.role, content: msg.content }));
       
     try {
-      const result = await generateChatResponse(userMessageContent, historyForAI);
+      // Pass chatbotOwnerId to generateChatResponse
+      const result = await generateChatResponse(userMessageContent, historyForAI, chatbotOwnerId);
       if (result.error) {
         addMessage('system', `Error: ${result.error}`);
         toast({ title: "Chat Error", description: result.error, variant: "destructive" });
@@ -49,7 +54,7 @@ export function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, toast]);
+  }, [messages, toast, chatbotOwnerId]); // Add chatbotOwnerId to dependencies
 
   return {
     messages,
