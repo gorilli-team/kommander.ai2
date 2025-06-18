@@ -8,14 +8,8 @@ import type { Faq } from '@/backend/schemas/faq';
 import { getFileContent } from '@/app/training/actions';
 import { auth } from '@/frontend/auth'; // Import auth for session
 
-import { getDocument, GlobalWorkerOptions, version as pdfjsVersion } from 'pdfjs-dist/legacy/build/pdf.js';
 import mammoth from 'mammoth';
-
-const PDF_JS_WORKER_SRC = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsVersion}/pdf.worker.min.js`;
-if (GlobalWorkerOptions.workerSrc !== PDF_JS_WORKER_SRC) {
-    GlobalWorkerOptions.workerSrc = PDF_JS_WORKER_SRC;
-}
-
+import pdf from 'pdf-parse'; // Import pdf-parse
 
 interface UploadedFileInfoForPrompt {
   fileName: string;
@@ -27,25 +21,25 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
   let rawText = '';
   try {
     if (fileType === 'application/pdf') {
-      const data = new Uint8Array(buffer);
-      const pdfDoc = await getDocument({ data, useWorkerFetch: false, isEvalSupported: false }).promise;
-      for (let i = 1; i <= pdfDoc.numPages; i++) {
-        const page = await pdfDoc.getPage(i);
-        const textContent = await page.getTextContent();
-        rawText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n';
-      }
+      const data = await pdf(buffer);
+      rawText = data.text;
+      console.log(`[app/chatbot/actions.ts] Estrazione testo PDF con pdf-parse completata per ${fileName}. Lunghezza: ${rawText.length}`);
     } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const result = await mammoth.extractRawText({ buffer });
       rawText = result.value;
+      console.log(`[app/chatbot/actions.ts] Estrazione testo DOCX completata per ${fileName}. Lunghezza: ${rawText.length}`);
     } else if (fileType === 'text/plain') {
       rawText = buffer.toString('utf-8');
+      console.log(`[app/chatbot/actions.ts] Estrazione testo TXT completata per ${fileName}. Lunghezza: ${rawText.length}`);
     } else {
+      console.warn(`[app/chatbot/actions.ts] Tipo file non supportato per estrazione testo: ${fileType} per ${fileName}`);
       return `Impossibile estrarre il testo dal file ${fileName} (tipo: ${fileType}) poiché il tipo di file non è supportato per l'estrazione del contenuto.`;
     }
   } catch (error: any) {
+    console.error(`[app/chatbot/actions.ts] Errore durante l'estrazione del testo da ${fileName} (tipo: ${fileType}):`, error.message);
     let detailedErrorMessage = error.message;
-    if (fileType === 'application/pdf' && error.message && (error.message.toLowerCase().includes("cannot find module './pdf.worker.js'") || error.message.toLowerCase().includes("setting up fake worker failed") || error.message.toLowerCase().includes("libuuid"))) {
-        detailedErrorMessage = "Si è verificato un problema con l'inizializzazione del componente di elaborazione PDF. L'estrazione del testo potrebbe non riuscire.";
+     if (fileType === 'application/pdf') {
+        detailedErrorMessage = `Errore durante l'elaborazione del PDF ${fileName} con pdf-parse. Dettagli: ${error.message}`;
     }
     return `Errore durante l'estrazione del testo dal file ${fileName}. Dettagli: ${detailedErrorMessage}`;
   }
@@ -78,7 +72,7 @@ export async function generateChatResponse(
     return { error: 'Il messaggio non può essere vuoto.' };
   }
 
-  if (!userIdToUse) { // Should not happen if logic above is correct, but as a safeguard
+  if (!userIdToUse) { 
     console.error('[app/chatbot/actions.ts] generateChatResponse: userIdToUse is still undefined.');
     return { error: 'Unable to determine user/owner for data retrieval.' };
   }
@@ -86,11 +80,10 @@ export async function generateChatResponse(
   try {
     const { db } = await connectToDatabase();
     
-    // Fetch FAQs specific to the userIdToUse
     const faqsCursor = await db.collection('faqs').find({ userId: userIdToUse }).limit(10).toArray(); 
     const faqs: Faq[] = faqsCursor.map(doc => ({
         id: doc._id.toString(),
-        userId: doc.userId, // This will be userIdToUse
+        userId: doc.userId, 
         question: doc.question,
         answer: doc.answer,
         createdAt: doc.createdAt ? new Date(doc.createdAt) : undefined,
@@ -98,9 +91,8 @@ export async function generateChatResponse(
     }));
     console.log(`[app/chatbot/actions.ts] generateChatResponse: Recuperate ${faqs.length} FAQ per user/owner ${userIdToUse}.`);
 
-    // Fetch file metadata specific to the userIdToUse
     const allUploadedFilesMeta = await db.collection('raw_files_meta')
-      .find({ userId: userIdToUse }) // Filter by userIdToUse
+      .find({ userId: userIdToUse }) 
       .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
       .sort({ uploadedAt: -1 })
       .toArray();
@@ -118,7 +110,6 @@ export async function generateChatResponse(
       const mostRecentFileMeta = allUploadedFilesMeta[0];
       console.log(`[app/chatbot/actions.ts] Tentativo di elaborazione del file più recente per user/owner ${userIdToUse}: ${mostRecentFileMeta.fileName} (GridFS ID: ${mostRecentFileMeta.gridFsFileId.toString()})`);
       
-      // Pass userIdToUse to getFileContent for authorization
       const fileBufferResult = await getFileContent(mostRecentFileMeta.gridFsFileId.toString(), userIdToUse);
 
       if ('error' in fileBufferResult) {

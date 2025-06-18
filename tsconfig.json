@@ -30,7 +30,8 @@
       "@/lib/*": ["frontend/lib/*"],
       "@/auth": ["frontend/auth.ts"],
       "@/auth.config": ["frontend/auth.config.ts"]
-    }
+    },
+    "types": ["node", "@types/pdf-parse"]
   },
   "include": [
     "next-env.d.ts",

@@ -35,13 +35,14 @@ const nextConfig = {
       bodySizeLimit: '10mb', 
     },
   },
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.alias['pdfjs-dist/build/pdf.worker.entry.js'] = 
-        'pdfjs-dist/build/pdf.worker.min.js';
-    }
-    return config;
-  },
+  // Rimuovere la configurazione webpack per pdfjs-dist
+  // webpack: (config, { isServer }) => {
+  //   if (!isServer) {
+  //     config.resolve.alias['pdfjs-dist/build/pdf.worker.entry.js'] = 
+  //       'pdfjs-dist/build/pdf.worker.min.js';
+  //   }
+  //   return config;
+  // },
 };
 
 export default nextConfig;
