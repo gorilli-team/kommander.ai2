@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { generateChatResponse } from '@/app/chatbot/actions'; 
+import { generateChatResponse } from '@/app/chatbot/actions'; // Keep this path as actions are now in root app dir
 import { useToast } from '@/frontend/hooks/use-toast';
 
 export interface Message {

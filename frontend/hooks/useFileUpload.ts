@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import { uploadFileAndProcess } from '@/app/training/actions'; 
+import { uploadFileAndProcess } from '@/app/training/actions'; // Keep this path
 import { useToast } from '@/frontend/hooks/use-toast';
 
 interface UseFileUploadOptions {

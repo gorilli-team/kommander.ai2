@@ -23,7 +23,7 @@
     "paths": {
       "@/frontend/*": ["frontend/*"],
       "@/backend/*": ["backend/*"],
-      "@/app/*": ["frontend/app/*"],
+      "@/app/*": ["app/*"],
       "@/components/*": ["frontend/components/*"],
       "@/ui/*": ["frontend/components/ui/*"],
       "@/hooks/*": ["frontend/hooks/*"],
@@ -37,10 +37,12 @@
     ".next/types/**/*.ts",
     "*.ts",
     "*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
     "frontend/**/*.ts",
     "frontend/**/*.tsx",
     "backend/**/*.ts",
     "backend/**/*.tsx"
   ],
-  "exclude": ["node_modules", "src", "app"]
+  "exclude": ["node_modules", "src"]
 }

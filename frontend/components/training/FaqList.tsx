@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Faq } from '@/backend/schemas/faq';
-import { getFaqs, deleteFaq, type FaqDisplayItem } from '@/app/training/actions'; 
+import { getFaqs, deleteFaq, type FaqDisplayItem } from '@/app/training/actions'; // Keep this path
 import { Button } from '@/frontend/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/frontend/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/frontend/components/ui/accordion';
@@ -80,6 +80,7 @@ export default function FaqList(props: FaqListProps) {
       id: faqItem.id, 
       createdAt: faqItem.createdAt ? new Date(faqItem.createdAt) : undefined,
       updatedAt: faqItem.updatedAt ? new Date(faqItem.updatedAt) : undefined,
+      userId: '', // This will be populated by the server action based on session
     };
     setEditingFaq(faqForEditing);
     setIsEditModalOpen(true);
