@@ -12,10 +12,10 @@ export default function ChatbotPage() {
         </p>
       </div>
       <div className="flex flex-1 flex-col md:flex-row gap-6 overflow-hidden">
-        <div className="w-full md:w-1/3 lg:w-2/5 xl:w-1/3 h-full md:max-h-[calc(100vh-10rem)]">
+        <div className="w-full md:w-1/3 lg:w-2/5 xl:w-1/3 h-full md:max-h-[calc(100vh-8rem)]">
           <ChatbotIntegrationInstructions />
         </div>
-        <div className="w-full md:w-2/3 lg:w-3/5 xl:w-2/3 h-full md:max-h-[calc(100vh-10rem)]">
+        <div className="w-full md:w-2/3 lg:w-3/5 xl:w-2/3 h-full md:max-h-[calc(100vh-8rem)]">
           <ChatUI />
         </div>
       </div>
