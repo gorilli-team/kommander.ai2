@@ -10,10 +10,12 @@ export default function LoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Bypass logic
-  if (process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true' || process.env.BYPASS_AUTH === 'true') { // Check both for client and server context if needed, though redirect is client-side
+  // Check for NEXT_PUBLIC_BYPASS_AUTH first for client-side, then BYPASS_AUTH as fallback
+  const isBypassAuthActive = process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true' || process.env.BYPASS_AUTH === 'true';
+
+  if (isBypassAuthActive) {
     useEffect(() => {
-      console.log('[LoginPage] BYPASS_AUTH active, redirecting to /training');
+      console.log('[LoginPage] BYPASS_AUTH or NEXT_PUBLIC_BYPASS_AUTH is active, redirecting to /training');
       router.replace('/training');
     }, [router]);
 
@@ -32,12 +34,12 @@ export default function LoginPage() {
   }
 
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (status === 'authenticated' && !isBypassAuthActive) { // Only redirect if not bypassing
       router.replace('/training');
     }
-  }, [status, router]);
+  }, [status, router, isBypassAuthActive]);
 
-  if (status === 'loading' || (status === 'authenticated' && !(process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true' || process.env.BYPASS_AUTH === 'true'))) {
+  if (status === 'loading' || (status === 'authenticated' && !isBypassAuthActive)) {
     // Show a loading skeleton or a blank page while redirecting for normal auth
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
