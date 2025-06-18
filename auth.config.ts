@@ -6,9 +6,6 @@ import { connectToDatabase } from '@/backend/lib/mongodb';
 import bcrypt from 'bcryptjs';
 import type { UserDocument } from '@/backend/schemas/user';
 
-// console.log('[auth.config.ts] Value of AUTH_SECRET being read by NextAuth config (first 5 chars):', process.env.AUTH_SECRET?.substring(0,5)); // Temporary: For debugging AUTH_SECRET issues
-// console.log('[auth.config.ts] Value of NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
-
 export const authConfig = {
   pages: {
     signIn: '/login',
@@ -30,48 +27,44 @@ export const authConfig = {
 
         let db;
         try {
-          console.log('[auth.config.ts] Attempting to connect to database...');
           const connection = await connectToDatabase();
           db = connection.db;
-          console.log('[auth.config.ts] Successfully connected to database. DB Name:', db.databaseName);
         } catch (dbConnectError: any) {
           console.error('[auth.config.ts] CRITICAL: Database connection FAILED during authorize:', dbConnectError.message);
-          console.error('[auth.config.ts] DB Connect Error Stack:', dbConnectError.stack);
           return null; 
         }
 
         let userDoc: UserDocument | null = null;
         try {
-          console.log('[auth.config.ts] Searching for user in database with email:', email);
           userDoc = await db.collection<UserDocument>('users').findOne({ email });
         } catch (dbFindError: any) {
           console.error('[auth.config.ts] CRITICAL: Error finding user in database:', dbFindError.message);
-          console.error('[auth.config.ts] DB Find Error Stack:', dbFindError.stack);
           return null;
         }
 
         if (!userDoc) {
-          console.log('[auth.config.ts] No user found for email:', email, '. Authentication failed.');
+          console.log('[auth.config.ts] No user found for email:', email);
           return null;
         }
-        console.log('[auth.config.ts] User found for email:', email, 'User ID:', userDoc._id.toString());
+        
+        if (!userDoc.emailVerified) {
+          console.log('[auth.config.ts] User found but email NOT VERIFIED for:', email, 'User ID:', userDoc._id.toString());
+          // You might want to throw a specific error type or return an object that AuthForm can interpret
+          // For NextAuth, returning null or throwing an error results in a generic credentials error.
+          // To provide a custom message, you'd typically handle this in the signIn call on the client.
+          // However, for security, just denying access is standard.
+          // Throwing an error with a specific message can sometimes be caught by NextAuth and displayed.
+          throw new Error("Email not verified. Please check your email for the verification link/OTP.");
+        }
+        console.log('[auth.config.ts] User found and email verified for:', email, 'User ID:', userDoc._id.toString());
+
 
         if (!userDoc.hashedPassword) {
           console.log('[auth.config.ts] User found but NO HASHED PASSWORD for email:', email, '(User ID:', userDoc._id.toString(), '). Authentication failed.');
           return null;
         }
-        console.log('[auth.config.ts] User has a hashed password.');
 
-        let passwordsMatch = false;
-        try {
-          console.log('[auth.config.ts] Comparing passwords for user:', email);
-          passwordsMatch = await bcrypt.compare(password, userDoc.hashedPassword);
-          console.log('[auth.config.ts] Password comparison result for user', email, ':', passwordsMatch);
-        } catch (bcryptError: any) {
-          console.error('[auth.config.ts] CRITICAL: Error comparing passwords with bcrypt:', bcryptError.message);
-          console.error('[auth.config.ts] BCrypt Error Stack:', bcryptError.stack);
-          return null; 
-        }
+        const passwordsMatch = await bcrypt.compare(password, userDoc.hashedPassword);
 
         if (passwordsMatch) {
           console.log('[auth.config.ts] Passwords match for user:', email, '(User ID:', userDoc._id.toString(), '). Authentication SUCCESS.');
@@ -79,9 +72,10 @@ export const authConfig = {
             id: userDoc._id.toString(),
             email: userDoc.email,
             name: userDoc.name || null,
+            // emailVerified: userDoc.emailVerified // Can be added if needed in session/token
           };
         } else {
-          console.log('[auth.config.ts] Passwords do NOT match for user:', email, '(User ID:', userDoc._id.toString(), '). Authentication failed.');
+          console.log('[auth.config.ts] Passwords do NOT match for user:', email);
           return null;
         }
       },
@@ -92,24 +86,21 @@ export const authConfig = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      // console.log('[auth.config.ts] JWT callback. User:', user, 'Token:', token);
-      if (user) { // User object is only passed on first sign-in
+      if (user) { 
         token.id = user.id;
-        token.name = user.name;
-        token.email = user.email;
+        // token.emailVerified = (user as any).emailVerified; // Pass custom props from authorize user object
       }
       return token;
     },
     async session({ session, token }) {
-      // console.log('[auth.config.ts] Session callback. Token:', token, 'Session:', session);
-      if (session.user) {
-        if (token.id) session.user.id = token.id as string;
-        // name and email are usually populated by default if in token from jwt callback
+      if (session.user && token.id) {
+        session.user.id = token.id as string;
+        // (session.user as any).emailVerified = token.emailVerified;
       }
       return session;
     },
   },
-  secret: process.env.AUTH_SECRET, // Explicitly set
-  trustHost: true, // Recommended for some environments, review for production if not using Vercel/Next.js standard hosting
-  debug: process.env.NODE_ENV === 'development', // Enable NextAuth.js debug messages in development
+  secret: process.env.AUTH_SECRET,
+  trustHost: true,
+  debug: process.env.NODE_ENV === 'development',
 } satisfies NextAuthConfig;

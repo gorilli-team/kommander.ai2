@@ -7,13 +7,16 @@ export const UserSchema = z.object({
   email: z.string().email(),
   name: z.string().optional(),
   hashedPassword: z.string(),
+  emailVerified: z.boolean().default(false).optional(),
+  otp: z.string().optional().nullable(),
+  otpExpiresAt: z.date().optional().nullable(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
 
 export type UserDocument = z.infer<typeof UserSchema>;
 
-export type ClientUser = Omit<UserDocument, '_id' | 'hashedPassword' | 'createdAt' | 'updatedAt'> & {
+export type ClientUser = Omit<UserDocument, '_id' | 'hashedPassword' | 'createdAt' | 'updatedAt' | 'otp' | 'otpExpiresAt'> & {
   id: string;
   createdAt?: string;
   updatedAt?: string;
