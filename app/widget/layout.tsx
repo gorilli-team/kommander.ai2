@@ -24,10 +24,14 @@ export default function WidgetLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className={`${inter.variable} font-body antialiased bg-transparent`}>
+      {/*
+        Ensure body is transparent and takes full height for iframe content.
+        Overflow hidden prevents scrollbars on the iframe body itself.
+      */}
+      <body className={`${inter.variable} font-body antialiased bg-transparent overflow-hidden h-full`}>
         {/* Widget content does not use AppLayout, it's self-contained for iframe */}
         {children}
-        <Toaster />
+        <Toaster /> {/* Toaster might still be useful for system messages within the widget context if needed */}
       </body>
     </html>
   );

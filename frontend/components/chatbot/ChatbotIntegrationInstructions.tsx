@@ -2,56 +2,97 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
-import { Lightbulb, ExternalLink, Copy, Share2, AlertTriangle, Settings2 } from 'lucide-react';
+import { Lightbulb, Copy, Settings2, Info, Loader2 } from 'lucide-react';
 import { useToast } from '@/frontend/hooks/use-toast';
 
 const ChatbotIntegrationInstructions: React.FC = () => {
   const { toast } = useToast();
+  const { data: session, status } = useSession();
   const [appUrl, setAppUrl] = useState('');
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
 
   useEffect(() => {
-    // Assicurati che questo venga eseguito solo nel client
     if (typeof window !== 'undefined') {
       setAppUrl(window.location.origin);
     }
   }, []);
 
-  // Sostituisci con un ID cliente reale o un modo per ottenerlo dinamicamente
-  const exampleChatbotId = "CLIENTE_ID_UNIVOCO_DA_SOSTITUIRE"; 
-  
-  const scriptSnippet = `<kommanderai-chat chatbot-id="${exampleChatbotId}" data-app-url="${appUrl}"></kommanderai-chat>
-<script src="${appUrl}/chatbot-loader.js" defer></script>`;
-  
-  const iframeLink = `${appUrl}/widget/chat/${exampleChatbotId}`; // Link diretto per testare/condividere l'iframe
+  useEffect(() => {
+    if (status !== 'loading') {
+      setIsLoadingSession(false);
+    }
+  }, [status]);
+
+  const chatbotId = session?.user?.id;
+
+  const scriptSnippet = `<kommander-dashboard-replica></kommander-dashboard-replica>
+<script src="${appUrl}/dashboard-replica-loader.js" data-app-url="${appUrl}" defer></script>`;
 
   const copyToClipboard = async (textToCopy: string, label: string) => {
     try {
       await navigator.clipboard.writeText(textToCopy);
       toast({
-        title: 'Copiato!',
-        description: `${label} copiato negli appunti.`,
+        title: 'Copied!',
+        description: `${label} copied to clipboard.`,
       });
     } catch (err) {
       toast({
-        title: 'Errore',
-        description: `Impossibile copiare ${label}.`,
+        title: 'Error',
+        description: `Could not copy ${label}.`,
         variant: 'destructive',
       });
       console.error('Failed to copy: ', err);
     }
   };
 
+  if (isLoadingSession) {
+    return (
+      <div className="space-y-6 h-full flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Loading integration details...</p>
+      </div>
+    );
+  }
+  
+  if (!chatbotId && status === 'authenticated') {
+     return (
+      <div className="space-y-6 h-full flex flex-col items-center justify-center text-center">
+        <Info className="h-12 w-12 text-primary mb-2" />
+        <p className="font-semibold text-lg">Chatbot ID Missing</p>
+        <p className="text-muted-foreground">
+          Could not retrieve your unique Chatbot ID from the session. Please try logging out and back in.
+          If the issue persists, contact support.
+        </p>
+      </div>
+    );
+  }
+  
+  if (status === 'unauthenticated') {
+     return (
+      <div className="space-y-6 h-full flex flex-col items-center justify-center text-center">
+        <Info className="h-12 w-12 text-primary mb-2" />
+        <p className="font-semibold text-lg">Please Log In</p>
+        <p className="text-muted-foreground">
+          You need to be logged in to view the chatbot integration instructions.
+        </p>
+      </div>
+    );
+  }
+
+
   return (
-    <div className="space-y-6 h-full overflow-y-auto pr-2">
+    <div className="space-y-6 h-full overflow-y-auto pr-1">
       <Alert className="bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300">
         <Lightbulb className="h-5 w-5 text-green-600 dark:text-green-400" />
-        <AlertTitle className="font-semibold">Integra il tuo Chatbot AI!</AlertTitle>
+        <AlertTitle className="font-semibold">Integrate Your AI Chatbot!</AlertTitle>
         <AlertDescription>
-          Usa lo snippet qui sotto per aggiungere il chatbot al tuo sito web. Assicurati di sostituire <strong>${exampleChatbotId}</strong> con l'ID univoco del tuo chatbot/cliente.
+          Use the snippet below to add the Kommander.ai assistant to your website.
+          The widget will use your unique Chatbot ID: <strong>{chatbotId || 'LOADING...'}</strong>.
         </AlertDescription>
       </Alert>
 
@@ -59,14 +100,13 @@ const ChatbotIntegrationInstructions: React.FC = () => {
         <CardHeader className="pb-3">
           <div className="flex items-center space-x-2">
             <Settings2 className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg font-semibold">Installa Chatbot sul tuo Sito</CardTitle>
+            <CardTitle className="text-lg font-semibold">Embed Chatbot on Your Site</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Copia e incolla questo snippet nel tag `&lt;body&gt;` del tuo sito web. 
-            Il `data-app-url` dovrebbe puntare al dominio dove la tua app Kommander.ai è ospitata.
-            Sostituisci <strong>${exampleChatbotId}</strong> con l'ID del tuo cliente.
+            Copy and paste this snippet into the `&lt;body&gt;` of your website.
+            The `data-app-url` attribute tells the loader where your Kommander.ai application is hosted.
           </p>
           <div className="flex flex-col space-y-2">
             <Input
@@ -75,50 +115,25 @@ const ChatbotIntegrationInstructions: React.FC = () => {
               className="flex-1 bg-muted/50 border-dashed h-auto text-xs p-2 font-mono"
               rows={3}
               // @ts-ignore
-              as="textarea" // Cast necessario se Input non supporta nativamente 'as' con 'rows'
+              as="textarea" 
             />
-            <Button variant="outline" size="sm" onClick={() => copyToClipboard(scriptSnippet, 'Snippet di installazione')} className="self-start">
-              <Copy className="mr-1.5 h-4 w-4" /> Copia Snippet
+            <Button variant="outline" size="sm" onClick={() => copyToClipboard(scriptSnippet, 'Installation snippet')} className="self-start">
+              <Copy className="mr-1.5 h-4 w-4" /> Copy Snippet
             </Button>
           </div>
           <p className="text-xs text-muted-foreground pt-2">
-            Nota: il `chatbot-id` è fondamentale per caricare le FAQ e i documenti specifici del cliente.
-            Il `data-app-url` dice allo script loader dove si trova la tua applicazione principale per caricare l'iframe. Se omesso, userà l'origine corrente.
+            The widget will automatically use your unique Chatbot ID ({chatbotId}) to load specific FAQs and documents for your users.
+            The loader script will also attempt to inherit `--primary` and `--card` CSS variables from your site for theme consistency of the launcher button and widget window, or use default styles if not found.
           </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center space-x-2">
-            <Share2 className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg font-semibold">Link Diretto al Chatbot (per iframe/test)</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Puoi usare questo link per testare direttamente l'interfaccia del chatbot in un iframe o per condividerla.
-            Ricorda di sostituire <strong>${exampleChatbotId}</strong>.
-          </p>
-          <div className="flex items-center space-x-2">
-            <Input
-              readOnly
-              value={iframeLink}
-              className="flex-1 bg-muted/50 border-dashed h-10 text-xs p-2 font-mono"
-            />
-            <Button variant="outline" size="sm" onClick={() => copyToClipboard(iframeLink, 'Link diretto al chatbot')}>
-               <Copy className="mr-1.5 h-4 w-4" /> Copia Link
-            </Button>
-          </div>
         </CardContent>
       </Card>
       
       <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Importante per la Produzione</AlertTitle>
+        <Info className="h-4 w-4" />
+        <AlertTitle>Important for Production</AlertTitle>
         <AlertDescription>
-          Per un ambiente di produzione, assicurati che `data-app-url` nello snippet punti al dominio pubblico della tua applicazione Kommander.ai. 
-          Inoltre, considera meccanismi di autenticazione/autorizzazione più robusti per l'accesso ai dati del chatbot (es. token API per cliente) per prevenire accessi non autorizzati.
+          For a production environment, ensure `data-app-url` in the snippet correctly points to the public domain of your Kommander.ai application.
+          The Chatbot ID is automatically tied to your logged-in account.
         </AlertDescription>
       </Alert>
     </div>

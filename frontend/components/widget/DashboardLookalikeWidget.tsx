@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/frontend/components/ui/av
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
-import { Send, User, Bot, AlertTriangle } from 'lucide-react';
+import { Send, User, Bot } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/frontend/lib/utils';
 
@@ -62,6 +62,8 @@ function StaticChatMessage({ message }: { message: typeof staticMessages[0] }) {
 
 export default function DashboardLookalikeWidget() {
   return (
+    // The container ensures it fills the iframe and uses theme's card styling
+    // h-full and w-full ensure it takes the full dimensions of its parent (the iframe content area)
     <div className="flex flex-col h-full w-full bg-card text-foreground">
       <div className="p-4 border-b border-border">
         <h2 className="text-xl font-semibold font-headline text-foreground">Kommander.ai Chat</h2>
@@ -80,7 +82,7 @@ export default function DashboardLookalikeWidget() {
           <Input
             type="text"
             value=""
-            readOnly
+            readOnly // Static, so input is not editable
             placeholder="Type your message..."
             className="flex-1 bg-background focus:ring-primary focus:border-primary"
             aria-label="Chat input"

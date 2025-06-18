@@ -1,158 +1,159 @@
 
-(() => {
-  console.log("Kommander.ai Widget Loader Initialized");
-
+(function () {
+  const APP_URL = document.currentScript?.getAttribute('data-app-url') || window.location.origin;
+  const WIDGET_ENDPOINT = '/widget/dashboard-replica';
   const WIDGET_WIDTH = '370px';
-  const WIDGET_HEIGHT = '550px'; // Adjusted for a typical chat window
-  const BUTTON_SIZE = '60px';
-  const ICON_SVG = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="32px" height="32px">
-      <path fill-rule="evenodd" d="M4.804 21.644A6.707 6.707 0 0 0 6 21.75a6.721 6.721 0 0 0 3.583-1.029c.444.252.95.424 1.476.542a6.749 6.749 0 0 0 5.88-2.884 6.752 6.752 0 0 0-1.483-9.367A6.718 6.718 0 0 0 9.75 3.002a6.75 6.75 0 0 0-4.946 18.642ZM21 13.5A8.25 8.25 0 1 1 4.5 13.5a8.25 8.25 0 0 1 16.5 0Z" clip-rule="evenodd" />
-      <path d="M12.012 7.178a.75.75 0 0 1 .75.75v2.556l1.138-.378A.75.75 0 0 1 15 10.83v1.538a.75.75 0 0 1-1.115.695L12 12.06v2.19a.75.75 0 0 1-1.5 0V7.928a.75.75 0 0 1 .762-.75Zm-3.204-.01A.75.75 0 0 0 8.25 7.93v6.321a.75.75 0 0 0 1.245.597L11.25 13.2v2.051a.75.75 0 0 0 1.5 0V9.362a.75.75 0 0 0-.762-.75.73.73 0 0 0-.054.002A.75.75 0 0 0 11.25 9.362v1.58L9.727 11.46a.75.75 0 0 0-1.227-.613L8.25 11.094V7.928a.75.75 0 0 0-.75-.75Z" />
-    </svg>
-  `; // Kommander icon (approximated ⌘ with a chat bubble context)
+  const WIDGET_HEIGHT = '550px'; // Adjusted height for better proportion
 
-  let iframeContainer = null;
-  let iframe = null;
-  let widgetButton = null;
-  let closeButton = null;
-  let isWidgetOpen = false;
-  let appBaseUrl = '';
-
-  function getAppBaseUrl() {
-    const loaderScript = document.querySelector('script[src*="dashboard-replica-loader.js"]');
-    if (loaderScript) {
-      const src = loaderScript.src;
-      // Assuming loader is at https://YOUR_APP_URL/dashboard-replica-loader.js
-      return src.substring(0, src.lastIndexOf('/')); 
-    }
-    // Fallback or error if URL can't be determined
-    console.warn("Kommander.ai: Could not determine app base URL from loader script path. Widget may not load correctly.");
-    return window.location.origin; // Fallback to current origin, might be incorrect for cross-domain
-  }
-  
-  function getThemeColor(variableName, fallbackColor) {
+  function getCssVariable(variableName, fallbackValue) {
     if (typeof window !== 'undefined') {
-      const color = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
-      return color || fallbackColor;
+      const value = getComputedStyle(document.documentElement).getPropertyValue(variableName)?.trim();
+      return value || fallbackValue;
     }
-    return fallbackColor;
+    return fallbackValue;
   }
 
-  function createWidgetButton() {
-    widgetButton = document.createElement('button');
-    widgetButton.id = 'kommander-widget-button';
-    widgetButton.innerHTML = ICON_SVG;
-    widgetButton.style.position = 'fixed';
-    widgetButton.style.bottom = '20px';
-    widgetButton.style.right = '20px';
-    widgetButton.style.width = BUTTON_SIZE;
-    widgetButton.style.height = BUTTON_SIZE;
-    widgetButton.style.backgroundColor = getThemeColor('--primary', '#1a56db'); // Use theme primary or fallback
-    widgetButton.style.color = 'white';
-    widgetButton.style.border = 'none';
-    widgetButton.style.borderRadius = '50%';
-    widgetButton.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-    widgetButton.style.cursor = 'pointer';
-    widgetButton.style.display = 'flex';
-    widgetButton.style.alignItems = 'center';
-    widgetButton.style.justifyContent = 'center';
-    widgetButton.style.zIndex = '99998';
-    widgetButton.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-    widgetButton.setAttribute('aria-label', 'Open Kommander.ai Chat');
-    widgetButton.onclick = toggleWidget;
-    document.body.appendChild(widgetButton);
-  }
+  function initializeWidget() {
+    const widgetHost = document.querySelector('kommander-dashboard-replica');
+    if (!widgetHost) {
+      // console.warn('Kommander Dashboard Replica: Host element <kommander-dashboard-replica> not found.');
+      return;
+    }
 
-  function createIframeContainer() {
-    iframeContainer = document.createElement('div');
-    iframeContainer.id = 'kommander-widget-container';
+    // --- Create Toggle Button ---
+    const toggleButton = document.createElement('button');
+    toggleButton.setAttribute('aria-label', 'Toggle Kommander.ai Chat');
+    toggleButton.style.position = 'fixed';
+    toggleButton.style.bottom = '20px';
+    toggleButton.style.right = '20px';
+    toggleButton.style.width = '60px';
+    toggleButton.style.height = '60px';
+    toggleButton.style.borderRadius = '50%';
+    toggleButton.style.backgroundColor = getCssVariable('--primary', '#1a56db'); // Use primary color from host or fallback
+    toggleButton.style.color = 'white';
+    toggleButton.style.border = 'none';
+    toggleButton.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+    toggleButton.style.cursor = 'pointer';
+    toggleButton.style.display = 'flex';
+    toggleButton.style.alignItems = 'center';
+    toggleButton.style.justifyContent = 'center';
+    toggleButton.style.zIndex = '99998';
+    toggleButton.style.transition = 'transform 0.2s ease-out, opacity 0.3s ease-in-out';
+    toggleButton.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: white;">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        <line x1="12" y1="9" x2="12" y2="13"></line>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+    `; // Using a generic Kommander-like icon (e.g., command symbol or abstract shape)
+    // Replace with your ⌘ icon if feasible as SVG string, or use a placeholder
+    toggleButton.innerHTML = '<span style="font-size: 28px; line-height: 1;">⌘</span>';
+
+
+    // --- Create Iframe Container (the "window") ---
+    const iframeContainer = document.createElement('div');
     iframeContainer.style.position = 'fixed';
-    iframeContainer.style.bottom = '20px'; // Align with button or slightly above
+    iframeContainer.style.bottom = '90px'; // Position above the toggle button
     iframeContainer.style.right = '20px';
     iframeContainer.style.width = WIDGET_WIDTH;
     iframeContainer.style.height = WIDGET_HEIGHT;
-    iframeContainer.style.backgroundColor = getThemeColor('--card', '#ffffff'); // Theme card or fallback white
-    iframeContainer.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+    iframeContainer.style.border = `1px solid ${getCssVariable('--border', '#e5e7eb')}`;
     iframeContainer.style.borderRadius = '12px'; // Rounded corners for the window
-    iframeContainer.style.zIndex = '99999';
-    iframeContainer.style.display = 'none';
+    iframeContainer.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+    iframeContainer.style.backgroundColor = getCssVariable('--card', 'white'); // Background for the window itself
+    iframeContainer.style.display = 'none'; // Initially hidden
     iframeContainer.style.flexDirection = 'column';
-    iframeContainer.style.overflow = 'hidden'; // Important for iframe to respect border-radius
+    iframeContainer.style.overflow = 'hidden'; // Clip iframe if it overflows
+    iframeContainer.style.zIndex = '99999';
     iframeContainer.style.transition = 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out';
-    iframeContainer.style.transform = 'translateY(20px) scale(0.95)';
     iframeContainer.style.opacity = '0';
-    
-    appBaseUrl = getAppBaseUrl();
-    const widgetSrc = `${appBaseUrl}/widget/dashboard-replica`;
+    iframeContainer.style.transform = 'translateY(20px)';
 
-    iframe = document.createElement('iframe');
-    iframe.id = 'kommander-widget-iframe';
-    iframe.src = widgetSrc;
+
+    // --- Create Iframe ---
+    const iframe = document.createElement('iframe');
+    iframe.src = `${APP_URL}${WIDGET_ENDPOINT}`;
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.border = 'none';
-    
-    iframeContainer.appendChild(iframe);
-    document.body.appendChild(iframeContainer);
+    iframe.setAttribute('allowTransparency', 'true');
 
-    createCloseButton();
-  }
 
-  function createCloseButton() {
-    closeButton = document.createElement('button');
-    closeButton.innerHTML = '&times;'; // Simple 'X'
-    closeButton.style.position = 'absolute';
-    closeButton.style.top = '8px';
-    closeButton.style.right = '8px';
-    closeButton.style.background = 'transparent';
-    closeButton.style.border = 'none';
-    closeButton.style.fontSize = '24px';
-    closeButton.style.lineHeight = '1';
-    closeButton.style.padding = '4px 8px';
-    closeButton.style.cursor = 'pointer';
-    closeButton.style.color = getThemeColor('--muted-foreground', '#666'); // Theme muted or fallback gray
-    closeButton.style.zIndex = '100000'; // Above iframe content
+    // --- Create Close Button for Iframe Container ---
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '&times;'; // 'X' character
     closeButton.setAttribute('aria-label', 'Close Chat');
-    closeButton.onclick = toggleWidget;
-    iframeContainer.appendChild(closeButton); // Append to container to be part of the "window"
+    closeButton.style.position = 'absolute';
+    closeButton.style.top = '10px';
+    closeButton.style.right = '10px';
+    closeButton.style.background = 'rgba(0,0,0,0.1)';
+    closeButton.style.color = getCssVariable('--foreground', '#333');
+    closeButton.style.border = 'none';
+    closeButton.style.borderRadius = '50%';
+    closeButton.style.width = '28px';
+    closeButton.style.height = '28px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.display = 'flex';
+    closeButton.style.alignItems = 'center';
+    closeButton.style.justifyContent = 'center';
+    closeButton.style.fontSize = '18px';
+    closeButton.style.lineHeight = '1';
+    closeButton.style.zIndex = '100000'; // Ensure it's above iframe content
+
+    // Append iframe and close button to container
+    iframeContainer.appendChild(iframe);
+    iframeContainer.appendChild(closeButton);
+
+
+    // Append to widget host or body
+    widgetHost.appendChild(toggleButton);
+    widgetHost.appendChild(iframeContainer);
+
+
+    // --- Event Listeners ---
+    let isOpen = false;
+    toggleButton.addEventListener('click', () => {
+      isOpen = !isOpen;
+      if (isOpen) {
+        iframeContainer.style.display = 'flex';
+        setTimeout(() => { // Allow display to apply before transition
+            iframeContainer.style.opacity = '1';
+            iframeContainer.style.transform = 'translateY(0)';
+        }, 10);
+        toggleButton.style.opacity = '0';
+        toggleButton.style.transform = 'scale(0.8)';
+        toggleButton.style.pointerEvents = 'none';
+
+      } else {
+        iframeContainer.style.opacity = '0';
+        iframeContainer.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            iframeContainer.style.display = 'none';
+        }, 300); // Match transition duration
+        toggleButton.style.opacity = '1';
+        toggleButton.style.transform = 'scale(1)';
+        toggleButton.style.pointerEvents = 'auto';
+      }
+    });
+
+    closeButton.addEventListener('click', () => {
+      if (isOpen) {
+        toggleButton.click(); // Simulate click on toggle button to close
+      }
+    });
+
+    // Optional: Close widget if clicked outside
+    document.addEventListener('click', function(event) {
+        if (isOpen && !iframeContainer.contains(event.target) && !toggleButton.contains(event.target)) {
+            toggleButton.click();
+        }
+    });
+
   }
 
-  function toggleWidget() {
-    isWidgetOpen = !isWidgetOpen;
-    if (isWidgetOpen) {
-      iframeContainer.style.display = 'flex';
-      widgetButton.style.opacity = '0';
-      widgetButton.style.transform = 'scale(0.8)';
-      widgetButton.style.pointerEvents = 'none';
-      // Animate in
-      setTimeout(() => {
-        iframeContainer.style.opacity = '1';
-        iframeContainer.style.transform = 'translateY(0) scale(1)';
-      }, 10);
-    } else {
-      iframeContainer.style.opacity = '0';
-      iframeContainer.style.transform = 'translateY(20px) scale(0.95)';
-      widgetButton.style.opacity = '1';
-      widgetButton.style.transform = 'scale(1)';
-      widgetButton.style.pointerEvents = 'auto';
-      setTimeout(() => {
-        iframeContainer.style.display = 'none';
-      }, 300); // Match transition duration
-    }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeWidget);
+  } else {
+    initializeWidget();
   }
-
-  function init() {
-    if (document.readyState === 'complete') {
-      createWidgetButton();
-      createIframeContainer();
-    } else {
-      window.addEventListener('load', () => {
-        createWidgetButton();
-        createIframeContainer();
-      });
-    }
-  }
-
-  init();
 })();
