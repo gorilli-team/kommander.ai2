@@ -1,8 +1,3 @@
-Perfetto! Ecco il file completo del README.md in un unico blocco che puoi copiare e incollare direttamente così com’è:
-
-⸻
-
-
 # Kommander.ai Prototype
 
 Kommander.ai is a prototype built with **Next.js** and **TypeScript** that demonstrates a dashboard for FAQ management, file uploads and a chat interface powered by OpenAI. Uploaded files are stored in MongoDB GridFS and the text from the most recent upload is extracted on demand using `pdf-parse` or `mammoth`. The chatbot uses the FAQs together with that extracted text when generating a reply. Responses rely on relevant snippets pulled from the document rather than any stored summaries.
@@ -10,6 +5,7 @@ Kommander.ai is a prototype built with **Next.js** and **TypeScript** that demon
 ## Setup
 
 1. Install dependencies:
+
    ```bash
    npm install
 
@@ -65,7 +61,3 @@ Limitations
 	•	Only the most recently uploaded document is considered when generating chat responses.
 	•	The application does not perform OCR on images or scanned PDFs.
 	•	Installing optional packages (e.g., OCR libraries) may fail in environments without network access.
-
----
-
-✅ Ora puoi incollarlo direttamente nel tuo `README.md` e fare commit. Se vuoi ti aiuto anche a creare una mini documentazione su un sito Docs separato o in formato Markdown statico.
