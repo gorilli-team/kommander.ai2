@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { cn } from '@/frontend/lib/utils';
-import { format } from 'date-fns';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
+import { cn } from '@/frontend/lib/utils';
+import { format } from 'date-fns';
 
 export interface ConversationMessageDisplay {
   role: 'user' | 'assistant';
@@ -25,13 +25,12 @@ interface Props {
 
 export default function ConversationsClient({ conversations }: Props) {
   const [selectedId, setSelectedId] = useState(conversations[0]?.id || '');
-
   const selected = conversations.find((c) => c.id === selectedId);
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 h-full">
+    <div className="flex flex-col md:flex-row gap-4 min-h-[70vh]">
       <aside className="md:w-72 w-full md:flex-shrink-0">
-        <div className="bg-card border border-border rounded-lg overflow-y-auto h-72 md:h-full">
+        <div className="bg-card border border-border rounded-lg overflow-y-auto h-full">
           {conversations.map((c) => {
             const last = c.messages[c.messages.length - 1];
             return (
