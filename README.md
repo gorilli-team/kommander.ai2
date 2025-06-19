@@ -5,56 +5,60 @@ Kommander.ai is a prototype built with **Next.js** and **TypeScript** that demon
 ## Setup
 
 1. Install dependencies:
+
    ```bash
    npm install
-   ```
-   The project uses OCR via `tesseract.js`. Building its dependencies (notably `canvas` for PDF rendering) may require system libraries such as `libcairo2-dev` and `libjpeg-dev` on Linux.
-2. Create a `.env.local` file in the project root and provide the required environment variables:
-   ```dotenv
-   OPENAI_API_KEY=your-openai-key
-   MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/dbname
-   AUTH_SECRET=your-auth-secret
-   NEXTAUTH_URL=http://localhost:9002
-   RESEND_API_KEY=your-resend-key          # optional, for email features
-   EMAIL_FROM="Kommander.ai Proto <onboarding@resend.dev>"  # optional
-   BYPASS_AUTH=true                         # optional, bypasses login in dev
-   MAX_PROMPT_FILES=3                       # limita quanti file vengono letti per costruire il prompt (default: 3)
-   ```
 
-## Running the project
+The project uses OCR via tesseract.js. Building its dependencies (notably canvas for PDF rendering) may require system libraries such as libcairo2-dev and libjpeg-dev on Linux.
+	2.	Create a .env.local file in the project root and provide the required environment variables:
 
-- Start the development server on [http://localhost:9002](http://localhost:9002):
-  ```bash
-  npm run dev
-  ```
-- Optionally seed example data:
-  ```bash
-  npm run seed
-  ```
-- For a production build:
-  ```bash
-  npm run build
-  npm start
-  ```
+OPENAI_API_KEY=your-openai-key
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/dbname
+AUTH_SECRET=your-auth-secret
+NEXTAUTH_URL=http://localhost:9002
+RESEND_API_KEY=your-resend-key          # optional, for email features
+EMAIL_FROM="Kommander.ai Proto <onboarding@resend.dev>"  # optional
+BYPASS_AUTH=true                         # optional, bypasses login in dev
+MAX_PROMPT_FILES=3                       # limits how many files are used for building the prompt (default: 3)
+
+
+
+Running the project
+	•	Start the development server on http://localhost:9002:
+
+npm run dev
+
+
+	•	Optionally seed example data:
+
+npm run seed
+
+
+	•	For a production build:
+
+npm run build
+npm start
+
+
 
 This README provides only a brief overview. See the source code and comments for more details on each feature.
 
-## Embeddable Chat Widget
+Embeddable Chat Widget
 
-To embed the Kommander.ai chat widget on any website, include the following snippet:
+To embed the Kommander.ai chat widget on any website, use the snippet below. It references your deployed instance (via NEXT_PUBLIC_BASE_URL) and includes a userId to link the chat to a specific account:
 
-```html
 <div id="kommander-chatbot"></div>
-<script src="https://cdn.kommander.ai/chatbot.js"></script>
-<script>window.initKommanderChatbot({ userId: 'YOUR_USER_ID' });</script>
-```
+<script src="https://kommanderai.vercel.app/chatbot.js"></script>
+<script>
+  window.initKommanderChatbot({ userId: 'YOUR_USER_ID' });
+</script>
 
-The `/api/kommander-query` endpoint returns CORS headers so the widget can be
-used from any origin.
+The /api/kommander-query endpoint returns CORS headers so the widget can be used from any origin.
+	•	Make sure the script URL points to your deployed chatbot.js file (e.g., https://kommanderai.vercel.app/chatbot.js).
+	•	Replace 'YOUR_USER_ID' with the actual user identifier from your system.
+	•	The chat widget will automatically mount inside the container and connect to the correct context (files + FAQs) for that user.
 
-## Limitations
-
-- Only the most recently uploaded document is considered when generating chat responses.
-- The application does not perform OCR on images or scanned PDFs.
-- Installing optional packages (e.g., OCR libraries) may fail in environments without network access.
-
+Limitations
+	•	Only the most recently uploaded document is considered when generating chat responses.
+	•	The application does not perform OCR on images or scanned PDFs.
+	•	Installing optional packages (e.g., OCR libraries) may fail in environments without network access.
