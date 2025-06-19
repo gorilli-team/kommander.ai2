@@ -5,10 +5,10 @@
 - Dashboard Layout: Dashboard layout with a persistent sidebar for navigation.
 - FAQ Form: FAQ Form to input questions and answers, with client-side validation using React Hook Form and Zod.
 - File Uploader: File uploader that supports PDF, DOCX, and TXT files. Displays upload progress and previews the content.
-- Document Parsing & Summarization: Backend file processing tool: Parse uploaded documents into chunks, summarize them using OpenAI, and save the summaries to MongoDB.
+- Document Parsing: Backend file processing tool that parses uploaded documents into chunks and stores them in MongoDB for retrieval during chat.
 - FAQ List: Display list of FAQs, which will persist upon refresh due to fetching of information from backend/database.
 - Chat UI: Chat interface with message bubbles, timestamps, automatic scrolling, and a 'bot is typing' indicator.
-- Intelligent Chatbot Responses: Generative AI that assembles a prompt from FAQs and document summaries, then uses the prompt as context to generate a response using OpenAI's API.
+- Intelligent Chatbot Responses: Generative AI that assembles a prompt from FAQs and extracted text snippets, then uses the prompt as context to generate a response using OpenAI's API.
 
 ## Style Guidelines:
 
