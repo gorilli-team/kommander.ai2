@@ -61,7 +61,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                   className="flex-1 cursor-pointer min-w-0"
                   onClick={() => setSelectedId(c.id)}
                 >
-                  <p className="text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                  <p className="text-sm font-medium truncate block max-w-full">
                     {last?.text || 'Nuova conversazione'}
                   </p>
                   <p className="text-xs text-muted-foreground">
