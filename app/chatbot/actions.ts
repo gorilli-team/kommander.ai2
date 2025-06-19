@@ -50,12 +50,13 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
 export async function generateChatResponse(
   userMessage: string,
   history: ChatMessage[],
+  userIdOverride?: string,
 ): Promise<{ response?: string; error?: string }> {
   const session = await auth();
-  if (!session?.user?.id) {
+  const userIdToUse = userIdOverride || session?.user?.id;
+  if (!userIdToUse) {
     return { error: 'User not authenticated.' };
   }
-  const userIdToUse = session.user.id;
 
   if (!userMessage.trim()) {
     return { error: 'Il messaggio non può essere vuoto.' };
