@@ -30,8 +30,7 @@ export default function WidgetChatPage() {
 
   return (
     <div style={{ height: '100vh', width: '100%', display: 'flex', flexDirection: 'column', margin: 0, padding: 0, boxSizing: 'border-box' }}>
-      {/* ChatUI will take chatbotOwnerId from its props now */}
-      <ChatUI chatbotOwnerId={chatbotId} />
+      <ChatUI />
     </div>
   );
 }

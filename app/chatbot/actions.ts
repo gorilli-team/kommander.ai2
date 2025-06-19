@@ -49,24 +49,17 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
 
 export async function generateChatResponse(
   userMessage: string,
-  history: ChatMessage[],
-  chatbotOwnerId?: string // Optional: ID of the customer/owner of the chatbot data
+  history: ChatMessage[]
 ): Promise<{ response?: string; error?: string }> {
-  console.log('[app/chatbot/actions.ts] generateChatResponse: Messaggio ricevuto:', userMessage, 'Lunghezza cronologia:', history.length, 'ChatbotOwnerId:', chatbotOwnerId);
-  
-  let userIdToUse: string | undefined = chatbotOwnerId;
+  console.log('[app/chatbot/actions.ts] generateChatResponse: Messaggio ricevuto:', userMessage, 'Lunghezza cronologia:', history.length);
 
-  if (!userIdToUse) { // Fallback to session if chatbotOwnerId is not provided
-    const session = await auth();
-    if (!session?.user?.id) {
-      console.error('[app/chatbot/actions.ts] generateChatResponse: User not authenticated and no chatbotOwnerId provided.');
-      return { error: 'User not authenticated or chatbot owner ID missing. Please log in or provide a valid chatbot ID.' };
-    }
-    userIdToUse = session.user.id;
-    console.log('[app/chatbot/actions.ts] generateChatResponse: User authenticated from session:', userIdToUse);
-  } else {
-    console.log('[app/chatbot/actions.ts] generateChatResponse: Using provided chatbotOwnerId:', userIdToUse);
+  const session = await auth();
+  if (!session?.user?.id) {
+    console.error('[app/chatbot/actions.ts] generateChatResponse: User not authenticated.');
+    return { error: 'User not authenticated. Please log in to use the chat.' };
   }
+  const userIdToUse = session.user.id;
+  console.log('[app/chatbot/actions.ts] generateChatResponse: Using authenticated user', userIdToUse);
 
   if (!userMessage.trim()) {
     return { error: 'Il messaggio non può essere vuoto.' };

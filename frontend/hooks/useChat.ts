@@ -12,11 +12,7 @@ export interface Message {
   timestamp: Date;
 }
 
-interface UseChatOptions {
-  chatbotOwnerId?: string; // Optional: For widget context
-}
-
-export function useChat({ chatbotOwnerId }: UseChatOptions = {}) {
+export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -39,8 +35,7 @@ export function useChat({ chatbotOwnerId }: UseChatOptions = {}) {
       .map(msg => ({ role: msg.role, content: msg.content }));
       
     try {
-      // Pass chatbotOwnerId to generateChatResponse
-      const result = await generateChatResponse(userMessageContent, historyForAI, chatbotOwnerId);
+      const result = await generateChatResponse(userMessageContent, historyForAI);
       if (result.error) {
         addMessage('system', `Error: ${result.error}`);
         toast({ title: "Chat Error", description: result.error, variant: "destructive" });
@@ -54,7 +49,7 @@ export function useChat({ chatbotOwnerId }: UseChatOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, toast, chatbotOwnerId]); // Add chatbotOwnerId to dependencies
+  }, [messages, toast]);
 
   return {
     messages,
