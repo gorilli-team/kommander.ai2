@@ -8,6 +8,7 @@ Kommander.ai is a prototype built with **Next.js** and **TypeScript** that demon
    ```bash
    npm install
    ```
+   The project uses OCR via `tesseract.js`. Building its dependencies (notably `canvas` for PDF rendering) may require system libraries such as `libcairo2-dev` and `libjpeg-dev` on Linux.
 2. Create a `.env.local` file in the project root and provide the required environment variables:
    ```dotenv
    OPENAI_API_KEY=your-openai-key
