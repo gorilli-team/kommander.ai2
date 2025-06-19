@@ -1,5 +1,6 @@
 
-import { MongoClient, ServerApiVersion, Db, GridFSBucket } from 'mongodb';
+import { MongoClient, ServerApiVersion, Db, GridFSBucket, Collection } from 'mongodb';
+import type { WidgetClientDocument } from '@/backend/schemas/widgetClient';
 
 const uri = process.env.MONGODB_URI;
 
@@ -21,6 +22,7 @@ const client = new MongoClient(uri, {
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
 let cachedBucket: GridFSBucket | null = null;
+let cachedWidgetClientsCollection: Collection<WidgetClientDocument> | null = null;
 
 export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db }> {
   if (cachedClient && cachedDb) {
@@ -79,4 +81,13 @@ export async function getGridFSBucket(): Promise<GridFSBucket> {
 export function getMongoClient(): MongoClient {
     console.log("[backend/lib/mongodb.ts] getMongoClient called.");
     return client;
+}
+
+export async function getWidgetClientsCollection(): Promise<Collection<WidgetClientDocument>> {
+  if (cachedWidgetClientsCollection) {
+    return cachedWidgetClientsCollection;
+  }
+  const { db } = await connectToDatabase();
+  cachedWidgetClientsCollection = db.collection<WidgetClientDocument>('widget_clients');
+  return cachedWidgetClientsCollection;
 }
