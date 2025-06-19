@@ -3,7 +3,7 @@
 
 import { connectToDatabase } from '@/backend/lib/mongodb';
 import { getOpenAI } from '@/backend/lib/openai';
-import { buildPromptServer, type ChatMessage } from '@/backend/lib/buildPromptServer';
+import { buildPromptServer, type ChatMessage, type DocumentSnippet } from '@/backend/lib/buildPromptServer';
 import type { Faq } from '@/backend/schemas/faq';
 import { getFileContent } from '@/app/training/actions';
 import { auth } from '@/frontend/auth'; // Import auth for session
