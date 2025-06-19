@@ -56,12 +56,11 @@ function ChatMessage({ message }: { message: Message }) {
 }
 
 interface ChatUIProps {
-  chatbotOwnerId?: string; // Optional: For widget context
-  containerClassName?: string; // Optional: For custom styling of the main container
+  containerClassName?: string;
 }
 
-export default function ChatUI({ chatbotOwnerId, containerClassName }: ChatUIProps) {
-  const { messages, isLoading, sendMessage } = useChat({ chatbotOwnerId }); // Pass chatbotOwnerId to useChat
+export default function ChatUI({ containerClassName }: ChatUIProps) {
+  const { messages, isLoading, sendMessage } = useChat();
   const [inputValue, setInputValue] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
