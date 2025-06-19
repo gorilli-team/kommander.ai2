@@ -16,6 +16,11 @@ interface FileSummaryForPrompt {
   summary: string;
 }
 
+export interface DocumentSnippet {
+  fileName: string;
+  snippet: string;
+}
+
 export function buildPromptServer(
   userMessage: string,
   faqs: Faq[],
