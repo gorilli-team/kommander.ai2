@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { generateChatResponse } from '@/app/chatbot/actions';
 import type { ChatMessage } from '@/backend/lib/buildPromptServer';
+import { appendMessages } from '@/app/conversations/actions';
+import { ObjectId } from 'mongodb';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +16,7 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    const { userId, message, history } = await request.json();
+    const { userId, message, history, conversationId } = await request.json();
     if (!userId || !message) {
       return NextResponse.json(
         { error: 'Missing userId or message.' },
@@ -23,14 +25,19 @@ export async function POST(request: Request) {
     }
     const chatHistory: ChatMessage[] = Array.isArray(history) ? history : [];
     const result = await generateChatResponse(message, chatHistory, userId);
+    const convId = conversationId || new ObjectId().toString();
     if (result.error) {
       return NextResponse.json(
         { error: result.error },
         { status: 400, headers: corsHeaders }
       );
     }
+    await appendMessages(userId, convId, [
+      { role: 'user', text: message, timestamp: new Date().toISOString() },
+      { role: 'assistant', text: result.response as string, timestamp: new Date().toISOString() },
+    ]);
     return NextResponse.json(
-      { reply: result.response },
+      { reply: result.response, conversationId: convId },
       { headers: corsHeaders }
     );
   } catch (err: any) {

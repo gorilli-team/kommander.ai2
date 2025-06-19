@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 export interface Message {
   id: string;
@@ -12,6 +12,7 @@ export interface Message {
 export function useWidgetChat(userId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const conversationIdRef = useRef<string>('');
 
   const addMessage = (role: Message['role'], content: string) => {
     setMessages((prev) => [
@@ -27,14 +28,20 @@ export function useWidgetChat(userId: string) {
     setIsLoading(true);
 
     try {
+      if (!conversationIdRef.current) {
+        conversationIdRef.current = Date.now().toString();
+      }
       const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/kommander-query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, message: userMessageContent }),
+        body: JSON.stringify({ userId, message: userMessageContent, conversationId: conversationIdRef.current }),
       });
       const data = await res.json();
       if (data.reply) {
         addMessage('assistant', data.reply);
+        if (data.conversationId) {
+          conversationIdRef.current = data.conversationId;
+        }
       } else if (data.error) {
         addMessage('system', `Error: ${data.error}`);
       }
