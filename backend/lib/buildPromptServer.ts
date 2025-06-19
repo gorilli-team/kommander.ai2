@@ -11,12 +11,18 @@ interface UploadedFileInfoForPromptContext {
   originalFileType: string;
 }
 
+interface FileSummaryForPrompt {
+  fileName: string;
+  summary: string;
+}
+
 export function buildPromptServer(
   userMessage: string,
   faqs: Faq[],
   uploadedFilesInfo: UploadedFileInfoForPromptContext[],
   extractedTextFromRecentFile: string | undefined,
-  history: ChatMessage[] = [] 
+  history: ChatMessage[] = [],
+  fileSummaries: FileSummaryForPrompt[] = []
 ): ChatMessage[] {
   
   let context = "Sei Kommander.ai, un assistente AI utile. Usa le seguenti informazioni per rispondere alla query dell'utente.\n\n";
@@ -35,6 +41,14 @@ export function buildPromptServer(
       context += `- Nome File: "${file.fileName}", Tipo: ${file.originalFileType}\n`;
     });
     context += "\n";
+
+    if (fileSummaries.length > 0) {
+      context += "Riassunti dei file caricati:\n";
+      fileSummaries.forEach(fs => {
+        context += `- ${fs.fileName}: ${fs.summary}\n`;
+      });
+      context += "\n";
+    }
 
     if (extractedTextFromRecentFile && extractedTextFromRecentFile.trim() !== '') {
       const recentFileName = uploadedFilesInfo[0]?.fileName || "un file caricato di recente";

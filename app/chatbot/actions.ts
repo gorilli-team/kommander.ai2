@@ -120,7 +120,7 @@ export async function generateChatResponse(
         updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : undefined,
     }));
 
-    const allUploadedFilesMeta = await db.collection('raw_files_meta')
+  const allUploadedFilesMeta = await db.collection('raw_files_meta')
       .find({ userId: userIdToUse })
       .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
       .sort({ uploadedAt: -1 })
@@ -129,6 +129,21 @@ export async function generateChatResponse(
     const filesForPromptContext: UploadedFileInfoForPrompt[] = allUploadedFilesMeta.map(doc => ({
         fileName: doc.fileName,
         originalFileType: doc.originalFileType,
+    }));
+
+    const fileNameMap = new Map<string, string>();
+    allUploadedFilesMeta.forEach(doc => {
+        fileNameMap.set(doc.gridFsFileId.toString(), doc.fileName);
+    });
+
+    const summariesFromDb = await db.collection('file_summaries')
+        .find({ userId: userIdToUse })
+        .project({ gridFsFileId: 1, summary: 1 })
+        .toArray();
+
+    const summariesForPrompt = summariesFromDb.map(doc => ({
+        fileName: fileNameMap.get(doc.gridFsFileId.toString()) || 'Documento',
+        summary: doc.summary as string,
     }));
     
     let extractedTextContentForPrompt: string | undefined = undefined;
@@ -150,7 +165,14 @@ export async function generateChatResponse(
       }
     }
 
-    const messages = buildPromptServer(userMessage, faqs, filesForPromptContext, extractedTextContentForPrompt, history);
+    const messages = buildPromptServer(
+      userMessage,
+      faqs,
+      filesForPromptContext,
+      extractedTextContentForPrompt,
+      history,
+      summariesForPrompt,
+    );
 
     const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
