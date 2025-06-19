@@ -2,7 +2,7 @@
 'use server';
 
 import { connectToDatabase } from '@/backend/lib/mongodb';
-import openai from '@/backend/lib/openai';
+import { getOpenAI } from '@/backend/lib/openai';
 import { buildPromptServer, type ChatMessage } from '@/backend/lib/buildPromptServer';
 import type { Faq } from '@/backend/schemas/faq';
 import { getFileContent } from '@/app/training/actions';
@@ -106,9 +106,10 @@ export async function generateChatResponse(
     }
 
     const messages = buildPromptServer(userMessage, faqs, filesForPromptContext, extractedTextContentForPrompt, history);
-    
+
+    const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo', 
+      model: 'gpt-3.5-turbo',
       messages: messages,
       temperature: 0.7,
       max_tokens: 1000,
