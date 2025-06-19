@@ -1,10 +1,24 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
-import { Card, CardContent } from '@/frontend/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/frontend/components/ui/dropdown-menu';
-import { Popover, PopoverContent, PopoverTrigger } from '@/frontend/components/ui/popover';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/frontend/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/frontend/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/frontend/components/ui/popover';
 import { cn } from '@/frontend/lib/utils';
 import { format } from 'date-fns';
 import { MoreVertical, UserCircle } from 'lucide-react';
@@ -65,7 +79,6 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                     {c.updatedAt ? format(new Date(c.updatedAt), 'Pp') : ''}
                   </p>
                 </div>
-                
               </div>
             );
           })}

@@ -23,8 +23,10 @@ export async function getConversations(): Promise<ConversationDisplayItem[]> {
   if (!session?.user?.id) {
     return [];
   }
+
   const userId = session.user.id;
   const { db } = await connectToDatabase();
+
   const docs = await db
     .collection<ConversationDocument>('conversations')
     .find({ userId })
@@ -52,14 +54,22 @@ export async function appendMessages(
 ): Promise<void> {
   const { db } = await connectToDatabase();
   const now = new Date();
+
   await db.collection<ConversationDocument>('conversations').updateOne(
     { userId, conversationId },
     {
       $setOnInsert: { createdAt: now, site },
       $set: { updatedAt: now },
-      $push: { messages: { $each: messages.map((m) => ({ ...m, timestamp: new Date(m.timestamp) })) } },
+      $push: {
+        messages: {
+          $each: messages.map((m) => ({
+            ...m,
+            timestamp: new Date(m.timestamp),
+          })),
+        },
+      },
     },
-    { upsert: true },
+    { upsert: true }
   );
 }
 
