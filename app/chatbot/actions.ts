@@ -9,7 +9,6 @@ import { getFileContent } from '@/app/training/actions';
 import { auth } from '@/frontend/auth'; // Import auth for session
 
 import mammoth from 'mammoth';
-import pdf from 'pdf-parse'; // Import pdf-parse
 
 interface UploadedFileInfoForPrompt {
   fileName: string;
@@ -21,7 +20,8 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
   let rawText = '';
   try {
     if (fileType === 'application/pdf') {
-      const data = await pdf(buffer);
+      const pdfParse = (await import('pdf-parse')).default;
+      const data = await pdfParse(buffer);
       rawText = data.text;
       console.log(`[app/chatbot/actions.ts] Estrazione testo PDF con pdf-parse completata per ${fileName}. Lunghezza: ${rawText.length}`);
     } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
