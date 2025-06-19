@@ -13,6 +13,7 @@ export interface ConversationMessageDisplay {
 export interface ConversationDisplayItem {
   id: string;
   messages: ConversationMessageDisplay[];
+  site?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -37,6 +38,7 @@ export async function getConversations(): Promise<ConversationDisplayItem[]> {
       text: m.text,
       timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
     })),
+    site: doc.site,
     createdAt: doc.createdAt?.toISOString(),
     updatedAt: doc.updatedAt?.toISOString(),
   }));
@@ -46,16 +48,29 @@ export async function appendMessages(
   userId: string,
   conversationId: string,
   messages: ConversationMessageDisplay[],
+  site?: string,
 ): Promise<void> {
   const { db } = await connectToDatabase();
   const now = new Date();
   await db.collection<ConversationDocument>('conversations').updateOne(
     { userId, conversationId },
     {
-      $setOnInsert: { createdAt: now },
+      $setOnInsert: { createdAt: now, site },
       $set: { updatedAt: now },
-      $push: { messages: { $each: messages.map((m) => ({ ...m, timestamp: new Date(m.timestamp) })) } },
+      $push: {
+        messages: {
+          $each: messages.map((m) => ({
+            ...m,
+            timestamp: new Date(m.timestamp),
+          })),
+        },
+      },
     },
     { upsert: true },
   );
+}
+
+export async function deleteConversation(userId: string, conversationId: string): Promise<void> {
+  const { db } = await connectToDatabase();
+  await db.collection<ConversationDocument>('conversations').deleteOne({ userId, conversationId });
 }

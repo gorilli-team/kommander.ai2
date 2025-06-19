@@ -8,9 +8,12 @@ export const ConversationMessageSchema = z.object({
 });
 
 export const ConversationSchema = z.object({
-  _id: z.custom<ObjectId>((val) => typeof val === 'object' || ObjectId.isValid(val as string)).optional(),
+  _id: z
+    .custom<ObjectId>((val) => typeof val === 'object' || ObjectId.isValid(val as string))
+    .optional(),
   userId: z.string(),
   conversationId: z.string(),
+  site: z.string().optional(),
   messages: z.array(ConversationMessageSchema),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),

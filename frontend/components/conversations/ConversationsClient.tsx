@@ -3,8 +3,20 @@
 import React, { useState } from 'react';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/frontend/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/frontend/components/ui/popover';
 import { cn } from '@/frontend/lib/utils';
 import { format } from 'date-fns';
+import { MoreVertical, UserCircle } from 'lucide-react';
 
 export interface ConversationMessageDisplay {
   role: 'user' | 'assistant';
@@ -15,6 +27,7 @@ export interface ConversationMessageDisplay {
 export interface ConversationDisplayItem {
   id: string;
   messages: ConversationMessageDisplay[];
+  site?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -23,9 +36,19 @@ interface Props {
   conversations: ConversationDisplayItem[];
 }
 
-export default function ConversationsClient({ conversations }: Props) {
-  const [selectedId, setSelectedId] = useState(conversations[0]?.id || '');
+export default function ConversationsClient({ conversations: initial }: Props) {
+  const [conversations, setConversations] = useState(initial);
+  const [selectedId, setSelectedId] = useState(initial[0]?.id || '');
+
   const selected = conversations.find((c) => c.id === selectedId);
+
+  const handleDelete = async (id: string) => {
+    const res = await fetch(`/api/conversations/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      if (selectedId === id) setSelectedId('');
+    }
+  };
 
   return (
     <div className="flex flex-col md:flex-row gap-4 min-h-[70vh]">
@@ -36,18 +59,43 @@ export default function ConversationsClient({ conversations }: Props) {
             return (
               <div
                 key={c.id}
-                onClick={() => setSelectedId(c.id)}
                 className={cn(
-                  'p-3 cursor-pointer border-b border-border last:border-b-0',
+                  'p-3 flex items-start gap-2 border-b border-border last:border-b-0',
                   selectedId === c.id ? 'bg-muted' : 'hover:bg-accent'
                 )}
               >
-                <p className="text-sm font-medium truncate">
-                  {last?.text || 'Nuova conversazione'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {c.updatedAt ? format(new Date(c.updatedAt), 'Pp') : ''}
-                </p>
+                <div className="flex-1 cursor-pointer" onClick={() => setSelectedId(c.id)}>
+                  <p className="text-sm font-medium truncate">
+                    {last?.text || 'Nuova conversazione'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {c.updatedAt ? format(new Date(c.updatedAt), 'Pp') : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="p-1 rounded hover:bg-accent" aria-label="Site info">
+                        <UserCircle className="w-4 h-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48" side="left">
+                      <p className="text-sm">{c.site || 'Sito sconosciuto'}</p>
+                    </PopoverContent>
+                  </Popover>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 rounded hover:bg-accent" aria-label="Azioni">
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleDelete(c.id)}>
+                        Elimina
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             );
           })}
@@ -56,11 +104,35 @@ export default function ConversationsClient({ conversations }: Props) {
       <section className="flex-1">
         {selected ? (
           <Card className="h-full flex flex-col">
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-2 flex items-center justify-between">
               <CardTitle className="text-xl">
                 Conversazione del{' '}
                 {selected.updatedAt ? format(new Date(selected.updatedAt), 'Pp') : ''}
               </CardTitle>
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="p-1 rounded hover:bg-accent" aria-label="Site info">
+                      <UserCircle className="w-5 h-5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent side="bottom" className="w-48">
+                    <p className="text-sm">{selected.site || 'Sito sconosciuto'}</p>
+                  </PopoverContent>
+                </Popover>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="p-1 rounded hover:bg-accent" aria-label="Azioni">
+                      <MoreVertical className="w-5 h-5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleDelete(selected.id)}>
+                      Elimina
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto space-y-2">
               {selected.messages.map((msg, idx) => (
