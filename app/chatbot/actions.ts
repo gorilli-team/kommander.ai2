@@ -86,26 +86,28 @@ export async function generateChatResponse(
         originalFileType: doc.originalFileType,
     }));
     
-    let extractedTextContentForPrompt: string | undefined = undefined;
+    const maxFilesForPrompt = parseInt(process.env.MAX_PROMPT_FILES || "3", 10);
+    const filesToProcess = allUploadedFilesMeta.slice(0, maxFilesForPrompt);
+    const documentSnippets: { fileName: string; snippet: string }[] = [];
 
-    if (allUploadedFilesMeta.length > 0) {
-      const mostRecentFileMeta = allUploadedFilesMeta[0];
-      
-      const fileBufferResult = await getFileContent(mostRecentFileMeta.gridFsFileId.toString(), userIdToUse);
-
-      if ('error' in fileBufferResult) {
-        extractedTextContentForPrompt = `Impossibile recuperare il contenuto per il file: ${mostRecentFileMeta.fileName}. Errore: ${fileBufferResult.error}`;
-      } else {
-        extractedTextContentForPrompt = await extractTextFromFileBuffer(fileBufferResult, mostRecentFileMeta.originalFileType, mostRecentFileMeta.fileName);
-        
-        const MAX_TEXT_LENGTH = 10000; 
-        if (extractedTextContentForPrompt.length > MAX_TEXT_LENGTH) {
-          extractedTextContentForPrompt = extractedTextContentForPrompt.substring(0, MAX_TEXT_LENGTH) + "\\n[...contenuto troncato a causa della lunghezza...]";
-        }
+    for (const meta of filesToProcess) {
+      const fileBufferResult = await getFileContent(meta.gridFsFileId.toString(), userIdToUse);
+      if ("error" in fileBufferResult) {
+        documentSnippets.push({
+          fileName: meta.fileName,
+          snippet: `Impossibile recuperare il contenuto per il file: ${meta.fileName}. Errore: ${fileBufferResult.error}`,
+        });
+        continue;
       }
+      let text = await extractTextFromFileBuffer(fileBufferResult, meta.originalFileType, meta.fileName);
+      const MAX_TEXT_LENGTH = 10000;
+      if (text.length > MAX_TEXT_LENGTH) {
+        text = text.substring(0, MAX_TEXT_LENGTH) + "\n[...contenuto troncato a causa della lunghezza...]";
+      }
+      documentSnippets.push({ fileName: meta.fileName, snippet: text });
     }
 
-    const messages = buildPromptServer(userMessage, faqs, filesForPromptContext, extractedTextContentForPrompt, history);
+    const messages = buildPromptServer(userMessage, faqs, filesForPromptContext, documentSnippets, history);
 
     const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
