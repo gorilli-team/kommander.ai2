@@ -2,23 +2,6 @@
 import { MongoClient, ServerApiVersion, Db, GridFSBucket, Collection } from 'mongodb';
 import type { WidgetClientDocument } from '@/backend/schemas/widgetClient';
 
-const uri = process.env.MONGODB_URI;
-
-if (!uri) {
-  console.error('[backend/lib/mongodb.ts] CRITICAL: MONGODB_URI environment variable is not defined.');
-  throw new Error('Please define the MONGODB_URI environment variable inside .env');
-}
-console.log(`[backend/lib/mongodb.ts] Attempting to connect to MongoDB. URI starts with: ${uri.substring(0, uri.indexOf('@') > 0 ? uri.indexOf('@') : 30)}...`);
-
-
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
-
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
 let cachedBucket: GridFSBucket | null = null;
@@ -36,15 +19,29 @@ export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db
     }
   }
 
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.error('[backend/lib/mongodb.ts] CRITICAL: MONGODB_URI environment variable is not defined.');
+    throw new Error('Please define the MONGODB_URI environment variable inside .env');
+  }
+  console.log(`[backend/lib/mongodb.ts] Attempting to connect to MongoDB. URI starts with: ${uri.substring(0, uri.indexOf('@') > 0 ? uri.indexOf('@') : 30)}...`);
+
   try {
     if (!cachedClient) {
       console.log("[backend/lib/mongodb.ts] No valid cached client, attempting to connect to MongoDB client...");
-      cachedClient = await client.connect();
+      cachedClient = new MongoClient(uri, {
+        serverApi: {
+          version: ServerApiVersion.v1,
+          strict: true,
+          deprecationErrors: true,
+        }
+      });
+      await cachedClient.connect();
       console.log("[backend/lib/mongodb.ts] Successfully connected to MongoDB client instance.");
     } else {
        console.log("[backend/lib/mongodb.ts] Reusing existing MongoDB client instance (was already connected).");
     }
-    
+
     const dbNameFromUri = uri.split('/').pop()?.split('?')[0];
     const dbName = dbNameFromUri || 'kommander_ai_prototype';
     if (!dbNameFromUri) {
@@ -79,8 +76,23 @@ export async function getGridFSBucket(): Promise<GridFSBucket> {
 }
 
 export function getMongoClient(): MongoClient {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error('Please define the MONGODB_URI environment variable inside .env');
+  }
+  if (!cachedClient) {
+    console.log("[backend/lib/mongodb.ts] getMongoClient called. Initializing MongoClient instance...");
+    cachedClient = new MongoClient(uri, {
+      serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+      }
+    });
+  } else {
     console.log("[backend/lib/mongodb.ts] getMongoClient called.");
-    return client;
+  }
+  return cachedClient;
 }
 
 export async function getWidgetClientsCollection(): Promise<Collection<WidgetClientDocument>> {
