@@ -8,6 +8,63 @@ import { FaqSchema, type Faq } from '@/backend/schemas/faq';
 import { ObjectId, type GridFSFile } from 'mongodb';
 import { Readable } from 'stream';
 import { auth } from '@/frontend/auth'; // Import auth for session
+import { getOpenAI } from '@/backend/lib/openai';
+import mammoth from 'mammoth';
+
+async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileName: string): Promise<string> {
+  console.log(`[app/training/actions.ts] extractTextFromFileBuffer: start for ${fileName}, type: ${fileType}, buffer length: ${buffer.length}`);
+  let rawText = '';
+  try {
+    if (fileType === 'application/pdf') {
+      const pdfParse = (await import('pdf-parse')).default;
+      const data = await pdfParse(buffer);
+      rawText = data.text;
+      console.log(`[app/training/actions.ts] PDF text extraction complete for ${fileName}. Length: ${rawText.length}`);
+    } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      const result = await mammoth.extractRawText({ buffer });
+      rawText = result.value;
+      console.log(`[app/training/actions.ts] DOCX text extraction complete for ${fileName}. Length: ${rawText.length}`);
+    } else if (fileType === 'text/plain') {
+      rawText = buffer.toString('utf-8');
+      console.log(`[app/training/actions.ts] TXT text extraction complete for ${fileName}. Length: ${rawText.length}`);
+    } else {
+      console.warn(`[app/training/actions.ts] Unsupported file type for extraction: ${fileType} for ${fileName}`);
+      return '';
+    }
+  } catch (error: any) {
+    console.error(`[app/training/actions.ts] Error extracting text from ${fileName} (type: ${fileType}):`, error.message);
+    return '';
+  }
+  return rawText.trim();
+}
+
+export async function summarizeDocument(buffer: Buffer, fileType: string, fileName: string): Promise<string> {
+  const text = await extractTextFromFileBuffer(buffer, fileType, fileName);
+  if (!text) {
+    return 'Nessun testo estratto dal documento.';
+  }
+
+  const MAX_SUMMARY_SOURCE_LENGTH = 4000;
+  const textToSummarize = text.length > MAX_SUMMARY_SOURCE_LENGTH ? text.substring(0, MAX_SUMMARY_SOURCE_LENGTH) : text;
+
+  try {
+    const openai = getOpenAI();
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: 'Sei un assistente che riassume brevemente i documenti.' },
+        { role: 'user', content: `Riassumi in italiano il seguente testo:\n\n${textToSummarize}` },
+      ],
+      temperature: 0.3,
+      max_tokens: 150,
+    });
+
+    return completion.choices[0]?.message?.content?.trim() || '';
+  } catch (err: any) {
+    console.error('[app/training/actions.ts] Error summarizing document:', err.message);
+    return 'Impossibile generare un riassunto del documento.';
+  }
+}
 
 // FAQ Types
 export type FaqDisplayItem = Omit<Faq, 'createdAt' | 'updatedAt' | 'userId'> & {
@@ -250,6 +307,20 @@ export async function uploadFileAndProcess(formData: FormData): Promise<{ succes
     };
 
     await db.collection('raw_files_meta').insertOne(fileMetaDoc);
+
+    let summary = '';
+    try {
+      summary = await summarizeDocument(fileBuffer, file.type, file.name);
+      await db.collection('file_summaries').insertOne({
+        userId,
+        gridFsFileId: uploadStream.id,
+        fileName: file.name,
+        summary,
+        createdAt: new Date(),
+      });
+    } catch (summaryError: any) {
+      console.error('[app/training/actions.ts] Error generating or storing summary:', summaryError?.message || summaryError);
+    }
     
     revalidatePath('/training');
     console.log(`[app/training/actions.ts] uploadFileAndProcess (GridFS): END - Success for user ${userId}.`);
