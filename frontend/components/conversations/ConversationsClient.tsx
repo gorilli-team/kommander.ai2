@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
@@ -25,7 +25,6 @@ interface Props {
 
 export default function ConversationsClient({ conversations }: Props) {
   const [selectedId, setSelectedId] = useState(conversations[0]?.id || '');
-
   const selected = conversations.find((c) => c.id === selectedId);
 
   return (
