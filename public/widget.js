@@ -74,7 +74,7 @@
       addMessage('user', text);
       input.value = '';
       try {
-        const res = await fetch('/api/widget-chat', {
+        const res = await fetch('/api/widget/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ clientId, apiKey, message: text })
