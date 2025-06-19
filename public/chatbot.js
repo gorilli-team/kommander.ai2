@@ -16,7 +16,7 @@
     const link = document.createElement('link');
     link.id = 'kommander-style';
     link.rel = 'stylesheet';
-    link.href = ORIGIN + '/chatbot.css';
+    link.href = ORIGIN + '/chatbot.css'; // assicurati che chatbot.css sia accessibile
     document.head.appendChild(link);
   }
 
@@ -102,7 +102,9 @@
                 'div',
                 {
                   key: i,
-                  className: 'kommander-msg ' + (m.role === 'user' ? 'kommander-user' : 'kommander-assistant'),
+                  className:
+                    'kommander-msg ' +
+                    (m.role === 'user' ? 'kommander-user' : 'kommander-assistant'),
                 },
                 m.text
               )
