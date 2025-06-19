@@ -7,6 +7,8 @@
   packages = [
     pkgs.nodejs_20
     pkgs.zulu
+    # Provides libuuid and other utilities used during development
+    pkgs.util-linux
   ];
   # Sets environment variables in the workspace
   env = {};
