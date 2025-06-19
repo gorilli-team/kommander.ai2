@@ -379,10 +379,10 @@ export async function getFileContent(gridFsFileIdString: string, userId: string)
 
     const downloadStream = bucket.openDownloadStream(gridFsFileId);
     
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const chunks: Buffer[] = [];
       downloadStream.on('data', (chunk) => chunks.push(chunk));
-      downloadStream.on('error', (err: any) => reject({ error: `Failed to download file: ${err.message}` }));
+      downloadStream.on('error', (err: any) => resolve({ error: `Failed to download file: ${err.message}` }));
       downloadStream.on('end', () => resolve(Buffer.concat(chunks)));
     });
   } catch (error: any) {
