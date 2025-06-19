@@ -1,6 +1,6 @@
 # Kommander.ai Prototype
 
-Kommander.ai is a prototype built with **Next.js** and **TypeScript** that demonstrates a simple dashboard with FAQ management, file uploads, and a chat interface backed by OpenAI. Uploaded documents are summarized using the OpenAI API and stored in MongoDB. A generative chatbot uses the FAQs and document summaries to answer questions in the chat UI.
+Kommander.ai is a prototype built with **Next.js** and **TypeScript** that demonstrates a dashboard for FAQ management, file uploads and a chat interface powered by OpenAI. Uploaded files are stored in MongoDB GridFS and the text from the most recent upload is extracted on demand using `pdf-parse` or `mammoth`. The chatbot uses the FAQs together with that extracted text when generating a reply.
 
 ## Setup
 
@@ -44,4 +44,10 @@ To embed the Kommander.ai chat widget on any website, include the following snip
 ```html
 <script src="https://cdn.kommander.ai/widget.js" data-client-id="abc123" data-api-key="sk_live_xyz"></script>
 ```
+
+## Limitations
+
+- Only the most recently uploaded document is considered when generating chat responses.
+- The application does not perform OCR on images or scanned PDFs.
+- Installing optional packages (e.g., OCR libraries) may fail in environments without network access.
 
