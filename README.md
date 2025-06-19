@@ -41,10 +41,12 @@ This README provides only a brief overview. See the source code and comments for
 
 ## Embeddable Chat Widget
 
-To embed the Kommander.ai chat widget on any website, include the following snippet:
+To embed the Kommander.ai chat widget on any website, use the snippet below. It references `process.env.NEXT_PUBLIC_BASE_URL` and the logged in user ID:
 
 ```html
-<script src="https://cdn.kommander.ai/widget.js" data-client-id="abc123" data-api-key="sk_live_xyz"></script>
+<div id="kommander-chatbot"></div>
+<script src="${process.env.NEXT_PUBLIC_BASE_URL}/chatbot.js"></script>
+<script>window.initKommanderChatbot({ userId: "YOUR_USER_ID" });</script>
 ```
 
 ## Limitations

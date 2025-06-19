@@ -1,7 +1,16 @@
 
 import ChatUI from '@/frontend/components/chatbot/ChatUI';
+import { auth } from '@/frontend/auth';
 
-export default function ChatbotPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function ChatbotPage() {
+  const session = await auth();
+  const userId = session?.user?.id || '';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+  const snippet = `<div id="kommander-chatbot"></div>
+<script src="${baseUrl}/chatbot.js"></script>
+<script>window.initKommanderChatbot({ userId: '${userId}' });</script>`;
   return (
     // Contenitore principale della pagina:
     // - flex flex-col: layout verticale.
@@ -21,7 +30,7 @@ export default function ChatbotPage() {
             Per inserire il widget di chat su qualsiasi sito, copia e incolla questo snippet nell'HTML della tua pagina:
           </p>
           <pre className="whitespace-pre-wrap bg-background p-2 rounded border border-border">
-{`<script src="https://cdn.kommander.ai/widget.js" data-client-id="abc123" data-api-key="sk_live_xyz"></script>`}
+{snippet}
           </pre>
         </div>
       </div>
