@@ -21,7 +21,9 @@ export default function ChatbotPage() {
             Per inserire il widget di chat su qualsiasi sito, copia e incolla questo snippet nell'HTML della tua pagina:
           </p>
           <pre className="whitespace-pre-wrap bg-background p-2 rounded border border-border">
-{`<script src="https://cdn.kommander.ai/widget.js" data-client-id="abc123" data-api-key="sk_live_xyz"></script>`}
+{`<div id="kommander-chatbot"></div>
+<script src="https://cdn.kommander.ai/chatbot.js"></script>
+<script>window.initKommanderChatbot({ userId: 'YOUR_USER_ID' });</script>`}
           </pre>
         </div>
       </div>

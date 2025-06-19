@@ -44,7 +44,9 @@ This README provides only a brief overview. See the source code and comments for
 To embed the Kommander.ai chat widget on any website, include the following snippet:
 
 ```html
-<script src="https://cdn.kommander.ai/widget.js" data-client-id="abc123" data-api-key="sk_live_xyz"></script>
+<div id="kommander-chatbot"></div>
+<script src="https://cdn.kommander.ai/chatbot.js"></script>
+<script>window.initKommanderChatbot({ userId: 'YOUR_USER_ID' });</script>
 ```
 
 ## Limitations
