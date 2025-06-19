@@ -16,7 +16,7 @@
     const link = document.createElement('link');
     link.id = 'kommander-style';
     link.rel = 'stylesheet';
-    link.href = ORIGIN + '/chatbot.css'; // assicurati che chatbot.css sia accessibile
+    link.href = ORIGIN + '/chatbot.css';
     document.head.appendChild(link);
   }
 
@@ -48,30 +48,40 @@
     const sendMessage = async () => {
       const text = input.trim();
       if (!text) return;
-      setMessages((m) => [...m, { role: 'user', text }]);
+
+      setMessages((prev) => [...prev, { role: 'user', text }]);
       setInput('');
+
       try {
         if (!conversationId) {
           conversationId = Date.now().toString();
           localStorage.setItem(storageKey, conversationId);
         }
+
         const res = await fetch(`${ORIGIN}/api/kommander-query`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, message: text, conversationId, site: window.location.hostname }),
+          body: JSON.stringify({
+            userId,
+            message: text,
+            conversationId,
+            site: window.location.hostname,
+          }),
         });
+
         const data = await res.json();
+
         if (data.reply) {
-          setMessages((m) => [...m, { role: 'assistant', text: data.reply }]);
+          setMessages((prev) => [...prev, { role: 'assistant', text: data.reply }]);
           if (data.conversationId) {
             conversationId = data.conversationId;
             localStorage.setItem(storageKey, conversationId);
           }
         } else if (data.error) {
-          setMessages((m) => [...m, { role: 'assistant', text: 'Error: ' + data.error }]);
+          setMessages((prev) => [...prev, { role: 'assistant', text: 'Error: ' + data.error }]);
         }
       } catch (err) {
-        setMessages((m) => [...m, { role: 'assistant', text: 'Error: ' + err.message }]);
+        setMessages((prev) => [...prev, { role: 'assistant', text: 'Error: ' + err.message }]);
       }
     };
 
@@ -89,16 +99,14 @@
       open &&
         React.createElement(
           'div',
-          {
-            className: 'kommander-window',
-          },
+          { className: 'kommander-window' },
           React.createElement(
             'div',
             { className: 'kommander-header' },
             React.createElement('span', { className: 'font-semibold' }, 'Kommander.ai'),
             React.createElement(
               'button',
-              { onClick: () => setOpen(false) },
+              { onClick: () => setOpen(false), 'aria-label': 'Close chatbot' },
               '×'
             )
           ),
@@ -133,16 +141,11 @@
             React.createElement('input', {
               value: input,
               onChange: (e) => setInput(e.target.value),
-              disabled: false,
-              className: '',
               placeholder: 'Type a message...',
             }),
             React.createElement(
               'button',
-              {
-                type: 'submit',
-                className: '',
-              },
+              { type: 'submit' },
               'Send'
             )
           )
