@@ -13,17 +13,21 @@ import { createFaq, updateFaq } from '@/app/training/actions'; // Keep this path
 import { useToast } from '@/frontend/hooks/use-toast';
 import React from 'react';
 
+type FaqInput = Omit<Faq, 'userId'>;
+
 interface FaqFormProps {
-  faq?: Faq; 
-  onSuccess?: () => void; 
+  faq?: FaqInput;
+  onSuccess?: () => void;
 }
 
 export default function FaqForm({ faq, onSuccess }: FaqFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const form = useForm<Faq>({
-    resolver: zodResolver(FaqSchema),
+  const ClientFaqSchema = React.useMemo(() => FaqSchema.omit({ userId: true }), []);
+
+  const form = useForm<FaqInput>({
+    resolver: zodResolver(ClientFaqSchema),
     defaultValues: faq || {
       question: '',
       answer: '',
@@ -34,7 +38,7 @@ export default function FaqForm({ faq, onSuccess }: FaqFormProps) {
     form.reset(faq || { question: '', answer: '' });
   }, [faq, form]);
 
-  const onSubmit = async (values: Faq) => {
+  const onSubmit = async (values: FaqInput) => {
     setIsSubmitting(true);
     try {
       let response;
