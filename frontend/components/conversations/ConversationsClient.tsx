@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
-import { ScrollArea } from '@/frontend/components/ui/scroll-area';
-import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
 import { cn } from '@/frontend/lib/utils';
 import { format } from 'date-fns';
+import { ScrollArea } from '@/frontend/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
 
 export interface ConversationMessageDisplay {
   role: 'user' | 'assistant';
