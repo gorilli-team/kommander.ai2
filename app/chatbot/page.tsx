@@ -15,6 +15,15 @@ export default function ChatbotPage() {
         <p className="text-muted-foreground">
           Interact with the Kommander.ai assistant. It uses the knowledge from FAQs and uploaded documents.
         </p>
+        {/* Istruzioni per l'embed del widget */}
+        <div className="mt-4 p-4 bg-muted rounded-lg text-sm space-y-2">
+          <p>
+            Per inserire il widget di chat su qualsiasi sito, copia e incolla questo snippet nell'HTML della tua pagina:
+          </p>
+          <pre className="whitespace-pre-wrap bg-background p-2 rounded border border-border">
+{`<script src="https://cdn.kommander.ai/widget.js" data-client-id="abc123" data-api-key="sk_live_xyz"></script>`}
+          </pre>
+        </div>
       </div>
 
       {/* Contenitore delle Colonne:
