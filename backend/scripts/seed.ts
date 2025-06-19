@@ -8,6 +8,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 import dotenv from 'dotenv';
 import type { UserDocument } from '@/backend/schemas/user'; // Assuming UserDocument is similar to what's in backend/schemas/user
 import type { Faq } from '@/backend/schemas/faq';
+import type { WidgetClientDocument } from '@/backend/schemas/widgetClient';
 
 
 dotenv.config({ path: '.env.local' }); // Load environment variables from .env.local
@@ -27,6 +28,15 @@ const exampleFaqsData: Omit<Faq, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[] 
     question: "Cosa sono i Movimenti non produttivi",
     answer: "Sono movimenti, spostamenti del veicolo per uso interno ovvero senza l’utilizzo del veicolo da parte di un cliente o un soggetto esterno alla tua organizzazione",
   }
+];
+
+const exampleWidgetClients: Omit<WidgetClientDocument, '_id' | 'createdAt' | 'updatedAt'>[] = [
+  {
+    clientId: 'demo-client',
+    apiKey: 'demo-api-key',
+    ownerId: '',
+    allowedDomains: ['localhost'],
+  },
 ];
 
 async function seedDatabase() {
@@ -50,6 +60,7 @@ async function seedDatabase() {
     const usersCollection = db.collection<UserDocument>('users');
     const faqsCollection = db.collection('faqs');
     const rawFilesMetaCollection = db.collection('raw_files_meta');
+    const widgetClientsCollection = db.collection<WidgetClientDocument>('widget_clients');
 
     // 1. Find the target user
     const arbiUser = await usersCollection.findOne({ email: targetUserEmail });
@@ -95,7 +106,7 @@ async function seedDatabase() {
     console.log(`[seed.ts] Deleted ${deleteResult.deletedCount} existing FAQs before seeding new examples.`);
 
     if (processedExampleFaqs.length > 0) {
-      const insertResult = await faqsCollection.insertMany(processedExampleFaqs as any[]); 
+      const insertResult = await faqsCollection.insertMany(processedExampleFaqs as any[]);
       console.log(`[seed.ts] Successfully seeded ${insertResult.insertedCount} example FAQs.`);
       if (arbiUserId) {
         console.log(`[seed.ts] Example FAQs seeded were associated with user ID: ${arbiUserId}`);
@@ -104,6 +115,22 @@ async function seedDatabase() {
       }
     } else {
       console.log("[seed.ts] No example FAQs to seed.");
+    }
+
+    // 5. Seed widget clients if collection is empty
+    const widgetCount = await widgetClientsCollection.countDocuments();
+    if (widgetCount === 0) {
+      const processedWidgetClients = exampleWidgetClients.map(wc => ({
+        ...wc,
+        ownerId: arbiUserId || wc.ownerId,
+        _id: new ObjectId(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+      const insertWidgetResult = await widgetClientsCollection.insertMany(processedWidgetClients as any[]);
+      console.log(`[seed.ts] Seeded ${insertWidgetResult.insertedCount} example widget clients.`);
+    } else {
+      console.log(`[seed.ts] Widget clients collection already has ${widgetCount} records. Skipping seeding.`);
     }
 
   } catch (error) {
