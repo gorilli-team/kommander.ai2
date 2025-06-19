@@ -57,7 +57,14 @@ export async function appendMessages(
     {
       $setOnInsert: { createdAt: now, site },
       $set: { updatedAt: now },
-      $push: { messages: { $each: messages.map((m) => ({ ...m, timestamp: new Date(m.timestamp) })) } },
+      $push: {
+        messages: {
+          $each: messages.map((m) => ({
+            ...m,
+            timestamp: new Date(m.timestamp),
+          })),
+        },
+      },
     },
     { upsert: true },
   );
