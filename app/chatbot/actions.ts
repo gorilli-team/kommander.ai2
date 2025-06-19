@@ -10,6 +10,25 @@ import { auth } from '@/frontend/auth'; // Import auth for session
 
 import mammoth from 'mammoth';
 
+class NodeCanvasFactory {
+  create(width: number, height: number) {
+    const { createCanvas } = require('canvas');
+    const canvas = createCanvas(width, height);
+    const context = canvas.getContext('2d');
+    return { canvas, context };
+  }
+  reset(canvasAndContext: any, width: number, height: number) {
+    canvasAndContext.canvas.width = width;
+    canvasAndContext.canvas.height = height;
+  }
+  destroy(canvasAndContext: any) {
+    canvasAndContext.canvas.width = 0;
+    canvasAndContext.canvas.height = 0;
+    canvasAndContext.canvas = null;
+    canvasAndContext.context = null;
+  }
+}
+
 interface UploadedFileInfoForPrompt {
   fileName: string;
   originalFileType: string;
@@ -24,6 +43,32 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
       const data = await pdfParse(buffer);
       rawText = data.text;
       console.log(`[app/chatbot/actions.ts] Estrazione testo PDF con pdf-parse completata per ${fileName}. Lunghezza: ${rawText.length}`);
+
+      if (!rawText.trim()) {
+        console.log(`[app/chatbot/actions.ts] pdf-parse non ha trovato testo in ${fileName}. Avvio OCR...`);
+        const { createWorker } = await import('tesseract.js');
+        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js');
+        const loadingTask = pdfjsLib.getDocument({ data: buffer });
+        const pdfDocument = await loadingTask.promise;
+        const worker = await createWorker();
+        await worker.load();
+        await worker.loadLanguage('eng');
+        await worker.initialize('eng');
+        let ocrText = '';
+        for (let pageIndex = 1; pageIndex <= pdfDocument.numPages; pageIndex++) {
+          const page = await pdfDocument.getPage(pageIndex);
+          const viewport = page.getViewport({ scale: 2 });
+          const canvasFactory = new NodeCanvasFactory();
+          const { canvas, context } = canvasFactory.create(viewport.width, viewport.height);
+          await page.render({ canvasContext: context, viewport, canvasFactory }).promise;
+          const { data: { text } } = await worker.recognize(canvas.toBuffer());
+          ocrText += text + '\n';
+          canvasFactory.destroy({ canvas, context });
+        }
+        await worker.terminate();
+        rawText = ocrText;
+        console.log(`[app/chatbot/actions.ts] OCR completato per ${fileName}. Lunghezza: ${rawText.length}`);
+      }
     } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const result = await mammoth.extractRawText({ buffer });
       rawText = result.value;
