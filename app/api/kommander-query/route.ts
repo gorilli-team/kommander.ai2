@@ -27,7 +27,6 @@ export async function POST(request: Request) {
 
     const chatHistory: ChatMessage[] = Array.isArray(history) ? history : [];
     const result = await generateChatResponse(message, chatHistory, userId);
-
     const convId = conversationId || new ObjectId().toString();
 
     if (result.error) {
@@ -37,10 +36,15 @@ export async function POST(request: Request) {
       );
     }
 
-    await appendMessages(userId, convId, [
-      { role: 'user', text: message, timestamp: new Date().toISOString() },
-      { role: 'assistant', text: result.response as string, timestamp: new Date().toISOString() },
-    ], site);
+    await appendMessages(
+      userId,
+      convId,
+      [
+        { role: 'user', text: message, timestamp: new Date().toISOString() },
+        { role: 'assistant', text: result.response as string, timestamp: new Date().toISOString() },
+      ],
+      site
+    );
 
     return NextResponse.json(
       { reply: result.response, conversationId: convId },
