@@ -36,3 +36,19 @@ Kommander.ai is a prototype built with **Next.js** and **TypeScript** that demon
   ```
 
 This README provides only a brief overview. See the source code and comments for more details on each feature.
+
+## Embedding the Chat Widget
+
+Add this snippet to the `<body>` of any site where you want the Kommander.ai assistant to appear:
+
+```html
+<script src="https://cdn.kommander.ai/widget.js"
+        data-client-id="clt_1234"
+        data-api-key="sk_live_5678"></script>
+```
+
+### Security Notes
+
+- **CORS:** Allow requests from your site to the Kommander.ai domain.
+- **Domain Binding:** Bind your widget to specific domains in the dashboard so third parties cannot reuse your key.
+- **Rate Limits:** API usage is rate-limited; contact support if you expect high traffic.

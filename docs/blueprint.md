@@ -19,3 +19,19 @@
 - Minimalist line icons for sidebar navigation and UI actions.
 - Clean and well-spaced layout to facilitate readability and usability.
 - Subtle animations and transitions for UI feedback, such as loading states and message delivery.
+
+## Embedding the Widget
+
+Add the widget to your site using:
+
+```html
+<script src="https://cdn.kommander.ai/widget.js"
+        data-client-id="clt_1234"
+        data-api-key="sk_live_5678"></script>
+```
+
+### Security Notes
+
+- Configure CORS to allow the domains that will host the widget.
+- Bind your API key to approved domains in the dashboard to prevent misuse.
+- The CDN enforces rate limits on each key.

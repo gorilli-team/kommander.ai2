@@ -30,8 +30,7 @@ const ChatbotIntegrationInstructions: React.FC = () => {
 
   const chatbotId = session?.user?.id;
 
-  const scriptSnippet = `<kommander-dashboard-replica></kommander-dashboard-replica>
-<script src="${appUrl}/dashboard-replica-loader.js" data-app-url="${appUrl}" defer></script>`;
+  const scriptSnippet = `<script src="https://cdn.kommander.ai/widget.js" data-client-id="${chatbotId}" data-api-key="sk_live_5678"></script>`;
 
   const copyToClipboard = async (textToCopy: string, label: string) => {
     try {
@@ -106,7 +105,6 @@ const ChatbotIntegrationInstructions: React.FC = () => {
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
             Copy and paste this snippet into the `&lt;body&gt;` of your website.
-            The `data-app-url` attribute tells the loader where your Kommander.ai application is hosted.
           </p>
           <div className="flex flex-col space-y-2">
             <Input
@@ -122,8 +120,7 @@ const ChatbotIntegrationInstructions: React.FC = () => {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground pt-2">
-            The widget will automatically use your unique Chatbot ID ({chatbotId}) to load specific FAQs and documents for your users.
-            The loader script will also attempt to inherit `--primary` and `--card` CSS variables from your site for theme consistency of the launcher button and widget window, or use default styles if not found.
+            Replace the sample client and API key with the values from your dashboard. The widget inherits basic theme colors from your site for a consistent look.
           </p>
         </CardContent>
       </Card>
@@ -132,8 +129,7 @@ const ChatbotIntegrationInstructions: React.FC = () => {
         <Info className="h-4 w-4" />
         <AlertTitle>Important for Production</AlertTitle>
         <AlertDescription>
-          For a production environment, ensure `data-app-url` in the snippet correctly points to the public domain of your Kommander.ai application.
-          The Chatbot ID is automatically tied to your logged-in account.
+          Keep your API key private and bind the widget to your production domains in the dashboard. Configure CORS to only allow those domains.
         </AlertDescription>
       </Alert>
     </div>
