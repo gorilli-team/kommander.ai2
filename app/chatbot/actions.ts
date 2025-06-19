@@ -10,6 +10,9 @@ import { auth } from '@/frontend/auth'; // Import auth for session
 
 import mammoth from 'mammoth';
 
+// Limit for how many recently uploaded files are included in the prompt context
+const MAX_PROMPT_FILES = parseInt(process.env.MAX_PROMPT_FILES || '3', 10);
+
 class NodeCanvasFactory {
   create(width: number, height: number) {
     const { createCanvas } = require('canvas');
@@ -126,13 +129,14 @@ export async function generateChatResponse(
       .sort({ uploadedAt: -1 })
       .toArray();
 
-    const filesForPromptContext: UploadedFileInfoForPrompt[] = allUploadedFilesMeta.map(doc => ({
+    const filesMetaForPrompt = allUploadedFilesMeta.slice(0, MAX_PROMPT_FILES);
+    const filesForPromptContext: UploadedFileInfoForPrompt[] = filesMetaForPrompt.map(doc => ({
         fileName: doc.fileName,
         originalFileType: doc.originalFileType,
     }));
 
     const fileNameMap = new Map<string, string>();
-    allUploadedFilesMeta.forEach(doc => {
+    filesMetaForPrompt.forEach(doc => {
         fileNameMap.set(doc.gridFsFileId.toString(), doc.fileName);
     });
 
@@ -148,8 +152,8 @@ export async function generateChatResponse(
     
     let extractedTextContentForPrompt: string | undefined = undefined;
 
-    if (allUploadedFilesMeta.length > 0) {
-      const mostRecentFileMeta = allUploadedFilesMeta[0];
+    if (filesMetaForPrompt.length > 0) {
+      const mostRecentFileMeta = filesMetaForPrompt[0];
       
       const fileBufferResult = await getFileContent(mostRecentFileMeta.gridFsFileId.toString(), userIdToUse);
 
