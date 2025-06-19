@@ -13,13 +13,21 @@ export default function LoginPage() {
   // Check for NEXT_PUBLIC_BYPASS_AUTH first for client-side, then BYPASS_AUTH as fallback
   const isBypassAuthActive = process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true' || process.env.BYPASS_AUTH === 'true';
 
-  if (isBypassAuthActive) {
-    useEffect(() => {
+  useEffect(() => {
+    if (isBypassAuthActive) {
       console.log('[LoginPage] BYPASS_AUTH or NEXT_PUBLIC_BYPASS_AUTH is active, redirecting to /training');
       router.replace('/training');
-    }, [router]);
+    }
+  }, [isBypassAuthActive, router]);
 
-    return ( // Show skeleton while redirecting
+  useEffect(() => {
+    if (status === 'authenticated' && !isBypassAuthActive) {
+      router.replace('/training');
+    }
+  }, [status, router, isBypassAuthActive]);
+  if (isBypassAuthActive) {
+    return (
+      // Show skeleton while redirecting
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-md space-y-4">
           <Skeleton className="h-10 w-3/4 mx-auto" />
@@ -32,12 +40,6 @@ export default function LoginPage() {
       </div>
     );
   }
-
-  useEffect(() => {
-    if (status === 'authenticated' && !isBypassAuthActive) { // Only redirect if not bypassing
-      router.replace('/training');
-    }
-  }, [status, router, isBypassAuthActive]);
 
   if (status === 'loading' || (status === 'authenticated' && !isBypassAuthActive)) {
     // Show a loading skeleton or a blank page while redirecting for normal auth
