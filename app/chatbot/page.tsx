@@ -1,6 +1,5 @@
 
 import ChatUI from '@/frontend/components/chatbot/ChatUI';
-import ChatbotIntegrationInstructions from '@/frontend/components/chatbot/ChatbotIntegrationInstructions';
 
 export default function ChatbotPage() {
   return (
@@ -26,24 +25,9 @@ export default function ChatbotPage() {
           - min-h-0: Aggiunto per aiutare con il dimensionamento flex in alcuni casi limite.
                            I figli (le colonne) devono gestire il proprio overflow.
       */}
-      <div className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden min-h-0">
-        {/* Colonna Sinistra: Istruzioni
-            - h-full: fa sì che questa colonna prenda l'intera altezza del suo genitore (il Contenitore delle Colonne).
-                      Questo è possibile perché il genitore ha una dimensione definita da flex-1 e min-h-0.
-            - Le classi di larghezza (w-full md:w-1/3...) definiscono la sua porzione orizzontale.
-        */}
-        <div className="w-full md:w-1/3 lg:w-2/5 xl:w-1/3 h-full">
-          {/* ChatbotIntegrationInstructions deve avere al suo interno h-full e overflow-y-auto */}
-          <ChatbotIntegrationInstructions />
-        </div>
-
-        {/* Colonna Destra: Interfaccia Chat
-            - h-full: stessa logica della colonna sinistra.
-        */}
-        <div className="w-full md:w-2/3 lg:w-3/5 xl:w-2/3 h-full">
-          {/* ChatUI deve avere al suo interno h-full e la sua area di scroll deve usare flex-1 */}
-          <ChatUI />
-        </div>
+      <div className="flex-1 overflow-hidden">
+        {/* ChatUI deve avere al suo interno h-full e la sua area di scroll deve usare flex-1 */}
+        <ChatUI />
       </div>
     </div>
   );
