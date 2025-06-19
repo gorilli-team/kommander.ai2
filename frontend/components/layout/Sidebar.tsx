@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, MessageCircle, type LucideIcon } from 'lucide-react';
+import { BookOpen, MessageCircle, MessageSquare, type LucideIcon } from 'lucide-react';
 import { cn } from '@/frontend/lib/utils';
 import React from 'react';
 
@@ -17,6 +17,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: '/training', label: 'Training', icon: BookOpen, id: 'sidebar-training' },
   { href: '/chatbot', label: 'Chatbot Trial', icon: MessageCircle, id: 'sidebar-chatbot' },
+  { href: '/conversations', label: 'Conversazioni', icon: MessageSquare, id: 'sidebar-conversations' },
 ];
 
 export default function Sidebar() {

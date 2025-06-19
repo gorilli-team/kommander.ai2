@@ -42,20 +42,31 @@
       }
     }, [messages]);
 
+    const storageKey = `kommander_conversation_${userId}`;
+    let conversationId = sessionStorage.getItem(storageKey) || '';
+
     const sendMessage = async () => {
       const text = input.trim();
       if (!text) return;
       setMessages((m) => [...m, { role: 'user', text }]);
       setInput('');
       try {
+        if (!conversationId) {
+          conversationId = Date.now().toString();
+          sessionStorage.setItem(storageKey, conversationId);
+        }
         const res = await fetch(`${ORIGIN}/api/kommander-query`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, message: text }),
+          body: JSON.stringify({ userId, message: text, conversationId, site: window.location.hostname }),
         });
         const data = await res.json();
         if (data.reply) {
           setMessages((m) => [...m, { role: 'assistant', text: data.reply }]);
+          if (data.conversationId) {
+            conversationId = data.conversationId;
+            sessionStorage.setItem(storageKey, conversationId);
+          }
         } else if (data.error) {
           setMessages((m) => [...m, { role: 'assistant', text: 'Error: ' + data.error }]);
         }
