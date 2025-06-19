@@ -18,6 +18,7 @@ Kommander.ai is a prototype built with **Next.js** and **TypeScript** that demon
    RESEND_API_KEY=your-resend-key          # optional, for email features
    EMAIL_FROM="Kommander.ai Proto <onboarding@resend.dev>"  # optional
    BYPASS_AUTH=true                         # optional, bypasses login in dev
+   MAX_PROMPT_FILES=3                       # limit of uploaded files processed per chat request (default: 3)
    ```
 
 ## Running the project
