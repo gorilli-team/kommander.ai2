@@ -53,6 +53,7 @@ To embed the Kommander.ai chat widget on any website, use the snippet below. It 
   window.initKommanderChatbot({ userId: 'YOUR_USER_ID' });
 </script>
 
+The /api/kommander-query endpoint returns CORS headers so the widget can be used from any origin.
 	•	Make sure the script URL points to your deployed chatbot.js file (e.g., https://kommanderai.vercel.app/chatbot.js).
 	•	Replace 'YOUR_USER_ID' with the actual user identifier from your system.
 	•	The chat widget will automatically mount inside the container and connect to the correct context (files + FAQs) for that user.

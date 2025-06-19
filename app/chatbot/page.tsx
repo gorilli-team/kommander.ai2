@@ -29,6 +29,11 @@ export default async function ChatbotPage() {
           <pre className="whitespace-pre-wrap bg-background p-2 rounded border border-border">
             {snippet}
           </pre>
+          <p className="mt-2 text-sm text-muted-foreground">
+            L'endpoint <code>/api/kommander-query</code> risponde con gli header
+            CORS necessari, quindi il widget può essere incluso da qualsiasi
+            dominio.
+          </p>
         </div>
       </div>
 
