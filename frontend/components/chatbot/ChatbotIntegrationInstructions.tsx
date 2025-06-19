@@ -30,8 +30,7 @@ const ChatbotIntegrationInstructions: React.FC = () => {
 
   const chatbotId = session?.user?.id;
 
-  const scriptSnippet = `<kommander-dashboard-replica></kommander-dashboard-replica>
-<script src="${appUrl}/dashboard-replica-loader.js" data-app-url="${appUrl}" defer></script>`;
+  const scriptSnippet = `<script src="https://cdn.example.com/widget.js" data-client-id="${chatbotId}" data-api-key="YOUR_API_KEY" data-app-url="${appUrl}" defer></script>`;
 
   const copyToClipboard = async (textToCopy: string, label: string) => {
     try {
