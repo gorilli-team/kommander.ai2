@@ -7,7 +7,7 @@ export default async function ConversationsPage() {
   const conversations = await getConversations();
 
   return (
-    <div className="container mx-auto space-y-6 pb-8 min-h-[80vh]">
+    <div className="container mx-auto space-y-6 pb-8 min-h-[85vh]">
       <div>
         <h1 className="text-3xl font-headline font-bold mb-2 text-foreground">Conversazioni</h1>
         <p className="text-muted-foreground">

@@ -27,6 +27,7 @@ export async function POST(request: Request) {
 
     const chatHistory: ChatMessage[] = Array.isArray(history) ? history : [];
     const result = await generateChatResponse(message, chatHistory, userId);
+
     const convId = conversationId || new ObjectId().toString();
 
     if (result.error) {

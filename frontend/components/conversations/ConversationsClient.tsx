@@ -2,7 +2,12 @@
 
 import React, { useState } from 'react';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
-import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/frontend/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,14 +51,16 @@ export default function ConversationsClient({ conversations: initial }: Props) {
     const res = await fetch(`/api/conversations/${id}`, { method: 'DELETE' });
     if (res.ok) {
       setConversations((prev) => prev.filter((c) => c.id !== id));
-      if (selectedId === id) setSelectedId('');
+      if (selectedId === id) {
+        setSelectedId('');
+      }
     }
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 min-h-[70vh]">
+    <div className="flex flex-col md:flex-row gap-4 min-h-[80vh]">
       <aside className="md:w-72 w-full md:flex-shrink-0">
-        <div className="bg-card border border-border rounded-lg overflow-y-auto h-full">
+        <ScrollArea className="h-full bg-card border border-border rounded-lg">
           {conversations.map((c) => {
             const last = c.messages[c.messages.length - 1];
             return (
@@ -65,50 +72,26 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                 )}
               >
                 <div className="flex-1 cursor-pointer" onClick={() => setSelectedId(c.id)}>
-                  <p className="text-sm font-medium truncate">
+                  <p className="text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis">
                     {last?.text || 'Nuova conversazione'}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {c.updatedAt ? format(new Date(c.updatedAt), 'Pp') : ''}
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button className="p-1 rounded hover:bg-accent" aria-label="Site info">
-                        <UserCircle className="w-4 h-4" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-48" side="left">
-                      <p className="text-sm">{c.site || 'Sito sconosciuto'}</p>
-                    </PopoverContent>
-                  </Popover>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="p-1 rounded hover:bg-accent" aria-label="Azioni">
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => handleDelete(c.id)}>
-                        Elimina
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
               </div>
             );
           })}
-        </div>
+        </ScrollArea>
       </aside>
       <section className="flex-1">
         {selected ? (
           <Card className="h-full flex flex-col">
-            <CardHeader className="pb-2 flex items-center justify-between">
-              <CardTitle className="text-xl">
+            <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b rounded-t-lg">
+              <h2 className="text-lg font-semibold">
                 Conversazione del{' '}
                 {selected.updatedAt ? format(new Date(selected.updatedAt), 'Pp') : ''}
-              </CardTitle>
+              </h2>
               <div className="flex items-center gap-2">
                 <Popover>
                   <PopoverTrigger asChild>
@@ -133,7 +116,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-            </CardHeader>
+            </div>
             <CardContent className="flex-1 overflow-y-auto space-y-2">
               {selected.messages.map((msg, idx) => (
                 <div

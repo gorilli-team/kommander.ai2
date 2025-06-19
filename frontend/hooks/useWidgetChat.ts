@@ -18,7 +18,7 @@ export function useWidgetChat(userId: string) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const stored = sessionStorage.getItem(storageKey);
+      const stored = localStorage.getItem(storageKey);
       if (stored) {
         conversationIdRef.current = stored;
       }
@@ -28,7 +28,12 @@ export function useWidgetChat(userId: string) {
   const addMessage = (role: Message['role'], content: string) => {
     setMessages((prev) => [
       ...prev,
-      { id: Date.now().toString(), role, content, timestamp: new Date() },
+      {
+        id: Date.now().toString(),
+        role,
+        content,
+        timestamp: new Date(),
+      },
     ]);
   };
 
@@ -43,7 +48,7 @@ export function useWidgetChat(userId: string) {
         if (!conversationIdRef.current) {
           conversationIdRef.current = Date.now().toString();
           if (typeof window !== 'undefined') {
-            sessionStorage.setItem(storageKey, conversationIdRef.current);
+            localStorage.setItem(storageKey, conversationIdRef.current);
           }
         }
 
@@ -62,10 +67,11 @@ export function useWidgetChat(userId: string) {
 
         if (data.reply) {
           addMessage('assistant', data.reply);
+
           if (data.conversationId) {
             conversationIdRef.current = data.conversationId;
             if (typeof window !== 'undefined') {
-              sessionStorage.setItem(storageKey, conversationIdRef.current);
+              localStorage.setItem(storageKey, conversationIdRef.current);
             }
           }
         } else if (data.error) {

@@ -23,8 +23,10 @@ export async function getConversations(): Promise<ConversationDisplayItem[]> {
   if (!session?.user?.id) {
     return [];
   }
+
   const userId = session.user.id;
   const { db } = await connectToDatabase();
+
   const docs = await db
     .collection<ConversationDocument>('conversations')
     .find({ userId })
@@ -52,6 +54,7 @@ export async function appendMessages(
 ): Promise<void> {
   const { db } = await connectToDatabase();
   const now = new Date();
+
   await db.collection<ConversationDocument>('conversations').updateOne(
     { userId, conversationId },
     {
@@ -66,7 +69,7 @@ export async function appendMessages(
         },
       },
     },
-    { upsert: true },
+    { upsert: true }
   );
 }
 

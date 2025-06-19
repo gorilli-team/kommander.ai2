@@ -16,7 +16,7 @@
     const link = document.createElement('link');
     link.id = 'kommander-style';
     link.rel = 'stylesheet';
-    link.href = ORIGIN + '/chatbot.css'; // assicurati che chatbot.css sia accessibile
+    link.href = ORIGIN + '/chatbot.css';
     document.head.appendChild(link);
   }
 
@@ -43,29 +43,38 @@
     }, [messages]);
 
     const storageKey = `kommander_conversation_${userId}`;
-    let conversationId = sessionStorage.getItem(storageKey) || '';
+    let conversationId = localStorage.getItem(storageKey) || '';
 
     const sendMessage = async () => {
       const text = input.trim();
       if (!text) return;
       setMessages((m) => [...m, { role: 'user', text }]);
       setInput('');
+
       try {
         if (!conversationId) {
           conversationId = Date.now().toString();
-          sessionStorage.setItem(storageKey, conversationId);
+          localStorage.setItem(storageKey, conversationId);
         }
+
         const res = await fetch(`${ORIGIN}/api/kommander-query`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, message: text, conversationId, site: window.location.hostname }),
+          body: JSON.stringify({
+            userId,
+            message: text,
+            conversationId,
+            site: window.location.hostname,
+          }),
         });
+
         const data = await res.json();
+
         if (data.reply) {
           setMessages((m) => [...m, { role: 'assistant', text: data.reply }]);
           if (data.conversationId) {
             conversationId = data.conversationId;
-            sessionStorage.setItem(storageKey, conversationId);
+            localStorage.setItem(storageKey, conversationId);
           }
         } else if (data.error) {
           setMessages((m) => [...m, { role: 'assistant', text: 'Error: ' + data.error }]);
@@ -89,16 +98,14 @@
       open &&
         React.createElement(
           'div',
-          {
-            className: 'kommander-window',
-          },
+          { className: 'kommander-window' },
           React.createElement(
             'div',
             { className: 'kommander-header' },
             React.createElement('span', { className: 'font-semibold' }, 'Kommander.ai'),
             React.createElement(
               'button',
-              { onClick: () => setOpen(false) },
+              { onClick: () => setOpen(false), 'aria-label': 'Close chatbot' },
               '×'
             )
           ),
