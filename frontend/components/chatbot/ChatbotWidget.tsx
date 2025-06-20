@@ -2,6 +2,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, X } from 'lucide-react';
+import { Badge } from '@/frontend/components/ui/badge';
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useWidgetChat } from '@/frontend/hooks/useWidgetChat';
 import { Button } from '@/frontend/components/ui/button';
@@ -36,6 +39,8 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  const currentDate = format(new Date(), 'dd MMM yyyy', { locale: it });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
@@ -63,11 +68,15 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
             transition={{ duration: 0.2 }}
             className="fixed inset-0 sm:bottom-20 sm:right-4 sm:inset-auto z-50 flex w-full h-full sm:w-[400px] sm:h-[600px] flex-col bg-background border border-border rounded-none sm:rounded-lg shadow-xl"
           >
-          <div className="p-3 border-b border-border flex items-center justify-between bg-[#1E3A8A] text-white">
-            <h2 className="font-semibold">Kommander.ai</h2>
-            <button onClick={() => setOpen(false)} aria-label="Close">
-              <X className="w-4 h-4" />
-            </button>
+          <div className="px-4 py-3 flex items-center justify-between bg-[#1E3A8A] text-white rounded-t-lg">
+            <span className="font-semibold">Kommander.ai – Trial</span>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-green-600 text-white border-none">Online</Badge>
+              <span className="text-sm">{currentDate}</span>
+              <button onClick={() => setOpen(false)} aria-label="Close" className="ml-2">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
           <ScrollArea className="flex-1 p-3">
             <div ref={viewportRef} className="space-y-2">
