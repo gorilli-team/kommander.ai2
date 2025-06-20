@@ -116,7 +116,8 @@ export const authConfig = {
             id: MOCK_USER_ID,
             email: MOCK_USER_EMAIL,
             name: MOCK_USER_NAME,
-          };
+            emailVerified: null,
+          } as any;
         }
         return session;
       }

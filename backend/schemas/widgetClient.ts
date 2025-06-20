@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 
 export const WidgetClientSchema = z.object({
   _id: z.custom<ObjectId>((val) => ObjectId.isValid(val as string) || typeof val === 'object'),
