@@ -42,6 +42,14 @@
       }
     }, [messages]);
 
+    useEffect(() => {
+      if (open && messages.length === 0) {
+        setMessages([
+          { role: 'assistant', text: 'Ciao, sono Kommander.ai! Come posso aiutarti oggi?' }
+        ]);
+      }
+    }, [open]);
+
     const storageKey = `kommander_conversation_${userId}`;
     let conversationId = localStorage.getItem(storageKey) || '';
 
@@ -93,8 +101,9 @@
         {
           onClick: () => setOpen(!open),
           className: 'kommander-button',
+          'aria-label': 'Apri chat',
         },
-        'Chat'
+        '\u2318'
       ),
       open &&
         React.createElement(
@@ -141,12 +150,12 @@
             React.createElement('input', {
               value: input,
               onChange: (e) => setInput(e.target.value),
-              placeholder: 'Type a message...',
+              placeholder: 'Scrivi qui…',
             }),
             React.createElement(
               'button',
               { type: 'submit' },
-              'Send'
+              '\u27A4'
             )
           )
         )
