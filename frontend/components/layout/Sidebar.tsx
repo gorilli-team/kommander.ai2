@@ -16,7 +16,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/training', label: 'Training', icon: BookOpen, id: 'sidebar-training' },
-  { href: '/chatbot', label: 'Chatbot Trial', icon: MessageCircle, id: 'sidebar-chatbot' },
+  { href: '/chatbot-trial', label: 'Chatbot Trial', icon: MessageCircle, id: 'sidebar-chatbot' },
   { href: '/conversations', label: 'Conversazioni', icon: MessageSquare, id: 'sidebar-conversations' },
 ];
 
