@@ -202,6 +202,7 @@
       ReactDOM.createRoot(container).render(React.createElement(ChatbotWidget, { userId }));
     } else {
       ReactDOM.render(React.createElement(ChatbotWidget, { userId }), container);
+
     }
   };
 })();
