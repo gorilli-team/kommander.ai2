@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export default async function ChatbotPage() {
   const session = await auth();
   const userId = session?.user?.id || '';
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://kommanderai.vercel.app';
 
   const snippet = `<div id="kommander-chatbot"></div>
 <script src="${baseUrl}/chatbot.js"></script>
