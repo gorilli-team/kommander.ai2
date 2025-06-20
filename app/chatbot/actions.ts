@@ -126,18 +126,22 @@ export async function generateChatResponse(
       .sort({ uploadedAt: -1 })
       .toArray();
 
-    const filesForPromptContext: UploadedFileInfoForPrompt[] = allUploadedFilesMeta.map(doc => ({
+    const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '3', 10);
+    const filesToProcess = allUploadedFilesMeta.slice(0, isNaN(maxFilesEnv) ? 3 : maxFilesEnv);
+
+    const filesForPromptContext: UploadedFileInfoForPrompt[] = filesToProcess.map(doc => ({
         fileName: doc.fileName,
         originalFileType: doc.originalFileType,
     }));
 
     const fileNameMap = new Map<string, string>();
-    allUploadedFilesMeta.forEach(doc => {
+    filesToProcess.forEach(doc => {
         fileNameMap.set(doc.gridFsFileId.toString(), doc.fileName);
     });
 
+    const selectedIds = filesToProcess.map(f => f.gridFsFileId);
     const summariesFromDb = await db.collection('file_summaries')
-        .find({ userId: userIdToUse })
+        .find({ userId: userIdToUse, gridFsFileId: { $in: selectedIds } })
         .project({ gridFsFileId: 1, summary: 1 })
         .toArray();
 
@@ -146,30 +150,27 @@ export async function generateChatResponse(
         summary: doc.summary as string,
     }));
     
-    let extractedTextContentForPrompt: string | undefined = undefined;
+    const extractedTextSnippets: DocumentSnippet[] = [];
 
-    if (allUploadedFilesMeta.length > 0) {
-      const mostRecentFileMeta = allUploadedFilesMeta[0];
-      
-      const fileBufferResult = await getFileContent(mostRecentFileMeta.gridFsFileId.toString(), userIdToUse);
+    for (const fileMeta of filesToProcess) {
+      const fileBufferResult = await getFileContent(fileMeta.gridFsFileId.toString(), userIdToUse);
 
       if ('error' in fileBufferResult) {
-        extractedTextContentForPrompt = `Impossibile recuperare il contenuto per il file: ${mostRecentFileMeta.fileName}. Errore: ${fileBufferResult.error}`;
+        extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: `Impossibile recuperare il contenuto: ${fileBufferResult.error}` });
       } else {
-        extractedTextContentForPrompt = await extractTextFromFileBuffer(fileBufferResult, mostRecentFileMeta.originalFileType, mostRecentFileMeta.fileName);
-        
-        const MAX_TEXT_LENGTH = 10000; 
-        if (extractedTextContentForPrompt.length > MAX_TEXT_LENGTH) {
-          extractedTextContentForPrompt = extractedTextContentForPrompt.substring(0, MAX_TEXT_LENGTH) + "\\n[...contenuto troncato a causa della lunghezza...]";
+        let text = await extractTextFromFileBuffer(fileBufferResult, fileMeta.originalFileType, fileMeta.fileName);
+        const MAX_TEXT_LENGTH = 10000;
+        if (text.length > MAX_TEXT_LENGTH) {
+          text = text.substring(0, MAX_TEXT_LENGTH) + "\\n[...contenuto troncato a causa della lunghezza...]";
         }
+        extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: text });
       }
     }
-
     const messages = buildPromptServer(
       userMessage,
       faqs,
       filesForPromptContext,
-      extractedTextContentForPrompt,
+      extractedTextSnippets,
       history,
       summariesForPrompt,
     );
