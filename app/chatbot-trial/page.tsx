@@ -1,6 +1,9 @@
+import { Send, CheckCircle, AlertTriangle } from "lucide-react";
+import { Badge } from "@/frontend/components/ui/badge";
+import CopySnippet, { CopyInput } from "./CopySnippet";
 import InfoPanel from './InfoPanel';
 import ChatPreview from './ChatPreview';
-import { auth } from '@/frontend/auth';
+import { auth } from "@/frontend/auth";
 
 export const dynamic = 'force-dynamic';
 

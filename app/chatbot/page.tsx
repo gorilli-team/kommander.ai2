@@ -21,16 +21,16 @@ export default async function ChatbotPage() {
           Interact with the Kommander.ai assistant. It uses the knowledge from FAQs and uploaded documents.
         </p>
 
-        {/* Istruzioni per l'embed del widget */}
+          {/* Istruzioni per l&apos;embed del widget */}
         <div className="mt-4 p-4 bg-muted rounded-lg text-sm space-y-2">
           <p>
-            Per inserire il widget di chat su qualsiasi sito, copia e incolla questo snippet nell'HTML della tua pagina:
+            Per inserire il widget di chat su qualsiasi sito, copia e incolla questo snippet nell&apos;HTML della tua pagina:
           </p>
           <pre className="whitespace-pre-wrap bg-background p-2 rounded border border-border">
             {snippet}
           </pre>
           <p className="mt-2 text-sm text-muted-foreground">
-            L'endpoint <code>/api/kommander-query</code> risponde con gli header
+            L&apos;endpoint <code>/api/kommander-query</code> risponde con gli header
             CORS necessari, quindi il widget può essere incluso da qualsiasi
             dominio.
           </p>
