@@ -36,6 +36,16 @@
     const [input, setInput] = useState('');
     const viewportRef = useRef(null);
 
+    function formatTime() {
+      return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    const currentDate = new Date().toLocaleDateString('it-IT', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+
     useEffect(() => {
       if (viewportRef.current) {
         viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
@@ -45,7 +55,7 @@
     useEffect(() => {
       if (open && messages.length === 0) {
         setMessages([
-          { role: 'assistant', text: 'Ciao, sono Kommander.ai! Come posso aiutarti oggi?' }
+          { role: 'assistant', text: 'Ciao, sono Kommander.ai! Come posso aiutarti oggi?', time: formatTime() },
         ]);
       }
     }, [open]);
@@ -57,7 +67,7 @@
       const text = input.trim();
       if (!text) return;
 
-      setMessages((prev) => [...prev, { role: 'user', text }]);
+      setMessages((prev) => [...prev, { role: 'user', text, time: formatTime() }]);
       setInput('');
 
       try {
@@ -80,16 +90,16 @@
         const data = await res.json();
 
         if (data.reply) {
-          setMessages((prev) => [...prev, { role: 'assistant', text: data.reply }]);
+          setMessages((prev) => [...prev, { role: 'assistant', text: data.reply, time: formatTime() }]);
           if (data.conversationId) {
             conversationId = data.conversationId;
             localStorage.setItem(storageKey, conversationId);
           }
         } else if (data.error) {
-          setMessages((prev) => [...prev, { role: 'assistant', text: 'Error: ' + data.error }]);
+          setMessages((prev) => [...prev, { role: 'assistant', text: 'Error: ' + data.error, time: formatTime() }]);
         }
       } catch (err) {
-        setMessages((prev) => [...prev, { role: 'assistant', text: 'Error: ' + err.message }]);
+        setMessages((prev) => [...prev, { role: 'assistant', text: 'Error: ' + err.message, time: formatTime() }]);
       }
     };
 
@@ -103,7 +113,7 @@
           className: 'kommander-button',
           'aria-label': 'Apri chat',
         },
-        '\u2318'
+        '\u2318',
       ),
       open &&
         React.createElement(
@@ -112,12 +122,18 @@
           React.createElement(
             'div',
             { className: 'kommander-header' },
-            React.createElement('span', { className: 'font-semibold' }, 'Kommander.ai'),
+            React.createElement('span', { className: 'font-semibold' }, 'Kommander.ai – Trial'),
             React.createElement(
-              'button',
-              { onClick: () => setOpen(false), 'aria-label': 'Close chatbot' },
-              '×'
-            )
+              'div',
+              { className: 'kommander-header-right' },
+              React.createElement('span', { className: 'kommander-badge' }, 'Online'),
+              React.createElement('span', { className: 'kommander-date' }, currentDate),
+              React.createElement(
+                'button',
+                { onClick: () => setOpen(false), 'aria-label': 'Close chatbot', className: 'kommander-close' },
+                '×',
+              ),
+            ),
           ),
           React.createElement(
             'div',
@@ -130,13 +146,28 @@
                 'div',
                 {
                   key: i,
-                  className:
-                    'kommander-msg ' +
-                    (m.role === 'user' ? 'kommander-user' : 'kommander-assistant'),
+                  className: 'kommander-row ' + (m.role === 'user' ? 'kommander-row-user' : 'kommander-row-assistant'),
                 },
-                m.text
-              )
-            )
+                m.role !== 'user' &&
+                  React.createElement('img', {
+                    className: 'kommander-avatar',
+                    src: 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
+                  }),
+                React.createElement(
+                  'div',
+                  {
+                    className: 'kommander-msg ' + (m.role === 'user' ? 'kommander-user' : 'kommander-assistant'),
+                  },
+                  React.createElement('p', null, m.text),
+                  React.createElement('p', { className: 'kommander-time' }, m.time),
+                ),
+                m.role === 'user' &&
+                  React.createElement('img', {
+                    className: 'kommander-avatar',
+                    src: 'https://placehold.co/40x40/8cb0ea/1A202C.png?text=U',
+                  }),
+              ),
+            ),
           ),
           React.createElement(
             'form',
@@ -154,19 +185,46 @@
             }),
             React.createElement(
               'button',
-              { type: 'submit' },
-              '\u27A4'
-            )
-          )
-        )
+              { type: 'submit', 'aria-label': 'Invia' },
+              React.createElement(
+                'svg',
+                {
+                  xmlns: 'http://www.w3.org/2000/svg',
+                  viewBox: '0 0 24 24',
+                  width: '16',
+                  height: '16',
+                  fill: 'none',
+                  stroke: 'currentColor',
+                  strokeWidth: '2',
+                  strokeLinecap: 'round',
+                  strokeLinejoin: 'round',
+                },
+                React.createElement('path', {
+                  d: 'M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z',
+                }),
+                React.createElement('path', {
+                  d: 'm21.854 2.147-10.94 10.939',
+                })
+              )
+            ),
+          ),
+        ),
     );
   }
 
   window.initKommanderChatbot = async function ({ userId }) {
     await ensureReact();
     loadStyles();
-    const container = document.getElementById('kommander-chatbot');
-    if (!container) return;
-    ReactDOM.render(React.createElement(ChatbotWidget, { userId }), container);
+    let container = document.getElementById('kommander-chatbot');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'kommander-chatbot';
+      document.body.appendChild(container);
+    }
+    if (ReactDOM.createRoot) {
+      ReactDOM.createRoot(container).render(React.createElement(ChatbotWidget, { userId }));
+    } else {
+      ReactDOM.render(React.createElement(ChatbotWidget, { userId }), container);
+    }
   };
 })();
