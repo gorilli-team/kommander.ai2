@@ -25,7 +25,7 @@ export function buildPromptServer(
   userMessage: string,
   faqs: Faq[],
   uploadedFilesInfo: UploadedFileInfoForPromptContext[],
-  extractedTextFromRecentFile: string | undefined,
+  extractedTextSnippets: DocumentSnippet[] = [],
   history: ChatMessage[] = [],
   fileSummaries: FileSummaryForPrompt[] = []
 ): ChatMessage[] {
@@ -55,16 +55,17 @@ export function buildPromptServer(
       context += "\n";
     }
 
-    if (extractedTextFromRecentFile && extractedTextFromRecentFile.trim() !== '') {
-      const recentFileName = uploadedFilesInfo[0]?.fileName || "un file caricato di recente";
-      if (extractedTextFromRecentFile.startsWith("Errore durante l'estrazione") || extractedTextFromRecentFile.startsWith("Impossibile estrarre il testo") || extractedTextFromRecentFile.startsWith("Impossibile recuperare il contenuto")) {
-        context += `Nota: Si è verificato un problema durante il tentativo di leggere il contenuto del file più recente (${recentFileName}): "${extractedTextFromRecentFile}". Non puoi visualizzare il suo contenuto testuale, ma sii consapevole della sua esistenza.\n\n`;
+    extractedTextSnippets.forEach(snippet => {
+      if (snippet.snippet.startsWith("Errore durante l'estrazione") || snippet.snippet.startsWith("Impossibile estrarre il testo") || snippet.snippet.startsWith("Impossibile recuperare il contenuto")) {
+        context += `Nota: Si è verificato un problema durante il tentativo di leggere il contenuto del file ${snippet.fileName}: "${snippet.snippet}". Non puoi visualizzare il suo contenuto testuale, ma sii consapevole della sua esistenza.\n\n`;
       } else {
-        context += `Contenuto dal file più recente, "${recentFileName}":\n"""\n${extractedTextFromRecentFile}\n"""\n\n`;
+        context += `Contenuto dal file "${snippet.fileName}":\n"""\n${snippet.snippet}\n"""\n\n`;
       }
-    } else if (uploadedFilesInfo.length > 0 && (!extractedTextFromRecentFile || extractedTextFromRecentFile.trim() === '')) {
-       const recentFileName = uploadedFilesInfo[0]?.fileName || "un file caricato di recente";
-      context += `Nota: Non è stato possibile estrarre o non è stato trovato alcun contenuto testuale nel file più recente (${recentFileName}), ma sii consapevole che esiste.\n\n`;
+    });
+
+    if (uploadedFilesInfo.length > 0 && extractedTextSnippets.length === 0) {
+      const recentFileName = uploadedFilesInfo[0]?.fileName || "un file caricato di recente";
+      context += `Nota: Non è stato possibile estrarre o non è stato trovato alcun contenuto testuale nel file (${recentFileName}), ma sii consapevole che esiste.\n\n`;
     }
   }
 

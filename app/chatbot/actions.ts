@@ -10,25 +10,6 @@ import { auth } from '@/frontend/auth'; // Import auth for session
 
 import mammoth from 'mammoth';
 
-class NodeCanvasFactory {
-  create(width: number, height: number) {
-    const { createCanvas } = require('canvas');
-    const canvas = createCanvas(width, height);
-    const context = canvas.getContext('2d');
-    return { canvas, context };
-  }
-  reset(canvasAndContext: any, width: number, height: number) {
-    canvasAndContext.canvas.width = width;
-    canvasAndContext.canvas.height = height;
-  }
-  destroy(canvasAndContext: any) {
-    canvasAndContext.canvas.width = 0;
-    canvasAndContext.canvas.height = 0;
-    canvasAndContext.canvas = null;
-    canvasAndContext.context = null;
-  }
-}
-
 interface UploadedFileInfoForPrompt {
   fileName: string;
   originalFileType: string;
@@ -45,29 +26,11 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
       console.log(`[app/chatbot/actions.ts] Estrazione testo PDF con pdf-parse completata per ${fileName}. Lunghezza: ${rawText.length}`);
 
       if (!rawText.trim()) {
-        console.log(`[app/chatbot/actions.ts] pdf-parse non ha trovato testo in ${fileName}. Avvio OCR...`);
-        const { createWorker } = await import('tesseract.js');
-        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js');
-        const loadingTask = pdfjsLib.getDocument({ data: buffer });
-        const pdfDocument = await loadingTask.promise;
-        const worker = await createWorker();
-        await worker.load();
-        await worker.loadLanguage('eng');
-        await worker.initialize('eng');
-        let ocrText = '';
-        for (let pageIndex = 1; pageIndex <= pdfDocument.numPages; pageIndex++) {
-          const page = await pdfDocument.getPage(pageIndex);
-          const viewport = page.getViewport({ scale: 2 });
-          const canvasFactory = new NodeCanvasFactory();
-          const { canvas, context } = canvasFactory.create(viewport.width, viewport.height);
-          await page.render({ canvasContext: context, viewport, canvasFactory }).promise;
-          const { data: { text } } = await worker.recognize(canvas.toBuffer());
-          ocrText += text + '\n';
-          canvasFactory.destroy({ canvas, context });
-        }
-        await worker.terminate();
-        rawText = ocrText;
-        console.log(`[app/chatbot/actions.ts] OCR completato per ${fileName}. Lunghezza: ${rawText.length}`);
+        console.warn(
+          `[app/chatbot/actions.ts] pdf-parse non ha trovato testo in ${fileName}. ` +
+          `Il file potrebbe essere una scansione o un documento non testuale.`
+        );
+        return `Impossibile estrarre il testo dal file ${fileName} in quanto sembra non contenere testo selezionabile.`;
       }
     } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const result = await mammoth.extractRawText({ buffer });
@@ -126,18 +89,22 @@ export async function generateChatResponse(
       .sort({ uploadedAt: -1 })
       .toArray();
 
-    const filesForPromptContext: UploadedFileInfoForPrompt[] = allUploadedFilesMeta.map(doc => ({
+    const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '3', 10);
+    const filesToProcess = allUploadedFilesMeta.slice(0, isNaN(maxFilesEnv) ? 3 : maxFilesEnv);
+
+    const filesForPromptContext: UploadedFileInfoForPrompt[] = filesToProcess.map(doc => ({
         fileName: doc.fileName,
         originalFileType: doc.originalFileType,
     }));
 
     const fileNameMap = new Map<string, string>();
-    allUploadedFilesMeta.forEach(doc => {
+    filesToProcess.forEach(doc => {
         fileNameMap.set(doc.gridFsFileId.toString(), doc.fileName);
     });
 
+    const selectedIds = filesToProcess.map(f => f.gridFsFileId);
     const summariesFromDb = await db.collection('file_summaries')
-        .find({ userId: userIdToUse })
+        .find({ userId: userIdToUse, gridFsFileId: { $in: selectedIds } })
         .project({ gridFsFileId: 1, summary: 1 })
         .toArray();
 
@@ -146,30 +113,27 @@ export async function generateChatResponse(
         summary: doc.summary as string,
     }));
     
-    let extractedTextContentForPrompt: string | undefined = undefined;
+    const extractedTextSnippets: DocumentSnippet[] = [];
 
-    if (allUploadedFilesMeta.length > 0) {
-      const mostRecentFileMeta = allUploadedFilesMeta[0];
-      
-      const fileBufferResult = await getFileContent(mostRecentFileMeta.gridFsFileId.toString(), userIdToUse);
+    for (const fileMeta of filesToProcess) {
+      const fileBufferResult = await getFileContent(fileMeta.gridFsFileId.toString(), userIdToUse);
 
       if ('error' in fileBufferResult) {
-        extractedTextContentForPrompt = `Impossibile recuperare il contenuto per il file: ${mostRecentFileMeta.fileName}. Errore: ${fileBufferResult.error}`;
+        extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: `Impossibile recuperare il contenuto: ${fileBufferResult.error}` });
       } else {
-        extractedTextContentForPrompt = await extractTextFromFileBuffer(fileBufferResult, mostRecentFileMeta.originalFileType, mostRecentFileMeta.fileName);
-        
-        const MAX_TEXT_LENGTH = 10000; 
-        if (extractedTextContentForPrompt.length > MAX_TEXT_LENGTH) {
-          extractedTextContentForPrompt = extractedTextContentForPrompt.substring(0, MAX_TEXT_LENGTH) + "\\n[...contenuto troncato a causa della lunghezza...]";
+        let text = await extractTextFromFileBuffer(fileBufferResult, fileMeta.originalFileType, fileMeta.fileName);
+        const MAX_TEXT_LENGTH = 10000;
+        if (text.length > MAX_TEXT_LENGTH) {
+          text = text.substring(0, MAX_TEXT_LENGTH) + "\\n[...contenuto troncato a causa della lunghezza...]";
         }
+        extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: text });
       }
     }
-
     const messages = buildPromptServer(
       userMessage,
       faqs,
       filesForPromptContext,
-      extractedTextContentForPrompt,
+      extractedTextSnippets,
       history,
       summariesForPrompt,
     );
