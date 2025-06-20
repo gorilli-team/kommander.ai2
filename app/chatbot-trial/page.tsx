@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export default async function ChatbotTrialPage() {
   const session = await auth();
   const userId = session?.user?.id || '';
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://kommanderai.vercel.app';
   const snippet = `<div id="kommander-chatbot"></div>
 <script src="${baseUrl}/chatbot.js"></script>
 <script>window.initKommanderChatbot({ userId: '${userId}' });</script>`;
@@ -23,7 +23,7 @@ export default async function ChatbotTrialPage() {
       <div className="md:w-2/5">
         <InfoPanel snippet={snippet} shareUrl={shareUrl} />
       </div>
-      <div className="md:w-3/5 h-[65vh]">
+      <div className="md:w-3/5 h-[80vh]">
         <ChatUI
           containerClassName="h-full"
           headerClassName="bg-[#1E3A8A] text-white px-4 py-3 rounded-t-lg"

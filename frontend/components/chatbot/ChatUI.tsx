@@ -98,7 +98,7 @@ export default function ChatUI({
           headerClassName
         )}
       >
-        <h2 className="text-xl font-semibold font-headline text-foreground">
+        <h2 className="text-xl font-semibold font-headline">
           {title}
         </h2>
         {headerExtras}
