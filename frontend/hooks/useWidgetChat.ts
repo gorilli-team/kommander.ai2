@@ -86,5 +86,5 @@ export function useWidgetChat(userId: string) {
     [userId, site, storageKey]
   );
 
-  return { messages, isLoading, sendMessage };
+  return { messages, isLoading, sendMessage, addMessage };
 }
