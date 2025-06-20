@@ -95,7 +95,7 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
                     )}
                     <div
                       className={cn(
-                        'max-w-xs md:max-w-md lg:max-w-lg rounded-xl px-4 py-3 shadow-md',
+                        'max-w-[65%] rounded-lg px-3 py-2 shadow-md text-sm',
                         msg.role === 'user'
                           ? 'bg-[#1E3A8A] text-white rounded-br-none'
                           : 'bg-card text-card-foreground rounded-bl-none border border-border',
