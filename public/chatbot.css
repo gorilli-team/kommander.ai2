@@ -150,6 +150,7 @@
   padding: 8px;
   font-size: 14px;
   background: #fff !important;
+  color: #000 !important;
 }
 .kommander-input button {
   background: #1e3a8a;

@@ -126,7 +126,7 @@ export default function ChatUI({
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Type your message..."
             disabled={isLoading}
-            className="flex-1 bg-background focus:ring-primary focus:border-primary"
+            className="flex-1 !bg-white text-black focus:ring-primary focus:border-primary"
             aria-label="Chat input"
           />
           <Button type="submit" disabled={isLoading || !inputValue.trim()} size="icon" aria-label="Send message">
