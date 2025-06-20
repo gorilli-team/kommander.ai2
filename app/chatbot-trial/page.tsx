@@ -1,5 +1,5 @@
-import CopySnippet from './CopySnippet';
-import ChatbotWidget from '@/frontend/components/chatbot/ChatbotWidget';
+import InfoPanel from './InfoPanel';
+import ChatPreview from './ChatPreview';
 import { auth } from '@/frontend/auth';
 
 export const dynamic = 'force-dynamic';
@@ -11,14 +11,15 @@ export default async function ChatbotTrialPage() {
   const snippet = `<div id="kommander-chatbot"></div>
 <script src="${baseUrl}/chatbot.js"></script>
 <script>window.initKommanderChatbot({ userId: '${userId}' });</script>`;
+  const shareUrl = `${baseUrl}/chatbot?user=${userId}`;
 
   return (
-    <div className="p-4 space-y-4">
-      <h1 className="text-3xl font-bold font-headline text-foreground">Chatbot Trial</h1>
-      <p>Copia e incolla questo snippet nel tuo sito:</p>
-      <CopySnippet snippet={snippet} />
-      <div className="h-96">
-        <ChatbotWidget userId={userId} />
+    <div className="flex flex-col gap-8 md:flex-row md:items-start">
+      <div className="md:w-2/5">
+        <InfoPanel snippet={snippet} shareUrl={shareUrl} />
+      </div>
+      <div className="md:w-3/5 h-96">
+        <ChatPreview />
       </div>
     </div>
   );
