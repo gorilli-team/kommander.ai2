@@ -165,8 +165,21 @@
   window.initKommanderChatbot = async function ({ userId }) {
     await ensureReact();
     loadStyles();
-    const container = document.getElementById('kommander-chatbot');
-    if (!container) return;
-    ReactDOM.render(React.createElement(ChatbotWidget, { userId }), container);
+    let container = document.getElementById('kommander-chatbot');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'kommander-chatbot';
+      document.body.appendChild(container);
+    }
+    if (ReactDOM.createRoot) {
+      ReactDOM.createRoot(container).render(
+        React.createElement(ChatbotWidget, { userId })
+      );
+    } else {
+      ReactDOM.render(
+        React.createElement(ChatbotWidget, { userId }),
+        container
+      );
+    }
   };
 })();
