@@ -9,7 +9,6 @@ Kommander.ai is a prototype built with **Next.js** and **TypeScript** that demon
    ```bash
    npm install
 
-The project uses OCR via tesseract.js. Building its dependencies (notably canvas for PDF rendering) may require system libraries such as libcairo2-dev and libjpeg-dev on Linux.
 	2.	Create a .env.local file in the project root and provide the required environment variables:
 
 OPENAI_API_KEY=your-openai-key
@@ -59,6 +58,6 @@ The /api/kommander-query endpoint returns CORS headers so the widget can be used
 	•	The chat widget will automatically mount inside the container and connect to the correct context (files + FAQs) for that user.
 
 Limitations
-	•	Only the most recently uploaded document is considered when generating chat responses.
-	•	The application does not perform OCR on images or scanned PDFs.
-	•	Installing optional packages (e.g., OCR libraries) may fail in environments without network access.
+        •       Only a limited number of the most recently uploaded documents are used when generating chat responses (controlled by MAX_PROMPT_FILES).
+        •       The application does not perform OCR on images or scanned PDFs; PDFs without embedded text will be ignored.
+        •       Installing optional packages (e.g., OCR libraries) may fail in environments without network access.
