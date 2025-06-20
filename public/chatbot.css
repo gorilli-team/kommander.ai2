@@ -149,7 +149,7 @@
   border-radius: 8px;
   padding: 8px;
   font-size: 14px;
-  background: #fff;
+  background: #fff !important;
 }
 .kommander-input button {
   background: #1e3a8a;

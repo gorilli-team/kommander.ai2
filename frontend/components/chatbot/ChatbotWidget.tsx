@@ -140,7 +140,7 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Scrivi qui…"
                 disabled={isLoading}
-                className="flex-1 bg-white rounded-xl focus:ring-primary focus:border-primary"
+                className="flex-1 !bg-white rounded-xl focus:ring-primary focus:border-primary"
               />
               <Button
                 type="submit"
