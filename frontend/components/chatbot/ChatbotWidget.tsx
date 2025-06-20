@@ -133,16 +133,22 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
             </ScrollArea>
             <form
               onSubmit={handleSubmit}
-              className="p-4 border-t border-border bg-background/50 rounded-b-lg flex items-center space-x-3"
+              className="p-4 border-t border-border bg-white rounded-b-2xl flex items-center space-x-3"
             >
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Scrivi qui…"
                 disabled={isLoading}
-                className="flex-1 bg-background focus:ring-primary focus:border-primary"
+                className="flex-1 bg-white rounded-xl focus:ring-primary focus:border-primary"
               />
-              <Button type="submit" size="icon" disabled={isLoading || !inputValue.trim()} aria-label="Invia">
+              <Button
+                type="submit"
+                size="icon"
+                disabled={isLoading || !inputValue.trim()}
+                aria-label="Invia"
+                className="rounded-full"
+              >
                 <Send className="w-4 h-4" />
               </Button>
             </form>
