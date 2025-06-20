@@ -57,9 +57,17 @@ function ChatMessage({ message }: { message: Message }) {
 
 interface ChatUIProps {
   containerClassName?: string;
+  headerClassName?: string;
+  headerExtras?: React.ReactNode;
+  title?: string;
 }
 
-export default function ChatUI({ containerClassName }: ChatUIProps) {
+export default function ChatUI({
+  containerClassName,
+  headerClassName,
+  headerExtras,
+  title = 'Kommander.ai Chat',
+}: ChatUIProps) {
   const { messages, isLoading, sendMessage } = useChat();
   const [inputValue, setInputValue] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -84,8 +92,16 @@ export default function ChatUI({ containerClassName }: ChatUIProps) {
         "flex flex-col h-full w-full bg-card shadow-xl rounded-lg border border-border",
         containerClassName // Allows custom class for container if needed (e.g., widget specific)
         )}>
-      <div className="p-4 border-b border-border">
-        <h2 className="text-xl font-semibold font-headline text-foreground">Kommander.ai Chat</h2>
+      <div
+        className={cn(
+          'p-4 border-b border-border flex items-center justify-between',
+          headerClassName
+        )}
+      >
+        <h2 className="text-xl font-semibold font-headline">
+          {title}
+        </h2>
+        {headerExtras}
       </div>
       
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
