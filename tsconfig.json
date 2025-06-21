@@ -23,7 +23,7 @@
     "paths": {
       "@/frontend/*": ["frontend/*"],
       "@/backend/*": ["backend/*"],
-      "@/app/*": ["app/*"],
+      "@/app/*": ["frontend/app/*"],
       "@/components/*": ["frontend/components/*"],
       "@/ui/*": ["frontend/components/ui/*"],
       "@/hooks/*": ["frontend/hooks/*"],
