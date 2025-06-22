@@ -14,7 +14,7 @@ export default async function ChatbotTrialPage() {
   const snippet = `<div id="kommander-chatbot"></div>
 <script src="${baseUrl}/chatbot.js"></script>
 <script>window.initKommanderChatbot({ userId: '${userId}' });</script>`;
-  const shareUrl = `${baseUrl}/chatbot?user=${userId}`;
+  const shareUrl = `${baseUrl}/widget-full?user=${userId}`;
 
   const currentDate = format(new Date(), 'dd MMM yyyy', { locale: it });
 

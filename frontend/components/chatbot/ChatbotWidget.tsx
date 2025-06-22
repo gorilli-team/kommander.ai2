@@ -15,10 +15,11 @@ import { cn } from '@/frontend/lib/utils';
 
 interface ChatbotWidgetProps {
   userId: string;
+  defaultOpen?: boolean;
 }
 
-export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
-  const [open, setOpen] = useState(false);
+export default function ChatbotWidget({ userId, defaultOpen = false }: ChatbotWidgetProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const { messages, isLoading, sendMessage, addMessage } = useWidgetChat(userId);
   const [inputValue, setInputValue] = useState('');
   const viewportRef = useRef<HTMLDivElement>(null);
