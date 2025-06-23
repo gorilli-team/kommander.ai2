@@ -2,7 +2,8 @@
 import type { Metadata } from 'next';
 import './globals.css'; 
 import { Inter } from 'next/font/google';
-import AppLayout from '@/frontend/components/layout/AppLayout'; 
+import AppLayout from '@/frontend/components/layout/AppLayout';
+import ThemeProvider from '@/frontend/components/layout/ThemeProvider';
 import { Toaster } from "@/frontend/components/ui/toaster"; 
 import { SessionProvider } from 'next-auth/react';
 
@@ -28,8 +29,10 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} font-body antialiased`}>
         <SessionProvider> {/* SessionProvider MUST wrap the core content for NextAuth client features */}
-          <AppLayout>{children}</AppLayout>
-          <Toaster />
+          <ThemeProvider>
+            <AppLayout>{children}</AppLayout>
+            <Toaster />
+          </ThemeProvider>
         </SessionProvider>
       </body>
     </html>

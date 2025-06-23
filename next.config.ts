@@ -30,7 +30,10 @@ const nextConfig = {
       }
     ],
   },
-  experimental: { 
+  compiler: {
+    styledComponents: true,
+  },
+  experimental: {
     serverActions: {
       bodySizeLimit: '10mb', 
     },
