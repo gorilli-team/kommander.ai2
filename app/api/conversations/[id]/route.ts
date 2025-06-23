@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/frontend/auth';
-import { deleteConversation } from '@/app/conversations/actions';
+import { deleteConversation, getConversation, setConversationHandledBy } from '@/app/conversations/actions';
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -16,4 +16,35 @@ export async function DELETE(
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
   }
+}
+
+export async function GET(
+  request: Request,
+  { params }: any
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const conv = await getConversation(session.user.id, params.id);
+  if (!conv) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+  return NextResponse.json(conv);
+}
+
+export async function POST(
+  request: Request,
+  { params }: any
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const { handledBy } = await request.json();
+  if (handledBy !== 'bot' && handledBy !== 'agent') {
+    return NextResponse.json({ error: 'Invalid handledBy' }, { status: 400 });
+  }
+  await setConversationHandledBy(session.user.id, params.id, handledBy);
+  return NextResponse.json({ success: true });
 }

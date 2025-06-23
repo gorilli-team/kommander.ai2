@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { generateChatResponse } from '@/app/chatbot/actions';
 import type { ChatMessage } from '@/backend/lib/buildPromptServer';
-import { appendMessages } from '@/app/conversations/actions';
+import { appendMessages, getConversation } from '@/app/conversations/actions';
 import { ObjectId } from 'mongodb';
 
 const corsHeaders = {
@@ -26,8 +26,21 @@ export async function POST(request: Request) {
     }
 
     const chatHistory: ChatMessage[] = Array.isArray(history) ? history : [];
-    const result = await generateChatResponse(message, chatHistory, userId);
     const convId = conversationId || new ObjectId().toString();
+    const existing = conversationId ? await getConversation(userId, convId) : null;
+    const handledBy = existing?.handledBy || 'bot';
+
+    if (handledBy === 'agent') {
+      await appendMessages(
+        userId,
+        convId,
+        [{ role: 'user', text: message, timestamp: new Date().toISOString() }],
+        site,
+      );
+      return NextResponse.json({ conversationId: convId, handledBy }, { headers: corsHeaders });
+    }
+
+    const result = await generateChatResponse(message, chatHistory, userId);
 
     if (result.error) {
       return NextResponse.json(
@@ -47,7 +60,7 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json(
-      { reply: result.response, conversationId: convId },
+      { reply: result.response, conversationId: convId, handledBy },
       { headers: corsHeaders }
     );
   } catch (err: any) {
