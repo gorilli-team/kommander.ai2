@@ -34,10 +34,22 @@
     const [open, setOpen] = useState(false);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
+    const [handledBy, setHandledBy] = useState('bot');
+    const [conversationId, setConversationId] = useState('');
+
     const viewportRef = useRef(null);
+    const conversationIdRef = useRef('');
+    const lastTimestampRef = useRef('');
+    const pollFnRef = useRef(null);
+    const prevHandledBy = useRef('bot');
 
     function formatTime() {
       return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function addMessage(role, text) {
+      setMessages((prev) => [...prev, { role, text, time: formatTime() }]);
+      lastTimestampRef.current = new Date().toISOString();
     }
 
     const currentDate = new Date().toLocaleDateString('it-IT', {
@@ -54,26 +66,93 @@
 
     useEffect(() => {
       if (open && messages.length === 0) {
-        setMessages([
-          { role: 'assistant', text: 'Ciao, sono Kommander.ai! Come posso aiutarti oggi?', time: formatTime() },
-        ]);
+        addMessage('assistant', 'Ciao, sono Kommander.ai! Come posso aiutarti oggi?');
       }
     }, [open]);
 
     const storageKey = `kommander_conversation_${userId}`;
-    let conversationId = localStorage.getItem(storageKey) || '';
+
+    useEffect(() => {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        conversationIdRef.current = stored;
+        setConversationId(stored);
+      }
+    }, [storageKey]);
+
+    const fetchInitial = async () => {
+      const id = conversationIdRef.current;
+      if (!id) return;
+      try {
+        const res = await fetch(`${ORIGIN}/api/widget-conversations/${id}?userId=${encodeURIComponent(userId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setHandledBy(data.handledBy || 'bot');
+          const msgs = (data.messages || []).map((m) => ({
+            role: m.role,
+            text: m.text,
+            time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          }));
+          setMessages(msgs);
+          if (msgs.length) {
+            lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
+          }
+        }
+      } catch {}
+    };
+
+    const poll = async () => {
+      const id = conversationIdRef.current;
+      if (!id) return;
+      try {
+        const params = new URLSearchParams({ userId });
+        if (lastTimestampRef.current) params.set('since', lastTimestampRef.current);
+        const res = await fetch(`${ORIGIN}/api/widget-conversations/${id}/updates?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setHandledBy(data.handledBy || 'bot');
+          const newMsgs = (data.messages || []).map((m) => ({
+            role: m.role,
+            text: m.text,
+            time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          }));
+          if (newMsgs.length) {
+            lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
+            setMessages((prev) => [...prev, ...newMsgs]);
+          }
+        }
+      } catch {}
+    };
+
+    useEffect(() => {
+      if (!conversationId) return;
+      pollFnRef.current = poll;
+      let interval;
+      fetchInitial().then(poll);
+      interval = setInterval(poll, 500);
+      return () => interval && clearInterval(interval);
+    }, [conversationId, userId]);
+
+    useEffect(() => {
+      if (handledBy === 'agent' && prevHandledBy.current !== 'agent') {
+        addMessage('system', 'Stai parlando con un operatore umano');
+      }
+      prevHandledBy.current = handledBy;
+    }, [handledBy]);
 
     const sendMessage = async () => {
       const text = input.trim();
       if (!text) return;
 
-      setMessages((prev) => [...prev, { role: 'user', text, time: formatTime() }]);
+      addMessage('user', text);
       setInput('');
 
       try {
-        if (!conversationId) {
-          conversationId = Date.now().toString();
-          localStorage.setItem(storageKey, conversationId);
+        if (!conversationIdRef.current) {
+          const newId = Date.now().toString();
+          conversationIdRef.current = newId;
+          setConversationId(newId);
+          localStorage.setItem(storageKey, newId);
         }
 
         const res = await fetch(`${ORIGIN}/api/kommander-query`, {
@@ -82,24 +161,32 @@
           body: JSON.stringify({
             userId,
             message: text,
-            conversationId,
+            conversationId: conversationIdRef.current,
             site: window.location.hostname,
           }),
         });
 
         const data = await res.json();
 
+        if (data.conversationId) {
+          conversationIdRef.current = data.conversationId;
+          setConversationId(data.conversationId);
+          localStorage.setItem(storageKey, data.conversationId);
+        }
+
+        if (data.handledBy) {
+          setHandledBy(data.handledBy);
+        }
+
         if (data.reply) {
-          setMessages((prev) => [...prev, { role: 'assistant', text: data.reply, time: formatTime() }]);
-          if (data.conversationId) {
-            conversationId = data.conversationId;
-            localStorage.setItem(storageKey, conversationId);
-          }
+          addMessage('assistant', data.reply);
         } else if (data.error) {
-          setMessages((prev) => [...prev, { role: 'assistant', text: 'Error: ' + data.error, time: formatTime() }]);
+          addMessage('system', 'Error: ' + data.error);
         }
       } catch (err) {
-        setMessages((prev) => [...prev, { role: 'assistant', text: 'Error: ' + err.message, time: formatTime() }]);
+        addMessage('system', 'Error: ' + err.message);
+      } finally {
+        if (pollFnRef.current) pollFnRef.current();
       }
     };
 
@@ -151,7 +238,10 @@
                 m.role !== 'user' &&
                   React.createElement('img', {
                     className: 'kommander-avatar',
-                    src: 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
+                    src:
+                      m.role === 'agent'
+                        ? 'https://placehold.co/40x40/444/FFFFFF.png?text=A'
+                        : 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
                   }),
                 React.createElement(
                   'div',
