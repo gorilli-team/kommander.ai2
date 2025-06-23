@@ -29,7 +29,6 @@ export function useWidgetChat(userId: string) {
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
-
     const fetchConversation = async () => {
       if (!conversationIdRef.current) return;
       try {
@@ -83,7 +82,6 @@ export function useWidgetChat(userId: string) {
       fetchConversation();
       interval = setInterval(fetchUpdates, 1000);
     }
-
     return () => {
       if (interval) clearInterval(interval);
     };
