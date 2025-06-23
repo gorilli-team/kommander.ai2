@@ -13,6 +13,7 @@ export function useWidgetChat(userId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [handledBy, setHandledBy] = useState<'bot' | 'agent'>('bot');
+  const [conversationId, setConversationId] = useState('');
   const conversationIdRef = useRef<string>('');
   const lastTimestampRef = useRef<string>('');
   const storageKey = `kommander_conversation_${userId}`;
@@ -23,22 +24,29 @@ export function useWidgetChat(userId: string) {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         conversationIdRef.current = stored;
+        setConversationId(stored);
       }
     }
   }, [storageKey]);
 
   useEffect(() => {
+
+    if (!conversationId) return;
+
     let interval: NodeJS.Timeout | null = null;
-    const fetchConversation = async () => {
-      if (!conversationIdRef.current) return;
+
+    const fetchInitial = async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/conversations/${conversationIdRef.current}`,
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
+
         );
         if (res.ok) {
           const data = await res.json();
           setHandledBy(data.handledBy || 'bot');
-          const msgs = data.messages.map((m: any) => ({
+
+          const msgs = (data.messages || []).map((m: any) => ({
+
             id: m.timestamp + m.role,
             role: m.role,
             content: m.text,
@@ -54,11 +62,16 @@ export function useWidgetChat(userId: string) {
       }
     };
 
-    const fetchUpdates = async () => {
-      if (!conversationIdRef.current || !lastTimestampRef.current) return;
+
+    const poll = async () => {
       try {
-        const url = `${process.env.NEXT_PUBLIC_BASE_URL}/api/conversations/${conversationIdRef.current}/updates?since=${encodeURIComponent(lastTimestampRef.current)}`;
-        const res = await fetch(url);
+        const params = new URLSearchParams({ userId });
+        if (lastTimestampRef.current) {
+          params.set('since', lastTimestampRef.current);
+        }
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
+
         if (res.ok) {
           const data = await res.json();
           setHandledBy(data.handledBy || 'bot');
@@ -78,14 +91,15 @@ export function useWidgetChat(userId: string) {
       }
     };
 
-    if (handledBy === 'agent') {
-      fetchConversation();
-      interval = setInterval(fetchUpdates, 1000);
-    }
+
+    fetchInitial();
+    interval = setInterval(poll, 1000);
+
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [handledBy, userId]);
+  }, [conversationId, userId]);
+
 
   const addMessage = (role: Message['role'], content: string) => {
     setMessages((prev) => [
@@ -109,9 +123,11 @@ export function useWidgetChat(userId: string) {
 
       try {
         if (!conversationIdRef.current) {
-          conversationIdRef.current = Date.now().toString();
+          const newId = Date.now().toString();
+          conversationIdRef.current = newId;
+          setConversationId(newId);
           if (typeof window !== 'undefined') {
-            localStorage.setItem(storageKey, conversationIdRef.current);
+            localStorage.setItem(storageKey, newId);
           }
         }
 
@@ -130,8 +146,11 @@ export function useWidgetChat(userId: string) {
 
         if (data.conversationId) {
           conversationIdRef.current = data.conversationId;
+
+          setConversationId(data.conversationId);
           if (typeof window !== 'undefined') {
-            localStorage.setItem(storageKey, conversationIdRef.current);
+            localStorage.setItem(storageKey, data.conversationId);
+
           }
         }
 
