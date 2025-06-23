@@ -4,7 +4,8 @@
 import React from 'react';
 import Sidebar from '@/frontend/components/layout/Sidebar';
 import KommanderIcon from '@/frontend/components/layout/KommanderIcon';
-import UserProfileButton from '@/frontend/components/layout/UserProfileButton'; 
+import UserProfileButton from '@/frontend/components/layout/UserProfileButton';
+import ThemeToggle from '@/frontend/components/layout/ThemeToggle';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -26,7 +27,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {showAuthElements && (
-        <div className="fixed right-6 top-8 z-30">
+        <div className="fixed right-6 top-4 z-40 flex items-center gap-4">
+          <ThemeToggle />
           <UserProfileButton />
         </div>
       )}
