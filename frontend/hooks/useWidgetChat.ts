@@ -16,7 +16,9 @@ export function useWidgetChat(userId: string) {
   const [conversationId, setConversationId] = useState('');
   const conversationIdRef = useRef<string>('');
   const lastTimestampRef = useRef<string>('');
+
   const pollFnRef = useRef<() => Promise<void>>();
+
   const storageKey = `kommander_conversation_${userId}`;
   const site = typeof window !== 'undefined' ? window.location.hostname : '';
   const POLL_INTERVAL_MS = 500;
@@ -32,6 +34,7 @@ export function useWidgetChat(userId: string) {
   }, [storageKey]);
 
   useEffect(() => {
+
     if (!conversationId) return;
 
     let interval: NodeJS.Timeout | null = null;
@@ -40,11 +43,15 @@ export function useWidgetChat(userId: string) {
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
+
+
         );
         if (res.ok) {
           const data = await res.json();
           setHandledBy(data.handledBy || 'bot');
+
           const msgs = (data.messages || []).map((m: any) => ({
+
             id: m.timestamp + m.role,
             role: m.role,
             content: m.text,
@@ -60,6 +67,7 @@ export function useWidgetChat(userId: string) {
       }
     };
 
+
     const poll = async () => {
       try {
         const params = new URLSearchParams({ userId });
@@ -68,7 +76,9 @@ export function useWidgetChat(userId: string) {
         }
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
+
         );
+
         if (res.ok) {
           const data = await res.json();
           setHandledBy(data.handledBy || 'bot');
@@ -87,10 +97,12 @@ export function useWidgetChat(userId: string) {
         // ignore
       }
     };
+
     pollFnRef.current = poll;
 
     fetchInitial().then(() => poll());
     interval = setInterval(poll, POLL_INTERVAL_MS);
+
 
     return () => {
       if (interval) clearInterval(interval);
@@ -142,9 +154,11 @@ export function useWidgetChat(userId: string) {
 
         if (data.conversationId) {
           conversationIdRef.current = data.conversationId;
+
           setConversationId(data.conversationId);
           if (typeof window !== 'undefined') {
             localStorage.setItem(storageKey, data.conversationId);
+
           }
         }
 
