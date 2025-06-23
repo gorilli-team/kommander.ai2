@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 
 export interface Message {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'agent';
   content: string;
   timestamp: Date;
 }
@@ -12,6 +12,7 @@ export interface Message {
 export function useWidgetChat(userId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [handledBy, setHandledBy] = useState<'bot' | 'agent'>('bot');
   const conversationIdRef = useRef<string>('');
   const storageKey = `kommander_conversation_${userId}`;
   const site = typeof window !== 'undefined' ? window.location.hostname : '';
@@ -24,6 +25,39 @@ export function useWidgetChat(userId: string) {
       }
     }
   }, [storageKey]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    const fetchLatest = async () => {
+      if (!conversationIdRef.current) return;
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/conversations/${conversationIdRef.current}`,
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setHandledBy(data.handledBy || 'bot');
+          setMessages(
+            data.messages.map((m: any) => ({
+              id: m.timestamp + m.role,
+              role: m.role,
+              content: m.text,
+              timestamp: new Date(m.timestamp),
+            })),
+          );
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    if (handledBy === 'agent') {
+      fetchLatest();
+      interval = setInterval(fetchLatest, 3000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [handledBy, userId]);
 
   const addMessage = (role: Message['role'], content: string) => {
     setMessages((prev) => [
@@ -65,15 +99,19 @@ export function useWidgetChat(userId: string) {
 
         const data = await res.json();
 
+        if (data.conversationId) {
+          conversationIdRef.current = data.conversationId;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(storageKey, conversationIdRef.current);
+          }
+        }
+
+        if (data.handledBy) {
+          setHandledBy(data.handledBy);
+        }
+
         if (data.reply) {
           addMessage('assistant', data.reply);
-
-          if (data.conversationId) {
-            conversationIdRef.current = data.conversationId;
-            if (typeof window !== 'undefined') {
-              localStorage.setItem(storageKey, conversationIdRef.current);
-            }
-          }
         } else if (data.error) {
           addMessage('system', `Error: ${data.error}`);
         }
@@ -86,5 +124,5 @@ export function useWidgetChat(userId: string) {
     [userId, site, storageKey]
   );
 
-  return { messages, isLoading, sendMessage, addMessage };
+  return { messages, isLoading, sendMessage, addMessage, handledBy, setHandledBy };
 }

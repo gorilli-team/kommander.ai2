@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ObjectId } from 'mongodb';
 
 export const ConversationMessageSchema = z.object({
-  role: z.enum(['user', 'assistant']),
+  role: z.enum(['user', 'assistant', 'agent']),
   text: z.string(),
   timestamp: z.date(),
 });
@@ -15,6 +15,7 @@ export const ConversationSchema = z.object({
   conversationId: z.string(),
   site: z.string().optional(),
   messages: z.array(ConversationMessageSchema),
+  handledBy: z.enum(['bot', 'agent']).default('bot'),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });

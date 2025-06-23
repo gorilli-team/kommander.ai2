@@ -3,11 +3,12 @@
 
 import { useState, useCallback } from 'react';
 import { generateChatResponse } from '@/app/chatbot/actions';
+import type { ChatMessage } from '@/backend/lib/buildPromptServer';
 import { useToast } from '@/frontend/hooks/use-toast';
 
 export interface Message {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'agent';
   content: string;
   timestamp: Date;
 }
@@ -30,9 +31,9 @@ export function useChat() {
     addMessage('user', userMessageContent);
     setIsLoading(true);
 
-    const historyForAI = messages
-      .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-      .map(msg => ({ role: msg.role, content: msg.content }));
+    const historyForAI: ChatMessage[] = messages
+      .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+      .map((msg) => ({ role: msg.role as 'user' | 'assistant', content: msg.content }));
       
     try {
       const result = await generateChatResponse(userMessageContent, historyForAI);
