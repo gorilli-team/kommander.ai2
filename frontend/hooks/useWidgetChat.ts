@@ -30,6 +30,7 @@ export function useWidgetChat(userId: string) {
   }, [storageKey]);
 
   useEffect(() => {
+
     if (!conversationId) return;
 
     let interval: NodeJS.Timeout | null = null;
@@ -38,11 +39,14 @@ export function useWidgetChat(userId: string) {
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
+
         );
         if (res.ok) {
           const data = await res.json();
           setHandledBy(data.handledBy || 'bot');
+
           const msgs = (data.messages || []).map((m: any) => ({
+
             id: m.timestamp + m.role,
             role: m.role,
             content: m.text,
@@ -58,6 +62,7 @@ export function useWidgetChat(userId: string) {
       }
     };
 
+
     const poll = async () => {
       try {
         const params = new URLSearchParams({ userId });
@@ -66,7 +71,7 @@ export function useWidgetChat(userId: string) {
         }
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
-        );
+
         if (res.ok) {
           const data = await res.json();
           setHandledBy(data.handledBy || 'bot');
@@ -86,6 +91,7 @@ export function useWidgetChat(userId: string) {
       }
     };
 
+
     fetchInitial();
     interval = setInterval(poll, 1000);
 
@@ -93,6 +99,7 @@ export function useWidgetChat(userId: string) {
       if (interval) clearInterval(interval);
     };
   }, [conversationId, userId]);
+
 
   const addMessage = (role: Message['role'], content: string) => {
     setMessages((prev) => [
@@ -139,9 +146,11 @@ export function useWidgetChat(userId: string) {
 
         if (data.conversationId) {
           conversationIdRef.current = data.conversationId;
+
           setConversationId(data.conversationId);
           if (typeof window !== 'undefined') {
             localStorage.setItem(storageKey, data.conversationId);
+
           }
         }
 
