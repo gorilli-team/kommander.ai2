@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
 import { Card, CardContent } from '@/frontend/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/frontend/components/ui/dropdown-menu';
@@ -8,9 +8,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/frontend/components/u
 import { cn } from '@/frontend/lib/utils';
 import { format } from 'date-fns';
 import { MoreVertical, UserCircle } from 'lucide-react';
+import AgentControlBar from './AgentControlBar';
 
 export interface ConversationMessageDisplay {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'agent';
   text: string;
   timestamp: string;
 }
@@ -21,6 +22,7 @@ export interface ConversationDisplayItem {
   site?: string;
   createdAt?: string;
   updatedAt?: string;
+  handledBy?: 'bot' | 'agent';
 }
 
 interface Props {
@@ -31,6 +33,18 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   const [conversations, setConversations] = useState(initial);
   const [selectedId, setSelectedId] = useState(initial[0]?.id || '');
   const selected = conversations.find((c) => c.id === selectedId);
+
+  useEffect(() => {
+    if (!selected) return;
+    const last = selected.messages[selected.messages.length - 1];
+    if (last && last.role === 'user' && typeof window !== 'undefined') {
+      if (Notification.permission === 'granted') {
+        new Notification('Nuovo messaggio', { body: last.text });
+      } else if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+  }, [selected]);
 
   const handleDelete = async (id: string) => {
     const res = await fetch(`/api/conversations/${id}`, { method: 'DELETE' });
@@ -102,24 +116,58 @@ export default function ConversationsClient({ conversations: initial }: Props) {
             </div>
 
             <CardContent className="flex-1 overflow-y-auto space-y-2 pt-4">
-              {selected.messages.map((msg, idx) => (
-                <div key={idx} className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
-                  <div
-                    className={cn(
-                      'rounded-xl px-3 py-2 max-w-[75%]',
-                      msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-br-none'
-                        : 'bg-muted text-foreground rounded-bl-none border border-border'
-                    )}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                    <p className={cn('text-xs mt-1', msg.role === 'user' ? 'text-primary-foreground/70 text-right' : 'text-muted-foreground text-left')}>
-                      {format(new Date(msg.timestamp), 'Pp')}
-                    </p>
+              {selected.messages.map((msg, idx) => {
+                const isUser = msg.role === 'user';
+                const isAgent = msg.role === 'agent';
+                return (
+                  <div key={idx} className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
+                    <div
+                      className={cn(
+                        'rounded-xl px-3 py-2 max-w-[75%]',
+                        isUser
+                          ? 'bg-primary text-primary-foreground rounded-br-none'
+                          : isAgent
+                          ? 'bg-accent text-accent-foreground rounded-bl-none border border-border'
+                          : 'bg-muted text-foreground rounded-bl-none border border-border'
+                      )}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                      <p className={cn('text-xs mt-1', isUser ? 'text-primary-foreground/70 text-right' : 'text-muted-foreground text-left')}>
+                        {format(new Date(msg.timestamp), 'Pp')}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
+            <AgentControlBar
+              conversationId={selected.id}
+              initialHandledBy={selected.handledBy || 'bot'}
+              onChange={(val) => {
+                setConversations((prev) => prev.map((c) => (c.id === selected.id ? { ...c, handledBy: val } : c)));
+              }}
+            />
+            {selected.handledBy === 'agent' && (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.target as HTMLFormElement;
+                  const input = form.elements.namedItem('agentMsg') as HTMLInputElement;
+                  const text = input.value.trim();
+                  if (!text) return;
+                  await fetch(`/api/conversations/${selected.id}/agent-message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text }),
+                  });
+                  input.value = '';
+                }}
+                className="p-2 border-t flex gap-2"
+              >
+                <input name="agentMsg" className="flex-1 border rounded px-2 py-1" placeholder="Scrivi una risposta" />
+                <button type="submit" className="px-3 py-1 rounded bg-primary text-primary-foreground">Invia</button>
+              </form>
+            )}
           </Card>
         ) : (
           <div className="p-4 text-muted-foreground">Nessuna conversazione selezionata.</div>
