@@ -7,13 +7,14 @@ import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/frontend/components/ui/avatar';
-import { Send, User, Bot, AlertTriangle } from 'lucide-react';
+import { Send, User, Bot, AlertTriangle, Headphones } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/frontend/lib/utils';
 
 function ChatMessage({ message }: { message: Message }) {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
+  const isAgent = message.role === 'agent';
   const isSystem = message.role === 'system';
 
   return (
@@ -25,15 +26,24 @@ function ChatMessage({ message }: { message: Message }) {
     >
       {!isUser && (
         <Avatar className="h-8 w-8 shrink-0">
-          <AvatarImage src="https://placehold.co/40x40/1a56db/FFFFFF.png?text=K" data-ai-hint="bot avatar" />
-          <AvatarFallback>{isAssistant ? <Bot size={18}/> : <AlertTriangle size={18}/>}</AvatarFallback>
+          <AvatarImage
+            src={isAssistant ? 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K' : 'https://placehold.co/40x40/444/FFFFFF.png?text=A'}
+            data-ai-hint="bot avatar"
+          />
+          <AvatarFallback>
+            {isAssistant ? <Bot size={18}/> : isAgent ? <Headphones size={18}/> : <AlertTriangle size={18}/>} 
+          </AvatarFallback>
         </Avatar>
       )}
       <div
         className={cn(
           'max-w-xs md:max-w-md lg:max-w-lg rounded-xl px-4 py-3 shadow-md',
           isUser ? 'bg-primary text-primary-foreground rounded-br-none' : '',
-          isAssistant ? 'bg-card text-card-foreground rounded-bl-none border border-border' : '',
+          isAssistant
+            ? 'bg-card text-card-foreground rounded-bl-none border border-border'
+            : isAgent
+            ? 'bg-accent text-accent-foreground rounded-bl-none border border-border'
+            : '',
           isSystem ? 'bg-destructive/10 text-destructive-foreground border border-destructive/30 rounded-bl-none' : ''
         )}
       >

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, X } from 'lucide-react';
+import { Send, Bot, User, X, Headphones } from 'lucide-react';
 import { Badge } from '@/frontend/components/ui/badge';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -19,7 +19,8 @@ interface ChatbotWidgetProps {
 
 export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
   const [open, setOpen] = useState(false);
-  const { messages, isLoading, sendMessage, addMessage } = useWidgetChat(userId);
+  const { messages, isLoading, sendMessage, addMessage, handledBy } = useWidgetChat(userId);
+  const prevHandledBy = useRef<'bot' | 'agent'>('bot');
   const [inputValue, setInputValue] = useState('');
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -28,6 +29,13 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
       viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight });
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (handledBy === 'agent' && prevHandledBy.current !== 'agent') {
+      addMessage('system', 'Stai parlando con un operatore umano');
+    }
+    prevHandledBy.current = handledBy;
+  }, [handledBy, addMessage]);
 
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -87,9 +95,15 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
                   >
                     {msg.role !== 'user' && (
                       <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarImage src="https://placehold.co/40x40/1a56db/FFFFFF.png?text=K" />
+                        <AvatarImage
+                          src={
+                            msg.role === 'assistant'
+                              ? 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K'
+                              : 'https://placehold.co/40x40/444/FFFFFF.png?text=A'
+                          }
+                        />
                         <AvatarFallback>
-                          <Bot size={18} />
+                          {msg.role === 'assistant' ? <Bot size={18} /> : <Headphones size={18} />}
                         </AvatarFallback>
                       </Avatar>
                     )}
@@ -98,6 +112,8 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
                         'max-w-[65%] rounded-lg px-3 py-2 shadow-md text-sm',
                         msg.role === 'user'
                           ? 'bg-[#1E3A8A] text-white rounded-br-none'
+                          : msg.role === 'agent'
+                          ? 'bg-accent text-accent-foreground rounded-bl-none border border-border'
                           : 'bg-card text-card-foreground rounded-bl-none border border-border',
                       )}
                     >
