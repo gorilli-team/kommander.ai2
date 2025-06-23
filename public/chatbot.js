@@ -145,6 +145,13 @@
       if (!text) return;
 
       addMessage('user', text);
+      const isHumanRequest = text.toLowerCase().includes('operatore umano');
+      if (isHumanRequest) {
+        addMessage(
+          'assistant',
+          'Certamente! Ti metto subito in contatto con uno specialista. Nel frattempo, se vuoi, puoi continuare a farmi domande: potrei gi\u00e0 aiutarti a trovare una soluzione mentre attendi la risposta di un operatore.'
+        );
+      }
       setInput('');
 
       try {
@@ -178,7 +185,7 @@
           setHandledBy(data.handledBy);
         }
 
-        if (data.reply) {
+        if (data.reply && !isHumanRequest) {
           addMessage('assistant', data.reply);
         } else if (data.error) {
           addMessage('system', 'Error: ' + data.error);
