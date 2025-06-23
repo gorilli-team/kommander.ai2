@@ -16,8 +16,12 @@ export function useWidgetChat(userId: string) {
   const [conversationId, setConversationId] = useState('');
   const conversationIdRef = useRef<string>('');
   const lastTimestampRef = useRef<string>('');
+
+  const pollFnRef = useRef<() => Promise<void>>();
+
   const storageKey = `kommander_conversation_${userId}`;
   const site = typeof window !== 'undefined' ? window.location.hostname : '';
+  const POLL_INTERVAL_MS = 500;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -39,6 +43,7 @@ export function useWidgetChat(userId: string) {
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
+
 
         );
         if (res.ok) {
@@ -72,6 +77,8 @@ export function useWidgetChat(userId: string) {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
 
+        );
+
         if (res.ok) {
           const data = await res.json();
           setHandledBy(data.handledBy || 'bot');
@@ -91,15 +98,16 @@ export function useWidgetChat(userId: string) {
       }
     };
 
+    pollFnRef.current = poll;
 
-    fetchInitial();
-    interval = setInterval(poll, 1000);
+    fetchInitial().then(() => poll());
+    interval = setInterval(poll, POLL_INTERVAL_MS);
+
 
     return () => {
       if (interval) clearInterval(interval);
     };
   }, [conversationId, userId]);
-
 
   const addMessage = (role: Message['role'], content: string) => {
     setMessages((prev) => [
@@ -167,6 +175,9 @@ export function useWidgetChat(userId: string) {
         addMessage('system', `Error: ${err.message || 'Network error.'}`);
       } finally {
         setIsLoading(false);
+        if (pollFnRef.current) {
+          pollFnRef.current();
+        }
       }
     },
     [userId, site, storageKey]
