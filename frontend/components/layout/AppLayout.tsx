@@ -27,7 +27,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {showAuthElements && (
-        <div className="fixed right-6 top-8 z-30 flex items-center gap-4">
+        <div className="fixed right-6 top-4 z-40 flex items-center gap-4">
           <ThemeToggle />
           <UserProfileButton />
         </div>
