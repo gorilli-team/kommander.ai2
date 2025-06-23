@@ -145,6 +145,12 @@
       if (!text) return;
 
       addMessage('user', text);
+      if (text.toLowerCase().includes('operatore umano')) {
+        addMessage(
+          'assistant',
+          'Certamente! Ti metto subito in contatto con uno specialista. Nel frattempo, se vuoi, puoi continuare a farmi domande: potrei gi\u00e0 aiutarti a trovare una soluzione mentre attendi la risposta di un operatore.'
+        );
+      }
       setInput('');
 
       try {
