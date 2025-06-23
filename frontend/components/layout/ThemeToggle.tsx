@@ -11,7 +11,7 @@ const ThemeToggle = () => {
   return (
     <StyledWrapper>
       <label className="switch" role="switch" aria-label="Toggle dark mode">
-        <input type="checkbox" checked={isDark} onChange={toggleTheme} />
+        <input type="checkbox" checked={!isDark} onChange={toggleTheme} />
         <span className="slider">
           <div className="star star_1" />
           <div className="star star_2" />
