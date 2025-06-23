@@ -4,7 +4,7 @@ import { deleteConversation, getConversation, setConversationHandledBy } from '@
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -20,7 +20,7 @@ export async function DELETE(
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: any
 ) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -35,7 +35,7 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: any
 ) {
   const session = await auth();
   if (!session?.user?.id) {

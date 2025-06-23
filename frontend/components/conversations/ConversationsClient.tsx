@@ -35,6 +35,27 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   const selected = conversations.find((c) => c.id === selectedId);
 
   useEffect(() => {
+    if (!selectedId) return;
+    let interval: NodeJS.Timeout;
+    const fetchConv = async () => {
+      try {
+        const res = await fetch(`/api/conversations/${selectedId}`);
+        if (res.ok) {
+          const data: ConversationDisplayItem = await res.json();
+          setConversations((prev) =>
+            prev.map((c) => (c.id === selectedId ? { ...c, ...data } : c)),
+          );
+        }
+      } catch {
+        // ignore
+      }
+    };
+    fetchConv();
+    interval = setInterval(fetchConv, 3000);
+    return () => clearInterval(interval);
+  }, [selectedId]);
+
+  useEffect(() => {
     if (!selected) return;
     const last = selected.messages[selected.messages.length - 1];
     if (last && last.role === 'user' && typeof window !== 'undefined') {
@@ -155,11 +176,25 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                   const input = form.elements.namedItem('agentMsg') as HTMLInputElement;
                   const text = input.value.trim();
                   if (!text) return;
-                  await fetch(`/api/conversations/${selected.id}/agent-message`, {
+                  const res = await fetch(`/api/conversations/${selected.id}/agent-message`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text }),
                   });
+                  if (res.ok) {
+                    const msg: ConversationMessageDisplay = {
+                      role: 'agent',
+                      text,
+                      timestamp: new Date().toISOString(),
+                    };
+                    setConversations((prev) =>
+                      prev.map((c) =>
+                        c.id === selected.id
+                          ? { ...c, messages: [...c.messages, msg] }
+                          : c,
+                      ),
+                    );
+                  }
                   input.value = '';
                 }}
                 className="p-2 border-t flex gap-2"

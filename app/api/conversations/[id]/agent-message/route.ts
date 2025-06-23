@@ -4,7 +4,7 @@ import { appendMessages } from '@/app/conversations/actions';
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: any,
 ) {
   const session = await auth();
   if (!session?.user?.id) {
