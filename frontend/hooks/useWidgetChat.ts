@@ -14,6 +14,7 @@ export function useWidgetChat(userId: string) {
   const [isLoading, setIsLoading] = useState(false);
   const [handledBy, setHandledBy] = useState<'bot' | 'agent'>('bot');
   const conversationIdRef = useRef<string>('');
+  const lastTimestampRef = useRef<string>('');
   const storageKey = `kommander_conversation_${userId}`;
   const site = typeof window !== 'undefined' ? window.location.hostname : '';
 
@@ -28,7 +29,7 @@ export function useWidgetChat(userId: string) {
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
-    const fetchLatest = async () => {
+    const fetchConversation = async () => {
       if (!conversationIdRef.current) return;
       try {
         const res = await fetch(
@@ -37,22 +38,49 @@ export function useWidgetChat(userId: string) {
         if (res.ok) {
           const data = await res.json();
           setHandledBy(data.handledBy || 'bot');
-          setMessages(
-            data.messages.map((m: any) => ({
-              id: m.timestamp + m.role,
-              role: m.role,
-              content: m.text,
-              timestamp: new Date(m.timestamp),
-            })),
-          );
+          const msgs = data.messages.map((m: any) => ({
+            id: m.timestamp + m.role,
+            role: m.role,
+            content: m.text,
+            timestamp: new Date(m.timestamp),
+          }));
+          setMessages(msgs);
+          if (msgs.length) {
+            lastTimestampRef.current = msgs[msgs.length - 1].timestamp.toISOString();
+          }
         }
-      } catch (err) {
+      } catch {
         // ignore
       }
     };
+
+    const fetchUpdates = async () => {
+      if (!conversationIdRef.current || !lastTimestampRef.current) return;
+      try {
+        const url = `${process.env.NEXT_PUBLIC_BASE_URL}/api/conversations/${conversationIdRef.current}/updates?since=${encodeURIComponent(lastTimestampRef.current)}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          setHandledBy(data.handledBy || 'bot');
+          const newMsgs = (data.messages || []).map((m: any) => ({
+            id: m.timestamp + m.role,
+            role: m.role,
+            content: m.text,
+            timestamp: new Date(m.timestamp),
+          }));
+          if (newMsgs.length) {
+            lastTimestampRef.current = newMsgs[newMsgs.length - 1].timestamp.toISOString();
+            setMessages((prev) => [...prev, ...newMsgs]);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+
     if (handledBy === 'agent') {
-      fetchLatest();
-      interval = setInterval(fetchLatest, 3000);
+      fetchConversation();
+      interval = setInterval(fetchUpdates, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -69,6 +97,7 @@ export function useWidgetChat(userId: string) {
         timestamp: new Date(),
       },
     ]);
+    lastTimestampRef.current = new Date().toISOString();
   };
 
   const sendMessage = useCallback(
