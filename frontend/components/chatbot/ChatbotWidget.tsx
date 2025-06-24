@@ -23,6 +23,18 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
   const prevHandledBy = useRef<'bot' | 'agent'>('bot');
   const [inputValue, setInputValue] = useState('');
   const viewportRef = useRef<HTMLDivElement>(null);
+  const [botName, setBotName] = useState('Kommander.ai');
+  const [botColor, setBotColor] = useState('#1E3A8A');
+
+  useEffect(() => {
+    fetch(`/api/settings/${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.name) setBotName(data.name);
+        if (data.color) setBotColor(data.color);
+      })
+      .catch(() => {});
+  }, [userId]);
 
   useEffect(() => {
     if (viewportRef.current) {
@@ -39,7 +51,7 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
 
   useEffect(() => {
     if (open && messages.length === 0) {
-      addMessage('assistant', 'Ciao, sono Kommander.ai! Come posso aiutarti oggi?');
+      addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi?`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -57,7 +69,8 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
     <>
       <motion.button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#1E3A8A] text-white shadow-lg"
+        className="fixed bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg"
+        style={{ backgroundColor: botColor }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         aria-label="Apri chat"
@@ -73,8 +86,8 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
             transition={{ duration: 0.2 }}
             className="fixed inset-0 sm:bottom-20 sm:right-4 sm:inset-auto z-50 flex w-full h-full sm:w-[400px] sm:h-[600px] flex-col bg-card border border-border rounded-none sm:rounded-lg shadow-xl"
           >
-            <div className="px-4 py-3 flex items-center justify-between bg-[#1E3A8A] text-white rounded-t-lg">
-              <span className="font-semibold">Kommander.ai – Trial</span>
+            <div className="px-4 py-3 flex items-center justify-between rounded-t-lg text-white" style={{ backgroundColor: botColor }}>
+              <span className="font-semibold">{botName} – Trial</span>
               <div className="flex items-center gap-2">
                 <Badge className="bg-green-600 text-white border-none">Online</Badge>
                 <span className="text-sm">{currentDate}</span>
@@ -111,11 +124,12 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
                       className={cn(
                         'max-w-[65%] rounded-lg px-3 py-2 shadow-md text-sm',
                         msg.role === 'user'
-                          ? 'bg-[#1E3A8A] text-white rounded-br-none'
+                          ? 'text-white rounded-br-none'
                           : msg.role === 'agent'
                           ? 'bg-accent text-accent-foreground rounded-bl-none border border-border'
                           : 'bg-card text-card-foreground rounded-bl-none border border-border',
                       )}
+                      style={msg.role === 'user' ? { backgroundColor: botColor } : undefined}
                     >
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       <p
@@ -142,7 +156,7 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
                 {isLoading && (
                   <div className="text-muted-foreground text-sm flex items-center space-x-2">
                     <Bot className="w-4 h-4 animate-pulse" />
-                    <span>Typing...</span>
+                    <span>{botName} sta scrivendo...</span>
                   </div>
                 )}
               </div>
