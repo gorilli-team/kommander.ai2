@@ -1,25 +1,15 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, X, Headphones } from 'lucide-react';
-import { Badge } from '@/frontend/components/ui/badge';
-import { format } from 'date-fns';
-import { it } from 'date-fns/locale';
-import { AnimatePresence, motion } from 'framer-motion';
+import { ChatBotWidget } from 'chatbot-widget-ui';
+import { useRef, useEffect } from 'react';
 import { useWidgetChat } from '@/frontend/hooks/useWidgetChat';
-import { Button } from '@/frontend/components/ui/button';
-import { Input } from '@/frontend/components/ui/input';
-import { ScrollArea } from '@/frontend/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/frontend/components/ui/avatar';
-import { cn } from '@/frontend/lib/utils';
 
 interface ChatbotWidgetProps {
   userId: string;
 }
 
 export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
-  const [open, setOpen] = useState(false);
-  const { messages, isLoading, sendMessage, addMessage, handledBy } = useWidgetChat(userId);
+  const { messages, callApi, addMessage, handledBy } = useWidgetChat(userId);
   const prevHandledBy = useRef<'bot' | 'agent'>('bot');
   const [inputValue, setInputValue] = useState('');
   const viewportRef = useRef<HTMLDivElement>(null);

@@ -122,6 +122,53 @@ export function useWidgetChat(userId: string) {
     lastTimestampRef.current = new Date().toISOString();
   };
 
+  const callApi = useCallback(
+    async (userMessageContent: string): Promise<string> => {
+      if (!userMessageContent.trim()) return '';
+
+      if (!conversationIdRef.current) {
+        const newId = Date.now().toString();
+        conversationIdRef.current = newId;
+        setConversationId(newId);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageKey, newId);
+        }
+      }
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/kommander-query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          message: userMessageContent,
+          conversationId: conversationIdRef.current,
+          site,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.conversationId) {
+        conversationIdRef.current = data.conversationId;
+        setConversationId(data.conversationId);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageKey, data.conversationId);
+        }
+      }
+
+      if (data.handledBy) {
+        setHandledBy(data.handledBy);
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      return data.reply || '';
+    },
+    [userId, site, storageKey]
+  );
+
   const sendMessage = useCallback(
     async (userMessageContent: string) => {
       if (!userMessageContent.trim()) return;
@@ -130,46 +177,9 @@ export function useWidgetChat(userId: string) {
       setIsLoading(true);
 
       try {
-        if (!conversationIdRef.current) {
-          const newId = Date.now().toString();
-          conversationIdRef.current = newId;
-          setConversationId(newId);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(storageKey, newId);
-          }
-        }
-
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/kommander-query`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            message: userMessageContent,
-            conversationId: conversationIdRef.current,
-            site,
-          }),
-        });
-
-        const data = await res.json();
-
-        if (data.conversationId) {
-          conversationIdRef.current = data.conversationId;
-
-          setConversationId(data.conversationId);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(storageKey, data.conversationId);
-
-          }
-        }
-
-        if (data.handledBy) {
-          setHandledBy(data.handledBy);
-        }
-
-        if (data.reply) {
-          addMessage('assistant', data.reply);
-        } else if (data.error) {
-          addMessage('system', `Error: ${data.error}`);
+        const reply = await callApi(userMessageContent);
+        if (reply) {
+          addMessage('assistant', reply);
         }
       } catch (err: any) {
         addMessage('system', `Error: ${err.message || 'Network error.'}`);
@@ -180,8 +190,16 @@ export function useWidgetChat(userId: string) {
         }
       }
     },
-    [userId, site, storageKey]
+    [callApi]
   );
 
-  return { messages, isLoading, sendMessage, addMessage, handledBy, setHandledBy };
+  return {
+    messages,
+    isLoading,
+    sendMessage,
+    addMessage,
+    handledBy,
+    setHandledBy,
+    callApi,
+  };
 }
