@@ -7,6 +7,7 @@ import { buildPromptServer, type ChatMessage, type DocumentSnippet } from '@/bac
 import type { Faq } from '@/backend/schemas/faq';
 import { getFileContent } from '@/app/training/actions';
 import { auth } from '@/frontend/auth'; // Import auth for session
+import { getSettings } from '@/app/settings/actions';
 
 import mammoth from 'mammoth';
 
@@ -112,7 +113,7 @@ export async function generateChatResponse(
         fileName: fileNameMap.get(doc.gridFsFileId.toString()) || 'Documento',
         summary: doc.summary as string,
     }));
-    
+
     const extractedTextSnippets: DocumentSnippet[] = [];
 
     for (const fileMeta of filesToProcess) {
@@ -129,6 +130,8 @@ export async function generateChatResponse(
         extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: text });
       }
     }
+
+    const userSettings = await getSettings();
     const messages = buildPromptServer(
       userMessage,
       faqs,
@@ -136,6 +139,7 @@ export async function generateChatResponse(
       extractedTextSnippets,
       history,
       summariesForPrompt,
+      userSettings || undefined,
     );
 
     const openai = getOpenAI();
