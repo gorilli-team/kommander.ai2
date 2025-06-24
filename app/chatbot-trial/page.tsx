@@ -4,12 +4,14 @@ import { Badge } from "@/frontend/components/ui/badge";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { auth } from "@/frontend/auth";
+import { getSettings } from '@/app/settings/actions';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ChatbotTrialPage() {
   const session = await auth();
   const userId = session?.user?.id || '';
+  const settings = await getSettings();
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://kommanderai.vercel.app';
   const snippet = `<div id="kommander-chatbot"></div>
 <script src="${baseUrl}/chatbot.js"></script>
@@ -24,17 +26,18 @@ export default async function ChatbotTrialPage() {
         <InfoPanel snippet={snippet} shareUrl={shareUrl} />
       </div>
       <div className="md:w-3/5 h-[80vh]">
-        <ChatUI
-          containerClassName="h-full"
-          headerClassName="bg-[#1E3A8A] text-white px-4 py-3 rounded-t-lg"
-          headerExtras={(
-            <div className="flex items-center gap-2">
-              <Badge className="bg-green-600 text-white border-none">Online</Badge>
-              <span className="text-sm">{currentDate}</span>
-            </div>
-          )}
-          title="Kommander.ai – Trial"
-        />
+          <ChatUI
+            containerClassName="h-full"
+            headerClassName="text-white px-4 py-3 rounded-t-lg"
+            accentColor={settings?.color}
+            title={`${settings?.name || 'Kommander.ai'} – Trial`}
+            headerExtras={(
+              <div className="flex items-center gap-2">
+                <Badge className="bg-green-600 text-white border-none">Online</Badge>
+                <span className="text-sm">{currentDate}</span>
+              </div>
+            )}
+          />
       </div>
     </div>
   );

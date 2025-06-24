@@ -27,10 +27,19 @@ export function buildPromptServer(
   uploadedFilesInfo: UploadedFileInfoForPromptContext[],
   extractedTextSnippets: DocumentSnippet[] = [],
   history: ChatMessage[] = [],
-  fileSummaries: FileSummaryForPrompt[] = []
+  fileSummaries: FileSummaryForPrompt[] = [],
+  settings?: { name?: string; personality?: string; traits?: string[] }
 ): ChatMessage[] {
   
-  let context = "Sei Kommander.ai, un assistente AI utile. Usa le seguenti informazioni per rispondere alla query dell'utente.\n\n";
+  const botName = settings?.name || 'Kommander.ai';
+  let context = `Sei ${botName}, un assistente AI utile.`;
+  if (settings?.personality) {
+    context += ` Stile comunicativo: ${settings.personality}.`;
+  }
+  if (settings?.traits && settings.traits.length) {
+    context += ` Carattere: ${settings.traits.join(', ')}.`;
+  }
+  context += " Usa le seguenti informazioni per rispondere alla query dell'utente.\n\n";
 
   if (faqs.length > 0) {
     context += "FAQ Rilevanti:\n";
