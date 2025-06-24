@@ -70,6 +70,7 @@ interface ChatUIProps {
   headerClassName?: string;
   headerExtras?: React.ReactNode;
   title?: string;
+  accentColor?: string;
 }
 
 export default function ChatUI({
@@ -77,6 +78,7 @@ export default function ChatUI({
   headerClassName,
   headerExtras,
   title = 'Kommander.ai Chat',
+  accentColor,
 }: ChatUIProps) {
   const { messages, isLoading, sendMessage } = useChat();
   const [inputValue, setInputValue] = useState('');
@@ -107,6 +109,7 @@ export default function ChatUI({
           'p-4 border-b border-border flex items-center justify-between',
           headerClassName
         )}
+        style={accentColor ? { backgroundColor: accentColor, color: '#fff' } : undefined}
       >
         <h2 className="text-xl font-semibold font-headline">
           {title}
@@ -122,7 +125,7 @@ export default function ChatUI({
           {isLoading && (
             <div className="flex items-center space-x-2 p-2 text-muted-foreground">
               <Bot className="w-5 h-5 animate-pulse" />
-              <span>Kommander.ai is typing...</span>
+              <span>{title} is typing...</span>
             </div>
           )}
         </div>
