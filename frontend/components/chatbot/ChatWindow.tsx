@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import type { Message } from '@/frontend/hooks/useChat';
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
@@ -9,40 +10,28 @@ import { Send, User, Bot, AlertTriangle, Headphones } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/frontend/lib/utils';
 
-export type ChatWindowMessage = {
-  id: string;
-  role: 'user' | 'assistant' | 'system' | 'agent';
-  content: string;
-  timestamp: Date;
-};
-
-interface ChatWindowProps {
-  messages: ChatWindowMessage[];
-  isLoading: boolean;
-  sendMessage?: (content: string) => void;
-  onSubmit?: (content: string) => void;
-  containerClassName?: string;
-  headerClassName?: string;
-  headerExtras?: React.ReactNode;
-  title?: string;
-  accentColor?: string;
-}
-
-function ChatMessage({ message }: { message: ChatWindowMessage }) {
+function ChatMessage({ message }: { message: Message }) {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
   const isAgent = message.role === 'agent';
   const isSystem = message.role === 'system';
 
   return (
-    <div className={cn('flex items-end space-x-3 py-3 px-1', isUser ? 'justify-end' : 'justify-start')}>
+    <div
+      className={cn(
+        'flex items-end space-x-3 py-3 px-1',
+        isUser ? 'justify-end' : 'justify-start'
+      )}
+    >
       {!isUser && (
         <Avatar className="h-8 w-8 shrink-0">
           <AvatarImage
             src={isAssistant ? 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K' : 'https://placehold.co/40x40/444/FFFFFF.png?text=A'}
             data-ai-hint="bot avatar"
           />
-          <AvatarFallback>{isAssistant ? <Bot size={18} /> : isAgent ? <Headphones size={18} /> : <AlertTriangle size={18} />}</AvatarFallback>
+          <AvatarFallback>
+            {isAssistant ? <Bot size={18}/> : isAgent ? <Headphones size={18}/> : <AlertTriangle size={18}/>}
+          </AvatarFallback>
         </Avatar>
       )}
       <div
@@ -58,27 +47,38 @@ function ChatMessage({ message }: { message: ChatWindowMessage }) {
         )}
       >
         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-        <p className={cn('text-xs mt-1.5', isUser ? 'text-primary-foreground/70 text-right' : 'text-muted-foreground text-left')}>
+        <p className={cn(
+             "text-xs mt-1.5",
+             isUser ? "text-primary-foreground/70 text-right" : "text-muted-foreground text-left"
+           )}>
           {format(message.timestamp, 'p')}
         </p>
       </div>
       {isUser && (
         <Avatar className="h-8 w-8 shrink-0">
           <AvatarImage src="https://placehold.co/40x40/8cb0eA/1A202C.png?text=U" data-ai-hint="user avatar" />
-          <AvatarFallback>
-            <User size={18} />
-          </AvatarFallback>
+          <AvatarFallback><User size={18}/></AvatarFallback>
         </Avatar>
       )}
     </div>
   );
 }
 
-export default function ChatWindow({
+export interface ChatWindowProps {
+  messages: Message[];
+  isLoading: boolean;
+  sendMessage: (message: string) => void;
+  containerClassName?: string;
+  headerClassName?: string;
+  headerExtras?: React.ReactNode;
+  title?: string;
+  accentColor?: string;
+}
+
+export function ChatWindow({
   messages,
   isLoading,
   sendMessage,
-  onSubmit,
   containerClassName,
   headerClassName,
   headerExtras,
@@ -86,6 +86,7 @@ export default function ChatWindow({
   accentColor,
 }: ChatWindowProps) {
   const [inputValue, setInputValue] = useState('');
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -96,24 +97,33 @@ export default function ChatWindow({
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!inputValue.trim()) return;
-    if (sendMessage) sendMessage(inputValue);
-    if (onSubmit) onSubmit(inputValue);
-    setInputValue('');
+    if (inputValue.trim()) {
+      sendMessage(inputValue);
+      setInputValue('');
+    }
   };
 
   return (
-    <div className={cn('flex flex-col h-full w-full bg-card shadow-xl rounded-lg border border-border', containerClassName)}>
+    <div className={cn(
+        "flex flex-col h-full w-full bg-card shadow-xl rounded-lg border border-border",
+        containerClassName
+        )}>
       <div
-        className={cn('p-4 border-b border-border flex items-center justify-between', headerClassName)}
+        className={cn(
+          'p-4 border-b border-border flex items-center justify-between',
+          headerClassName
+        )}
         style={accentColor ? { backgroundColor: accentColor, color: '#fff' } : undefined}
       >
-        <h2 className="text-xl font-semibold font-headline">{title}</h2>
+        <h2 className="text-xl font-semibold font-headline">
+          {title}
+        </h2>
         {headerExtras}
       </div>
-      <ScrollArea className="flex-1 p-4">
+
+      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div ref={viewportRef} className="space-y-2">
-          {messages.map((msg) => (
+         {messages.map((msg) => (
             <ChatMessage key={msg.id} message={msg} />
           ))}
           {isLoading && (
@@ -144,3 +154,4 @@ export default function ChatWindow({
   );
 }
 
+export default ChatWindow;

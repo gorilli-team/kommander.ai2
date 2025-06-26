@@ -2,35 +2,10 @@
 
 import React from 'react';
 import { useChat } from '@/frontend/hooks/useChat';
-import ChatWindow from './ChatWindow';
+import ChatWindow, { ChatWindowProps } from '@/frontend/components/chatbot/ChatWindow';
 
-interface ChatUIProps {
-  containerClassName?: string;
-  headerClassName?: string;
-  headerExtras?: React.ReactNode;
-  title?: string;
-  accentColor?: string;
-}
-
-export default function ChatUI({
-  containerClassName,
-  headerClassName,
-  headerExtras,
-  title = 'Kommander.ai Chat',
-  accentColor,
-}: ChatUIProps) {
+export default function ChatUI(props: Omit<ChatWindowProps, 'messages' | 'isLoading' | 'sendMessage'>) {
   const { messages, isLoading, sendMessage } = useChat();
-
-  return (
-    <ChatWindow
-      messages={messages}
-      isLoading={isLoading}
-      sendMessage={sendMessage}
-      containerClassName={containerClassName}
-      headerClassName={headerClassName}
-      headerExtras={headerExtras}
-      title={title}
-      accentColor={accentColor}
-    />
-  );
+  return <ChatWindow {...props} messages={messages} isLoading={isLoading} sendMessage={sendMessage} />;
 }
+
