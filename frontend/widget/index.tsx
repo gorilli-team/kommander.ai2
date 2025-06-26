@@ -9,6 +9,7 @@ function loadStyles() {
   link.rel = 'stylesheet';
   const src = (document.currentScript as HTMLScriptElement | null)?.src;
   const origin = src ? new URL(src).origin : '';
+  (window as any).__kommanderBaseUrl = origin;
   link.href = origin + '/chatbot.css';
   document.head.appendChild(link);
 }
