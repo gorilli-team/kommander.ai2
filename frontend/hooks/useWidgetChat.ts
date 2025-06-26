@@ -21,6 +21,10 @@ export function useWidgetChat(userId: string) {
 
   const storageKey = `kommander_conversation_${userId}`;
   const site = typeof window !== 'undefined' ? window.location.hostname : '';
+  const baseUrl =
+    (typeof window !== 'undefined' && (window as any).__kommanderBaseUrl) ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    '';
   const POLL_INTERVAL_MS = 500;
 
   useEffect(() => {
@@ -42,7 +46,7 @@ export function useWidgetChat(userId: string) {
     const fetchInitial = async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
+          `${baseUrl}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
 
 
         );
@@ -75,7 +79,7 @@ export function useWidgetChat(userId: string) {
           params.set('since', lastTimestampRef.current);
         }
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
+          `${baseUrl}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
 
         );
 
@@ -139,7 +143,7 @@ export function useWidgetChat(userId: string) {
           }
         }
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/kommander-query`, {
+        const res = await fetch(`${baseUrl}/api/kommander-query`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
