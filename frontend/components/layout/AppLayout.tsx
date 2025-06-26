@@ -8,7 +8,7 @@ import { usePathname } from 'next/navigation';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const showAuthElements = pathname !== '/login';
+  const showAuthElements = !['/login', '/signup'].includes(pathname);
 
   return (
     <div className="relative flex flex-col min-h-screen bg-background">
@@ -21,7 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
       <main
-        className={`flex-1 overflow-y-auto p-6 pt-[calc(5rem+1px)] ${showAuthElements ? 'pl-[6rem] md:pl-[6.25rem] lg:pl-[6.5rem] pr-[4rem]' : ''}`}
+        className={`flex-1 overflow-y-auto p-6 ${showAuthElements ? 'pt-[calc(5rem+1px)] pl-[6rem] md:pl-[6.25rem] lg:pl-[6.5rem] pr-[4rem]' : ''}`}
       >
         {children}
       </main>
