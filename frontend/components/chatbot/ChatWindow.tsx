@@ -134,7 +134,6 @@ export function ChatWindow({
           )}
         </div>
       </ScrollArea>
-
       <div className="p-4 border-t border-border bg-background/50 rounded-b-lg">
         <form onSubmit={handleSubmit} className="flex items-center space-x-3">
           <Input
@@ -156,4 +155,3 @@ export function ChatWindow({
 }
 
 export default ChatWindow;
-
