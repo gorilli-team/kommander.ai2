@@ -7,6 +7,26 @@ const scriptSrc = (document.currentScript as HTMLScriptElement | null)?.src;
 const baseOrigin = scriptSrc ? new URL(scriptSrc).origin : '';
 (window as any).__kommanderBaseUrl = baseOrigin;
 
+// Dynamically load React and ReactDOM if missing
+function loadScript(src: string) {
+  return new Promise<void>((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
+async function ensureReact() {
+  if (!(window as any).React) {
+    await loadScript(baseOrigin + '/react.production.min.js');
+  }
+  if (!(window as any).ReactDOM) {
+    await loadScript(baseOrigin + '/react-dom.production.min.js');
+  }
+}
+
 function loadStyles() {
   if (document.getElementById('kommander-style')) return;
   const link = document.createElement('link');
@@ -16,7 +36,8 @@ function loadStyles() {
   document.head.appendChild(link);
 }
 
-export function initKommanderChatbot({ userId }: { userId: string }) {
+export async function initKommanderChatbot({ userId }: { userId: string }) {
+  await ensureReact();
   loadStyles();
   let el = document.getElementById('kommander-chatbot');
   if (!el) {
