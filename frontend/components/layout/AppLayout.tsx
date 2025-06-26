@@ -15,7 +15,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {showAuthElements && <Navbar />}
 
       {showAuthElements && (
-        <div className="fixed left-4 top-20 z-30 flex flex-col items-start space-y-3">
+        <div className="fixed left-4 top-[calc(5rem+1px)] z-30 flex flex-col items-start space-y-3">
           <Sidebar />
         </div>
       )}
