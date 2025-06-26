@@ -16,7 +16,7 @@
     const link = document.createElement('link');
     link.id = 'kommander-style';
     link.rel = 'stylesheet';
-    link.href = ORIGIN + '/chatbot.css';
+    link.href = ORIGIN + '/widget.css';
     document.head.appendChild(link);
   }
 
