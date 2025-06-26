@@ -10,7 +10,7 @@ async function run() {
     format: 'iife',
     outfile: path.join(root, 'public/chatbot.js'),
     platform: 'browser',
-    external: ['react', 'react-dom'],
+    external: ['react', 'react-dom', 'react-dom/client'],
     minify: true,
   });
 
