@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 9002",
-    "build": "next build",
+    "build": "npm run build:widget-css && next build",
+    "build:widget-css": "tailwindcss -i ./app/globals.css -c ./tailwind.config.ts -o ./public/widget.css --minify",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
