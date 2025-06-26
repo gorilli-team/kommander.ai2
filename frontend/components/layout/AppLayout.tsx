@@ -3,10 +3,7 @@
 
 import React from 'react';
 import Sidebar from '@/frontend/components/layout/Sidebar';
-import KommanderIcon from '@/frontend/components/layout/KommanderIcon';
-import UserProfileButton from '@/frontend/components/layout/UserProfileButton';
-import ThemeToggle from '@/frontend/components/layout/ThemeToggle';
-import Link from 'next/link';
+import Navbar from '@/frontend/components/layout/Navbar';
 import { usePathname } from 'next/navigation';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -15,25 +12,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative flex flex-col min-h-screen bg-background">
+      <Navbar />
+
       {showAuthElements && (
-        <div className="fixed left-4 top-8 z-30 flex flex-col items-start space-y-3">
-          <div className="flex-shrink-0 w-16 flex justify-center">
-            <Link href="/training" className="inline-flex items-center justify-center" aria-label="Go to Training page">
-              <KommanderIcon />
-            </Link>
-          </div>
+        <div className="fixed left-4 top-24 z-30 flex flex-col items-start space-y-3">
           <Sidebar />
         </div>
       )}
 
-      {showAuthElements && (
-        <div className="fixed right-6 top-4 z-40 flex items-center gap-4">
-          <ThemeToggle />
-          <UserProfileButton />
-        </div>
-      )}
-      
-      <main className={`flex-1 overflow-y-auto p-6 ${showAuthElements ? 'pl-[6rem] md:pl-[6.25rem] lg:pl-[6.5rem] pr-[4rem]' : ''}`}>
+      <main className={`flex-1 overflow-y-auto p-6 pt-20 ${showAuthElements ? 'pl-[6rem] md:pl-[6.25rem] lg:pl-[6.5rem] pr-[4rem]' : ''}`}>
         {children}
       </main>
     </div>
