@@ -2,14 +2,17 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import ChatbotWidget from '@/frontend/components/chatbot/ChatbotWidget';
 
+// Determine the base URL from the script origin at load time
+const scriptSrc = (document.currentScript as HTMLScriptElement | null)?.src;
+const baseOrigin = scriptSrc ? new URL(scriptSrc).origin : '';
+(window as any).__kommanderBaseUrl = baseOrigin;
+
 function loadStyles() {
   if (document.getElementById('kommander-style')) return;
   const link = document.createElement('link');
   link.id = 'kommander-style';
   link.rel = 'stylesheet';
-  const src = (document.currentScript as HTMLScriptElement | null)?.src;
-  const origin = src ? new URL(src).origin : '';
-  link.href = origin + '/chatbot.css';
+  link.href = baseOrigin + '/chatbot.css';
   document.head.appendChild(link);
 }
 
