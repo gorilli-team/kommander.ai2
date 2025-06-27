@@ -1,3 +1,4 @@
+
 (function () {
   const ORIGIN = new URL(document.currentScript.src).origin;
 
@@ -36,12 +37,33 @@
     const [input, setInput] = useState('');
     const [handledBy, setHandledBy] = useState('bot');
     const [conversationId, setConversationId] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+      try {
+        return localStorage.getItem('kommander_dark_mode') === 'true';
+      } catch (e) {
+        console.error("Failed to read dark mode from localStorage", e);
+        return false;
+      }
+    });
 
     const viewportRef = useRef(null);
     const conversationIdRef = useRef('');
     const lastTimestampRef = useRef('');
     const pollFnRef = useRef(null);
     const prevHandledBy = useRef('bot');
+
+    const toggleDarkMode = () => {
+      setIsDarkMode(prevMode => {
+        const newMode = !prevMode;
+        try {
+          localStorage.setItem('kommander_dark_mode', newMode.toString());
+        } catch (e) {
+          console.error("Failed to write dark mode to localStorage", e);
+        }
+        return newMode;
+      });
+    };
 
     function formatTime() {
       return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -62,7 +84,7 @@
       if (viewportRef.current) {
         viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
       }
-    }, [messages]);
+    }, [messages, isTyping]);
 
     useEffect(() => {
       if (open && messages.length === 0) {
@@ -98,7 +120,9 @@
             lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
           }
         }
-      } catch {}
+      } catch (err) {
+        console.error("Error fetching initial conversation:", err);
+      }
     };
 
     const poll = async () => {
@@ -119,23 +143,31 @@
           if (newMsgs.length) {
             lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
             setMessages((prev) => [...prev, ...newMsgs]);
+            setIsTyping(false); // Stop typing indicator if new messages arrive
           }
         }
-      } catch {}
+      } catch (err) {
+        console.error("Error polling for updates:", err);
+      }
     };
 
     useEffect(() => {
       if (!conversationId) return;
       pollFnRef.current = poll;
       let interval;
-      fetchInitial().then(poll);
-      interval = setInterval(poll, 500);
+      fetchInitial().then(() => {
+        // Only start polling if the chatbot is open, otherwise poll when opened
+        if (open) {
+          poll();
+        }
+      });
+      interval = setInterval(poll, 1000); // Poll more frequently for a better real-time feel
       return () => interval && clearInterval(interval);
-    }, [conversationId, userId]);
+    }, [conversationId, userId, open]); // Added 'open' to dependency array
 
     useEffect(() => {
       if (handledBy === 'agent' && prevHandledBy.current !== 'agent') {
-        addMessage('system', 'Stai parlando con un operatore umano');
+        addMessage('system', 'Sei ora in contatto con un operatore umano.');
       }
       prevHandledBy.current = handledBy;
     }, [handledBy]);
@@ -145,18 +177,23 @@
       if (!text) return;
 
       addMessage('user', text);
+      setIsTyping(true); // Show typing indicator
+
       const isHumanRequest = text.toLowerCase().includes('operatore umano');
+
       if (isHumanRequest) {
         addMessage(
           'assistant',
           'Certamente! Ti metto subito in contatto con uno specialista. Nel frattempo, se vuoi, puoi continuare a farmi domande: potrei gi\u00e0 aiutarti a trovare una soluzione mentre attendi la risposta di un operatore.'
         );
+        setIsTyping(false);
       }
+
       setInput('');
 
       try {
         if (!conversationIdRef.current) {
-          const newId = Date.now().toString();
+          const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; // More robust ID
           conversationIdRef.current = newId;
           setConversationId(newId);
           localStorage.setItem(storageKey, newId);
@@ -180,20 +217,20 @@
           setConversationId(data.conversationId);
           localStorage.setItem(storageKey, data.conversationId);
         }
-
         if (data.handledBy) {
           setHandledBy(data.handledBy);
         }
-
         if (data.reply && !isHumanRequest) {
           addMessage('assistant', data.reply);
         } else if (data.error) {
-          addMessage('system', 'Error: ' + data.error);
+          addMessage('system', 'Si è verificato un errore: ' + data.error);
         }
       } catch (err) {
-        addMessage('system', 'Error: ' + err.message);
+        addMessage('system', 'Ops! Non riusciamo a connetterci. Riprova più tardi.');
+        console.error("Failed to send message:", err);
       } finally {
-        if (pollFnRef.current) pollFnRef.current();
+        setIsTyping(false); // Hide typing indicator
+        if (pollFnRef.current) pollFnRef.current(); // Manual poll after sending message
       }
     };
 
@@ -207,12 +244,26 @@
           className: 'kommander-button',
           'aria-label': 'Apri chat',
         },
-        '\u2318',
+        open ? '×' : React.createElement(
+          'svg',
+          {
+            xmlns: 'http://www.w3.org/2000/svg',
+            viewBox: '0 0 24 24',
+            width: '24',
+            height: '24',
+            fill: 'none',
+            stroke: 'currentColor',
+            strokeWidth: '2',
+            strokeLinecap: 'round',
+            strokeLinejoin: 'round',
+          },
+          React.createElement('path', { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' })
+        )
       ),
       open &&
         React.createElement(
           'div',
-          { className: 'kommander-window' },
+          { className: `kommander-window ${isDarkMode ? 'dark-mode' : ''}` },
           React.createElement(
             'div',
             { className: 'kommander-header' },
@@ -224,7 +275,28 @@
               React.createElement('span', { className: 'kommander-date' }, currentDate),
               React.createElement(
                 'button',
-                { onClick: () => setOpen(false), 'aria-label': 'Close chatbot', className: 'kommander-close' },
+                {
+                  onClick: toggleDarkMode,
+                  'aria-label': 'Toggle Dark Mode',
+                  className: 'kommander-toggle-dark-mode',
+                  title: isDarkMode ? 'Disattiva Modalità Scura' : 'Attiva Modalità Scura'
+                },
+                isDarkMode ?
+                  React.createElement(
+                    'svg',
+                    { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'currentColor', width: '16', height: '16' },
+                    React.createElement('path', { d: 'M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.894 6.106a.75.75 0 0 0-1.06-1.06l-1.591 1.59a.75.75 0 1 0 1.06 1.06l1.591-1.59ZM21.75 12a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1 0-1.5H21a.75.75 0 0 1 .75.75ZM18.894 17.894a.75.75 0 0 0-1.06 1.06l1.591 1.591a.75.75 0 1 0 1.06-1.06l-1.591-1.591ZM12 18.75a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25a.75.75 0 0 1 .75-.75ZM5.003 18.894a.75.75 0 0 0 1.06-1.06l-1.59-1.591a.75.75 0 1 0-1.06 1.06l1.59 1.591ZM3 12.75a.75.75 0 0 1-.75-.75H.75a.75.75 0 0 1 0-1.5H2.25c.414 0 .75.336.75.75Z' })
+                  )
+                  :
+                  React.createElement(
+                    'svg',
+                    { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'currentColor', width: '16', height: '16' },
+                    React.createElement('path', { d: 'M9.528 1.714a.75.75 0 0 0-.829 1.074 11.25 11.25 0 0 1 7.029 7.029.75.75 0 0 0 1.074-.829 12.75 12.75 0 0 0-8.274-8.274ZM10.5 12a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12 3.75a.75.75 0 0 1 .75.75v.75a.75.75 0 0 1-1.5 0V4.5a.75.75 0 0 1 .75-.75ZM5.25 5.25a.75.75 0 0 0 0 1.06h.001l.447.447a.75.75 0 1 0 1.06-1.06l-.447-.447a.75.75 0 0 0-1.06 0ZM4.5 12a.75.75 0 0 1 .75-.75H5.25a.75.75 0 0 1 0 1.5H4.5a.75.75 0 0 1-.75-.75ZM7.029 18.894a.75.75 0 0 0-1.06-1.06l-1.591 1.59a.75.75 0 1 0 1.06 1.06l1.59-1.591ZM12 18.75a.75.75 0 0 1-.75.75v.75a.75.75 0 0 1 1.5 0v-.75a.75.75 0 0 1-.75-.75ZM17.894 17.029a.75.75 0 1 0-1.06 1.06l1.59 1.591a.75.75 0 1 0 1.06-1.06l-1.591-1.59ZM19.5 12a.75.75 0 0 1 .75-.75h.75a.75.75 0 0 1 0 1.5h-.75a.75.75 0 0 1-.75-.75ZM18.894 5.003a.75.75 0 0 0-1.06-1.06l-1.59 1.59a.75.75 0 0 0 1.06 1.06l1.59-1.591ZM12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM9.528 1.714a.75.75 0 0 0-.829 1.074 11.25 11.25 0 0 1 7.029 7.029.75.75 0 0 0 1.074-.829 12.75 12.75 0 0 0-8.274-8.274ZM10.5 12a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12 3.75a.75.75 0 0 1 .75.75v.75a.75.75 0 0 1-1.5 0V4.5a.75.75 0 0 1 .75-.75ZM5.25 5.25a.75.75 0 0 0 0 1.06h.001l.447.447a.75.75 0 1 0 1.06-1.06l-.447-.447a.75.75 0 0 0-1.06 0ZM4.5 12a.75.75 0 0 1 .75-.75H5.25a.75.75 0 0 1 0 1.5H4.5a.75.75 0 0 1-.75-.75ZM7.029 18.894a.75.75 0 0 0-1.06-1.06l-1.591 1.59a.75.75 0 1 0 1.06 1.06l1.59-1.591ZM12 18.75a.75.75 0 0 1-.75.75v.75a.75.75 0 0 1 1.5 0v-.75a.75.75 0 0 1-.75-.75ZM17.894 17.029a.75.75 0 1 0-1.06 1.06l1.59 1.591a.75.75 0 1 0 1.06-1.06l-1.591-1.59ZM19.5 12a.75.75 0 0 1 .75-.75h.75a.75.75 0 0 1 0 1.5h-.75a.75.75 0 0 1-.75-.75ZM18.894 5.003a.75.75 0 0 0-1.06-1.06l-1.59 1.59a.75.75 0 0 0 1.06 1.06l1.59-1.591Z' })
+                  )
+              ),
+              React.createElement(
+                'button',
+                { onClick: () => setOpen(false), 'aria-label': 'Chiudi chatbot', className: 'kommander-close' },
                 '×',
               ),
             ),
@@ -240,7 +312,7 @@
                 'div',
                 {
                   key: i,
-                  className: 'kommander-row ' + (m.role === 'user' ? 'kommander-row-user' : 'kommander-row-assistant'),
+                  className: `kommander-row kommander-row-${m.role === 'user' ? 'user' : m.role}`,
                 },
                 m.role !== 'user' &&
                   React.createElement('img', {
@@ -249,11 +321,12 @@
                       m.role === 'agent'
                         ? 'https://placehold.co/40x40/444/FFFFFF.png?text=A'
                         : 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
+                    alt: m.role
                   }),
                 React.createElement(
                   'div',
                   {
-                    className: 'kommander-msg ' + (m.role === 'user' ? 'kommander-user' : 'kommander-assistant'),
+                    className: `kommander-msg kommander-${m.role}`,
                   },
                   React.createElement('p', null, m.text),
                   React.createElement('p', { className: 'kommander-time' }, m.time),
@@ -262,9 +335,24 @@
                   React.createElement('img', {
                     className: 'kommander-avatar',
                     src: 'https://placehold.co/40x40/8cb0ea/1A202C.png?text=U',
+                    alt: 'User'
                   }),
               ),
             ),
+            isTyping && React.createElement(
+              'div',
+              { className: 'kommander-row kommander-row-assistant' },
+              React.createElement('img', {
+                className: 'kommander-avatar',
+                src: 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
+                alt: 'Kommander.ai'
+              }),
+              React.createElement(
+                'div',
+                { className: 'kommander-msg kommander-assistant kommander-typing' },
+                React.createElement('p', null, '...')
+              )
+            )
           ),
           React.createElement(
             'form',
@@ -279,10 +367,11 @@
               value: input,
               onChange: (e) => setInput(e.target.value),
               placeholder: 'Scrivi qui…',
+              disabled: isTyping // Disable input while typing
             }),
             React.createElement(
               'button',
-              { type: 'submit', 'aria-label': 'Invia' },
+              { type: 'submit', 'aria-label': 'Invia', disabled: isTyping || !input.trim() },
               React.createElement(
                 'svg',
                 {
@@ -325,3 +414,4 @@
     }
   };
 })();
+
