@@ -57,6 +57,10 @@ The /api/kommander-query endpoint returns CORS headers so the widget can be used
 	•	Replace 'YOUR_USER_ID' with the actual user identifier from your system.
 	•	The chat widget will automatically mount inside the container and connect to the correct context (files + FAQs) for that user.
 
+### Rebuilding the widget
+
+Run `npm run build:widget` to regenerate `public/chatbot.js` and `public/chatbot.css` using esbuild and Tailwind. This bundles `ChatbotWidget.tsx` and keeps the widget styles in sync with the main app.
+
 Limitations
         •       Only a limited number of the most recently uploaded documents are used when generating chat responses (controlled by MAX_PROMPT_FILES).
         •       The application does not perform OCR on images or scanned PDFs; PDFs without embedded text will be ignored.
