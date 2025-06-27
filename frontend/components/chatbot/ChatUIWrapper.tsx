@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { type Message } from '@/frontend/hooks/useChat';
+import React, { useEffect, useRef } from 'react';
+import type { Message } from '@/frontend/hooks/useChat';
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
@@ -30,7 +30,7 @@ function ChatMessage({ message }: { message: Message }) {
             data-ai-hint="bot avatar"
           />
           <AvatarFallback>
-            {isAssistant ? <Bot size={18} /> : isAgent ? <Headphones size={18} /> : <AlertTriangle size={18} />}
+            {isAssistant ? <Bot size={18}/> : isAgent ? <Headphones size={18}/> : <AlertTriangle size={18}/>}
           </AvatarFallback>
         </Avatar>
       )}
@@ -47,21 +47,17 @@ function ChatMessage({ message }: { message: Message }) {
         )}
       >
         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-        <p
-          className={cn(
-            'text-xs mt-1.5',
-            isUser ? 'text-primary-foreground/70 text-right' : 'text-muted-foreground text-left'
-          )}
-        >
+        <p className={cn(
+             'text-xs mt-1.5',
+             isUser ? 'text-primary-foreground/70 text-right' : 'text-muted-foreground text-left'
+           )}>
           {format(message.timestamp, 'p')}
         </p>
       </div>
       {isUser && (
         <Avatar className="h-8 w-8 shrink-0">
           <AvatarImage src="https://placehold.co/40x40/8cb0eA/1A202C.png?text=U" data-ai-hint="user avatar" />
-          <AvatarFallback>
-            <User size={18} />
-          </AvatarFallback>
+          <AvatarFallback><User size={18}/></AvatarFallback>
         </Avatar>
       )}
     </div>
@@ -71,7 +67,9 @@ function ChatMessage({ message }: { message: Message }) {
 export interface ChatUIWrapperProps {
   messages: Message[];
   isLoading: boolean;
-  sendMessage: (text: string) => void;
+  onSend: (message: string) => void;
+  inputValue: string;
+  onInputChange: (value: string) => void;
   containerClassName?: string;
   headerClassName?: string;
   headerExtras?: React.ReactNode;
@@ -82,14 +80,15 @@ export interface ChatUIWrapperProps {
 export default function ChatUIWrapper({
   messages,
   isLoading,
-  sendMessage,
+  onSend,
+  inputValue,
+  onInputChange,
   containerClassName,
   headerClassName,
   headerExtras,
   title = 'Kommander.ai Chat',
   accentColor,
 }: ChatUIWrapperProps) {
-  const [inputValue, setInputValue] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -102,18 +101,16 @@ export default function ChatUIWrapper({
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (inputValue.trim()) {
-      sendMessage(inputValue);
-      setInputValue('');
+      onSend(inputValue);
+      onInputChange('');
     }
   };
 
   return (
-    <div
-      className={cn(
+    <div className={cn(
         'flex flex-col h-full w-full bg-card shadow-xl rounded-lg border border-border',
         containerClassName
-      )}
-    >
+        )}>
       <div
         className={cn(
           'p-4 border-b border-border flex items-center justify-between',
@@ -121,13 +118,15 @@ export default function ChatUIWrapper({
         )}
         style={accentColor ? { backgroundColor: accentColor, color: '#fff' } : undefined}
       >
-        <h2 className="text-xl font-semibold font-headline">{title}</h2>
+        <h2 className="text-xl font-semibold font-headline">
+          {title}
+        </h2>
         {headerExtras}
       </div>
 
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div ref={viewportRef} className="space-y-2">
-          {messages.map((msg) => (
+         {messages.map((msg) => (
             <ChatMessage key={msg.id} message={msg} />
           ))}
           {isLoading && (
@@ -144,7 +143,7 @@ export default function ChatUIWrapper({
           <Input
             type="text"
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => onInputChange(e.target.value)}
             placeholder="Type your message..."
             disabled={isLoading}
             className="flex-1 !bg-white text-black focus:ring-primary focus:border-primary"

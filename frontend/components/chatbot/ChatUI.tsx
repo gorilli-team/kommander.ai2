@@ -1,20 +1,40 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useChat } from '@/frontend/hooks/useChat';
-import ChatUIWrapper, { ChatUIWrapperProps } from './ChatUIWrapper';
+import ChatUIWrapper from '@/frontend/components/chatbot/ChatUIWrapper';
+import { cn } from '@/frontend/lib/utils';
 
-export type ChatUIProps = Omit<ChatUIWrapperProps, 'messages' | 'isLoading' | 'sendMessage'>;
+interface ChatUIProps {
+  containerClassName?: string;
+  headerClassName?: string;
+  headerExtras?: React.ReactNode;
+  title?: string;
+  accentColor?: string;
+}
 
-export default function ChatUI(props: ChatUIProps) {
+export default function ChatUI({
+  containerClassName,
+  headerClassName,
+  headerExtras,
+  title = 'Kommander.ai Chat',
+  accentColor,
+}: ChatUIProps) {
   const { messages, isLoading, sendMessage } = useChat();
+  const [inputValue, setInputValue] = useState('');
 
   return (
     <ChatUIWrapper
-      {...props}
       messages={messages}
       isLoading={isLoading}
-      sendMessage={sendMessage}
+      onSend={sendMessage}
+      inputValue={inputValue}
+      onInputChange={setInputValue}
+      containerClassName={containerClassName}
+      headerClassName={headerClassName}
+      headerExtras={headerExtras}
+      title={title}
+      accentColor={accentColor}
     />
   );
 }
