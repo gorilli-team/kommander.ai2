@@ -8,7 +8,6 @@ async function bundle() {
     bundle: true,
     format: 'iife',
     globalName: 'KommanderWidget',
-    external: ['react', 'react-dom'],
     jsx: 'transform',
     jsxImportSource: 'react',
     loader: { '.ts': 'ts', '.tsx': 'tsx' },

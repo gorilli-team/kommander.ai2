@@ -59,7 +59,7 @@ The /api/kommander-query endpoint returns CORS headers so the widget can be used
 
 ### Rebuilding the widget
 
-Run `npm run build:widget` to regenerate `public/chatbot.js` and `public/chatbot.css` using esbuild and Tailwind. This bundles `ChatbotWidget.tsx` and keeps the widget styles in sync with the main app.
+Run `npm run build:widget` to regenerate `public/chatbot.js` and `public/chatbot.css` using esbuild and Tailwind. This bundles `ChatbotWidget.tsx` **along with React and ReactDOM**, keeping the widget styles in sync with the main app and letting the script run on pages that don’t already load React.
 
 Limitations
         •       Only a limited number of the most recently uploaded documents are used when generating chat responses (controlled by MAX_PROMPT_FILES).
