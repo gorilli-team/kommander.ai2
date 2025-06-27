@@ -11,6 +11,8 @@ async function bundle() {
     jsx: 'transform',
     jsxImportSource: 'react',
     loader: { '.ts': 'ts', '.tsx': 'tsx' },
+    minify: true,
+    sourcemap: false,
   });
 
   execSync(
