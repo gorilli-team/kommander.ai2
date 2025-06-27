@@ -9,7 +9,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "seed": "tsx backend/scripts/seed.ts",
-    "build:widget": "node scripts/build-widget.js"
+    "build:widget": "vite build --config vite.widget.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",
