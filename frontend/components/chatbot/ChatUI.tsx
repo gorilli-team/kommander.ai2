@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useChat } from '@/frontend/hooks/useChat';
 import ChatUIWrapper from '@/frontend/components/chatbot/ChatUIWrapper';
-import { cn } from '@/frontend/lib/utils';
 
 interface ChatUIProps {
   containerClassName?: string;
@@ -21,15 +20,12 @@ export default function ChatUI({
   accentColor,
 }: ChatUIProps) {
   const { messages, isLoading, sendMessage } = useChat();
-  const [inputValue, setInputValue] = useState('');
 
   return (
     <ChatUIWrapper
       messages={messages}
       isLoading={isLoading}
-      onSend={sendMessage}
-      inputValue={inputValue}
-      onInputChange={setInputValue}
+      sendMessage={sendMessage}
       containerClassName={containerClassName}
       headerClassName={headerClassName}
       headerExtras={headerExtras}
