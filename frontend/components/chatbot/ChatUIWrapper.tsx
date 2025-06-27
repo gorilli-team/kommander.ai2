@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useEffect, useRef } from 'react';
-import type { Message } from '@/frontend/hooks/useChat';
+import React, { useState, useRef, useEffect } from 'react';
+import { Message } from '@/frontend/hooks/useWidgetChat';
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
@@ -27,49 +27,46 @@ function ChatMessage({ message }: { message: Message }) {
         <Avatar className="h-8 w-8 shrink-0">
           <AvatarImage
             src={isAssistant ? 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K' : 'https://placehold.co/40x40/444/FFFFFF.png?text=A'}
-            data-ai-hint="bot avatar"
           />
           <AvatarFallback>
-            {isAssistant ? <Bot size={18}/> : isAgent ? <Headphones size={18}/> : <AlertTriangle size={18}/>}
+            {isAssistant ? <Bot size={18} /> : isAgent ? <Headphones size={18} /> : <AlertTriangle size={18} />}
           </AvatarFallback>
         </Avatar>
       )}
       <div
         className={cn(
-          'max-w-xs md:max-w-md lg:max-w-lg rounded-xl px-4 py-3 shadow-md',
-          isUser ? 'bg-primary text-primary-foreground rounded-br-none' : '',
-          isAssistant
-            ? 'bg-card text-card-foreground rounded-bl-none border border-border'
-            : isAgent
-            ? 'bg-accent text-accent-foreground rounded-bl-none border border-border'
-            : '',
+          'max-w-[65%] md:max-w-md lg:max-w-lg rounded-lg px-3 py-2 shadow-md text-sm',
+          isUser ? 'text-white rounded-br-none' : '',
+          isAssistant ? 'bg-card text-card-foreground rounded-bl-none border border-border' : '',
+          isAgent ? 'bg-accent text-accent-foreground rounded-bl-none border border-border' : '',
           isSystem ? 'bg-destructive/10 text-destructive-foreground border border-destructive/30 rounded-bl-none' : ''
         )}
       >
         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-        <p className={cn(
-             'text-xs mt-1.5',
-             isUser ? 'text-primary-foreground/70 text-right' : 'text-muted-foreground text-left'
-           )}>
+        <p
+          className={cn(
+            isUser ? 'text-primary-foreground/70 text-right' : 'text-muted-foreground text-left'
+          )}
+        >
           {format(message.timestamp, 'p')}
         </p>
       </div>
       {isUser && (
         <Avatar className="h-8 w-8 shrink-0">
-          <AvatarImage src="https://placehold.co/40x40/8cb0eA/1A202C.png?text=U" data-ai-hint="user avatar" />
-          <AvatarFallback><User size={18}/></AvatarFallback>
+          <AvatarImage src="https://placehold.co/40x40/8cb0eA/1A202C.png?text=U" />
+          <AvatarFallback>
+            <User size={18} />
+          </AvatarFallback>
         </Avatar>
       )}
     </div>
   );
 }
 
-export interface ChatUIWrapperProps {
+interface ChatUIWrapperProps {
   messages: Message[];
   isLoading: boolean;
-  onSend: (message: string) => void;
-  inputValue: string;
-  onInputChange: (value: string) => void;
+  sendMessage: (message: string) => Promise<void>;
   containerClassName?: string;
   headerClassName?: string;
   headerExtras?: React.ReactNode;
@@ -80,15 +77,14 @@ export interface ChatUIWrapperProps {
 export default function ChatUIWrapper({
   messages,
   isLoading,
-  onSend,
-  inputValue,
-  onInputChange,
+  sendMessage,
   containerClassName,
   headerClassName,
   headerExtras,
   title = 'Kommander.ai Chat',
   accentColor,
 }: ChatUIWrapperProps) {
+  const [inputValue, setInputValue] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -100,17 +96,18 @@ export default function ChatUIWrapper({
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (inputValue.trim()) {
-      onSend(inputValue);
-      onInputChange('');
-    }
+    if (!inputValue.trim()) return;
+    sendMessage(inputValue);
+    setInputValue('');
   };
 
   return (
-    <div className={cn(
+    <div
+      className={cn(
         'flex flex-col h-full w-full bg-card shadow-xl rounded-lg border border-border',
         containerClassName
-        )}>
+      )}
+    >
       <div
         className={cn(
           'p-4 border-b border-border flex items-center justify-between',
@@ -118,15 +115,12 @@ export default function ChatUIWrapper({
         )}
         style={accentColor ? { backgroundColor: accentColor, color: '#fff' } : undefined}
       >
-        <h2 className="text-xl font-semibold font-headline">
-          {title}
-        </h2>
+        <h2 className="text-xl font-semibold font-headline">{title}</h2>
         {headerExtras}
       </div>
-
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div ref={viewportRef} className="space-y-2">
-         {messages.map((msg) => (
+          {messages.map((msg) => (
             <ChatMessage key={msg.id} message={msg} />
           ))}
           {isLoading && (
@@ -137,13 +131,12 @@ export default function ChatUIWrapper({
           )}
         </div>
       </ScrollArea>
-
       <div className="p-4 border-t border-border bg-background/50 rounded-b-lg">
         <form onSubmit={handleSubmit} className="flex items-center space-x-3">
           <Input
             type="text"
             value={inputValue}
-            onChange={(e) => onInputChange(e.target.value)}
+            onChange={(e) => setInputValue(e.target.value)}
             placeholder="Type your message..."
             disabled={isLoading}
             className="flex-1 !bg-white text-black focus:ring-primary focus:border-primary"
@@ -157,4 +150,3 @@ export default function ChatUIWrapper({
     </div>
   );
 }
-

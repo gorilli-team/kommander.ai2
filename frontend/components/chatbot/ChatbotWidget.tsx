@@ -17,7 +17,6 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
   const [open, setOpen] = useState(false);
   const { messages, isLoading, sendMessage, addMessage, handledBy } = useWidgetChat(userId);
   const prevHandledBy = useRef<'bot' | 'agent'>('bot');
-  const [inputValue, setInputValue] = useState('');
   const [botName, setBotName] = useState('Kommander.ai');
   const [botColor, setBotColor] = useState('#1E3A8A');
 
@@ -73,22 +72,19 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
             <ChatUIWrapper
               messages={messages}
               isLoading={isLoading}
-              onSend={sendMessage}
-              inputValue={inputValue}
-              onInputChange={setInputValue}
-              containerClassName="flex flex-col h-full w-full bg-card border border-border rounded-none sm:rounded-lg shadow-xl"
-              headerClassName="px-4 py-3 flex items-center justify-between rounded-t-lg text-white"
+              sendMessage={sendMessage}
+              containerClassName="h-full rounded-none sm:rounded-lg"
+              title={`${botName} – Trial`}
+              accentColor={botColor}
               headerExtras={(
-                <div className="flex items-center gap-2">
+                <>
                   <Badge className="bg-green-600 text-white border-none">Online</Badge>
                   <span className="text-sm">{currentDate}</span>
                   <button onClick={() => setOpen(false)} aria-label="Close" className="ml-2">
                     <X className="w-4 h-4" />
                   </button>
-                </div>
+                </>
               )}
-              title={`${botName} – Trial`}
-              accentColor={botColor}
             />
           </motion.div>
         )}
