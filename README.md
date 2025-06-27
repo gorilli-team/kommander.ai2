@@ -6,11 +6,20 @@ Kommander.ai is a prototype built with **Next.js** and **TypeScript** that demon
 
 1. Install dependencies:
 
-   ```bash
-   npm install
+```bash
+npm install
+```
 
-	2.	Create a .env.local file in the project root and provide the required environment variables:
+After installation you can run lint and type checks:
 
+```bash
+npm run lint
+npm run typecheck
+```
+
+2. Create a `.env.local` file in the project root with the required environment variables:
+
+```bash
 OPENAI_API_KEY=your-openai-key
 MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/dbname
 AUTH_SECRET=your-auth-secret
@@ -19,8 +28,9 @@ RESEND_API_KEY=your-resend-key          # optional, for email features
 EMAIL_FROM="Kommander.ai Proto <onboarding@resend.dev>"  # optional
 BYPASS_AUTH=true                         # optional, bypasses login in dev
 MAX_PROMPT_FILES=3                       # limits how many files are used for building the prompt (default: 3)
+```
 
-
+You can also run `./dev.sh` to install dependencies and verify lint and type checks automatically.
 
 Running the project
 	•	Start the development server on http://localhost:9002:

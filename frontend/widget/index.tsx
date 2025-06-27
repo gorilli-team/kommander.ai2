@@ -16,7 +16,7 @@ function ensureStyles(origin: string) {
 }
 
 export function initKommanderChatbot(opts: InitOptions) {
-  const origin = new URL(document.currentScript!.src).origin;
+  const origin = new URL((document.currentScript as HTMLScriptElement)!.src).origin;
   ensureStyles(origin);
   let container = document.getElementById('kommander-chatbot');
   if (!container) {
