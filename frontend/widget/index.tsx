@@ -24,7 +24,7 @@ export function initKommanderChatbot(opts: InitOptions) {
     container.id = 'kommander-chatbot';
     document.body.appendChild(container);
   }
-  const elem = React.createElement(ChatbotWidget, { userId: opts.userId });
+  const elem = React.createElement(ChatbotWidget, { userId: opts.userId, baseUrl: origin });
   if ((ReactDOM as any).createRoot) {
     (ReactDOM as any).createRoot(container).render(elem);
   } else {

@@ -11,17 +11,18 @@ import ChatUIWrapper from '@/frontend/components/chatbot/ChatUIWrapper';
 
 interface ChatbotWidgetProps {
   userId: string;
+  baseUrl: string;
 }
 
-export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
+export default function ChatbotWidget({ userId, baseUrl }: ChatbotWidgetProps) {
   const [open, setOpen] = useState(false);
-  const { messages, isLoading, sendMessage, addMessage, handledBy } = useWidgetChat(userId);
+  const { messages, isLoading, sendMessage, addMessage, handledBy } = useWidgetChat(userId, baseUrl);
   const prevHandledBy = useRef<'bot' | 'agent'>('bot');
   const [botName, setBotName] = useState('Kommander.ai');
   const [botColor, setBotColor] = useState('#1E3A8A');
 
   useEffect(() => {
-    fetch(`/api/settings/${userId}`)
+    fetch(`${baseUrl}/api/settings/${userId}`)
       .then(res => res.json())
       .then(data => {
         if (data.name) setBotName(data.name);

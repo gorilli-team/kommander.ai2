@@ -9,7 +9,7 @@ export interface Message {
   timestamp: Date;
 }
 
-export function useWidgetChat(userId: string) {
+export function useWidgetChat(userId: string, baseUrl: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [handledBy, setHandledBy] = useState<'bot' | 'agent'>('bot');
@@ -42,7 +42,7 @@ export function useWidgetChat(userId: string) {
     const fetchInitial = async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
+          `${baseUrl}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
 
 
         );
@@ -75,7 +75,7 @@ export function useWidgetChat(userId: string) {
           params.set('since', lastTimestampRef.current);
         }
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
+          `${baseUrl}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
 
         );
 
@@ -139,7 +139,7 @@ export function useWidgetChat(userId: string) {
           }
         }
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/kommander-query`, {
+        const res = await fetch(`${baseUrl}/api/kommander-query`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
