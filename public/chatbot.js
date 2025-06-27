@@ -11486,7 +11486,6 @@ var KommanderWidget = (() => {
       constructor(latestValues = {}, parent = defaultParent?.()) {
         this.id = id2++;
         this.animationId = 0;
-        this.animationCommitId = 0;
         this.children = /* @__PURE__ */ new Set();
         this.options = {};
         this.isTreeAnimating = false;
@@ -11701,14 +11700,9 @@ var KommanderWidget = (() => {
           this.nodes.forEach(clearMeasurements);
           return;
         }
-        if (this.animationId <= this.animationCommitId) {
-          this.nodes.forEach(clearIsLayoutDirty);
-          return;
-        }
         if (!this.isUpdating) {
           this.nodes.forEach(clearIsLayoutDirty);
         }
-        this.animationCommitId = this.animationId;
         this.isUpdating = false;
         this.nodes.forEach(resetTransformStyle);
         this.nodes.forEach(updateLayout);
