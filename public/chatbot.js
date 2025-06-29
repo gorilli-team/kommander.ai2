@@ -42,11 +42,12 @@
     const [botColor, setBotColor] = useState('#1E3A8A');
     const [isDarkMode, setIsDarkMode] = useState(() => {
       try {
-        return localStorage.getItem('kommander_dark_mode') === 'true';
+        const stored = localStorage.getItem('kommander_dark_mode');
+        if (stored !== null) return stored === 'true';
       } catch (e) {
         console.error("Failed to read dark mode from localStorage", e);
-        return false;
       }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
     });
 
     const viewportRef = useRef(null);
@@ -56,14 +57,23 @@
     const prevHandledBy = useRef('bot');
     const lastSentTextRef = useRef('');
 
+    const isSendingRef = useRef(false);
+    const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+
     const restartConversation = () => {
-      if (!window.confirm('Ricominciare la conversazione?')) return;
+
       const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       conversationIdRef.current = newId;
       setConversationId(newId);
       localStorage.setItem(storageKey, newId);
       setMessages([]);
       lastTimestampRef.current = '';
+    };
+
+
+    const confirmRestart = () => {
+      restartConversation();
+      setShowRestartConfirm(false);
     };
 
     const toggleDarkMode = () => {
@@ -101,6 +111,12 @@
               '--kommander-primary-color',
               data.color,
             );
+
+            document.documentElement.style.setProperty(
+              '--kommander-secondary-color',
+              data.color,
+            );
+
           }
         })
         .catch(() => {});
@@ -209,7 +225,8 @@
 
     const sendMessage = async () => {
       const text = input.trim();
-      if (!text) return;
+      if (!text || isSendingRef.current) return;
+      isSendingRef.current = true;
 
       addMessage('user', text, false);
       lastSentTextRef.current = text;
@@ -266,6 +283,9 @@
         console.error("Failed to send message:", err);
       } finally {
         setIsTyping(false); // Hide typing indicator
+
+        isSendingRef.current = false;
+
         if (pollFnRef.current) pollFnRef.current(true); // Manual poll after sending message
       }
     };
@@ -361,10 +381,14 @@
                   }),
                 React.createElement(
                   'div',
-                  {
-                    className: `kommander-msg kommander-${m.role}`,
-                  },
-                  React.createElement('p', null, m.text),
+                  { className: 'kommander-message-wrap' },
+                  React.createElement(
+                    'div',
+                    {
+                      className: `kommander-msg kommander-${m.role}`,
+                    },
+                    React.createElement('p', null, m.text),
+                  ),
                   React.createElement('p', { className: 'kommander-time' }, m.time),
                 ),
                 m.role === 'user' &&
@@ -401,13 +425,13 @@
             },
             React.createElement(
               'button',
-              { type: 'button', className: 'kommander-restart', onClick: restartConversation, disabled: isTyping, 'aria-label': 'Ricomincia' },
+
+              { type: 'button', className: 'kommander-restart', onClick: () => setShowRestartConfirm(true), disabled: isTyping, 'aria-label': 'Ricomincia' },
               React.createElement(
                 'svg',
-                { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', width: '16', height: '16', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round', strokeLinejoin: 'round' },
-                React.createElement('polyline', { points: '1 4 1 10 7 10' }),
-                React.createElement('polyline', { points: '23 20 23 14 17 14' }),
-                React.createElement('path', { d: 'M20.49 9A9 9 0 0 0 5.5 5.5L1 10' })
+                { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 1920 1920', width: '16', height: '16', fill: 'currentColor' },
+                React.createElement('path', { d: 'M960 0v112.941c467.125 0 847.059 379.934 847.059 847.059 0 467.125-379.934 847.059-847.059 847.059-467.125 0-847.059-379.934-847.059-847.059 0-267.106 126.607-515.915 338.824-675.727v393.374h112.94V112.941H0v112.941h342.89C127.058 407.38 0 674.711 0 960c0 529.355 430.645 960 960 960s960-430.645 960-960S1489.355 0 960 0' })
+
               )
             ),
             React.createElement('input', {
@@ -441,6 +465,34 @@
               )
             ),
           ),
+          showRestartConfirm &&
+            React.createElement(
+              'div',
+              { className: 'kommander-modal-overlay' },
+              React.createElement(
+                'div',
+                { className: 'kommander-modal' },
+                React.createElement(
+                  'p',
+                  null,
+                  'Ricominciare la conversazione?'
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'kommander-modal-buttons' },
+                  React.createElement(
+                    'button',
+                    { className: 'kommander-modal-confirm', onClick: confirmRestart },
+                    'S\u00ec'
+                  ),
+                  React.createElement(
+                    'button',
+                    { className: 'kommander-modal-cancel', onClick: () => setShowRestartConfirm(false) },
+                    'No'
+                  )
+                )
+              )
+            ),
         ),
     );
   }

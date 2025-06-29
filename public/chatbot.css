@@ -234,6 +234,24 @@ body {
   justify-content: flex-start;
 }
 
+.kommander-message-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.kommander-row-user .kommander-message-wrap {
+  align-items: flex-end;
+}
+
+.kommander-row-assistant .kommander-message-wrap,
+.kommander-row-agent .kommander-message-wrap {
+  align-items: flex-start;
+}
+
+.kommander-row-agent {
+  justify-content: flex-start;
+}
+
 .kommander-avatar {
   width: 36px; /* Slightly larger avatar */
   height: 36px;
@@ -269,12 +287,25 @@ body {
   margin-left: 0; /* Ensure no extra margin */
 }
 
+.kommander-agent {
+  background: var(--kommander-assistant-message-bg);
+  color: var(--kommander-text-color-dark);
+  border: 1px solid var(--kommander-assistant-message-border);
+  border-bottom-left-radius: 4px;
+  margin-left: 0;
+}
+
 .kommander-user p {
   color: var(--kommander-text-color-light) !important;
   font-size: 12px;
 }
 
 .kommander-assistant p {
+  color: var(--kommander-text-color-dark);
+  font-size: 12px;
+}
+
+.kommander-agent p {
   color: var(--kommander-text-color-dark);
   font-size: 12px;
 }
@@ -288,6 +319,10 @@ body {
 }
 
 .kommander-row-assistant .kommander-time {
+  text-align: left;
+}
+
+.kommander-row-agent .kommander-time {
   text-align: left;
 }
 
@@ -366,6 +401,59 @@ body {
   background: var(--kommander-secondary-color);
   color: var(--kommander-text-color-light);
 }
+.kommander-restart svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.kommander-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.kommander-modal {
+  background: var(--kommander-bg-light);
+  color: var(--kommander-text-color-dark);
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 300px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.kommander-window.dark-mode .kommander-modal {
+  background: var(--kommander-bg-dark-message);
+  color: var(--kommander-text-color-light);
+}
+
+.kommander-modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.kommander-modal-buttons button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.kommander-modal-confirm {
+  background: var(--kommander-primary-color);
+  color: var(--kommander-text-color-light);
+}
+
+.kommander-modal-cancel {
+  background: var(--kommander-border-color);
+  color: var(--kommander-text-color-dark);
 
 .kommander-input button:hover {
   background: var(--kommander-secondary-color);
