@@ -1,6 +1,13 @@
 
 (function () {
-  const ORIGIN = new URL(document.currentScript.src).origin;
+  const scriptEl =
+    document.currentScript ||
+    Array.from(document.querySelectorAll('script')).find((s) =>
+      s.src && s.src.includes('chatbot.js'),
+    );
+  const ORIGIN = scriptEl
+    ? new URL(scriptEl.src, window.location.href).origin
+    : window.location.origin;
 
   function loadScript(src) {
     return new Promise((resolve, reject) => {
@@ -69,7 +76,6 @@
       setMessages([]);
       lastTimestampRef.current = '';
     };
-
 
     const confirmRestart = () => {
       restartConversation();
