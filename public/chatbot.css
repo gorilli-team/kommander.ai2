@@ -44,7 +44,7 @@ body {
   bottom: 16px;
   right: 16px;
   z-index: 2147483647;
-  background: linear-gradient(to right, #6a11cb 0%, #2575fc 100%);
+  background: linear-gradient(to right, var(--kommander-primary-color) 0%, var(--kommander-secondary-color) 100%);
   color: var(--kommander-text-color-light);
   border-radius: 9999px;
   width: 56px; /* Slightly larger */
@@ -167,15 +167,16 @@ body {
 }
 
 .kommander-close, .kommander-toggle-dark-mode {
-  background: none;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
   color: var(--kommander-text-color-light);
   cursor: pointer;
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1;
   padding: 0;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -192,8 +193,8 @@ body {
 .kommander-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  font-size: 14px;
+  padding: 12px;
+  font-size: 12px;
   background-color: var(--kommander-bg-light);
   color: var(--kommander-text-color-dark);
 }
@@ -233,6 +234,24 @@ body {
   justify-content: flex-start;
 }
 
+.kommander-message-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.kommander-row-user .kommander-message-wrap {
+  align-items: flex-end;
+}
+
+.kommander-row-assistant .kommander-message-wrap,
+.kommander-row-agent .kommander-message-wrap {
+  align-items: flex-start;
+}
+
+.kommander-row-agent {
+  justify-content: flex-start;
+}
+
 .kommander-avatar {
   width: 36px; /* Slightly larger avatar */
   height: 36px;
@@ -243,8 +262,8 @@ body {
 
 .kommander-msg {
   max-width: 75%; /* Allow messages to take up more width */
-  padding: 12px 16px; /* More padding */
-  border-radius: 18px; /* Softer rounded corners */
+  padding: 8px 12px;
+  border-radius: 14px;
   box-shadow: 0 4px 10px var(--kommander-message-shadow); /* More pronounced shadow */
   border: 1px solid transparent; /* Base border */
   word-wrap: break-word;
@@ -268,12 +287,27 @@ body {
   margin-left: 0; /* Ensure no extra margin */
 }
 
+.kommander-agent {
+  background: var(--kommander-assistant-message-bg);
+  color: var(--kommander-text-color-dark);
+  border: 1px solid var(--kommander-assistant-message-border);
+  border-bottom-left-radius: 4px;
+  margin-left: 0;
+}
+
 .kommander-user p {
   color: var(--kommander-text-color-light) !important;
+  font-size: 12px;
 }
 
 .kommander-assistant p {
   color: var(--kommander-text-color-dark);
+  font-size: 12px;
+}
+
+.kommander-agent p {
+  color: var(--kommander-text-color-dark);
+  font-size: 12px;
 }
 
 .kommander-time {
@@ -285,6 +319,10 @@ body {
 }
 
 .kommander-row-assistant .kommander-time {
+  text-align: left;
+}
+
+.kommander-row-agent .kommander-time {
   text-align: left;
 }
 
@@ -343,6 +381,80 @@ body {
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kommander-restart {
+  background: var(--kommander-border-color);
+  color: var(--kommander-text-color-dark);
+  border: none;
+  border-radius: 9999px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.kommander-restart:hover {
+  background: var(--kommander-secondary-color);
+  color: var(--kommander-text-color-light);
+}
+
+.kommander-restart svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.kommander-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.kommander-modal {
+  background: var(--kommander-bg-light);
+  color: var(--kommander-text-color-dark);
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 300px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.kommander-window.dark-mode .kommander-modal {
+  background: var(--kommander-bg-dark-message);
+  color: var(--kommander-text-color-light);
+}
+
+.kommander-modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.kommander-modal-buttons button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.kommander-modal-confirm {
+  background: var(--kommander-primary-color);
+  color: var(--kommander-text-color-light);
+}
+
+.kommander-modal-cancel {
+  background: var(--kommander-border-color);
+  color: var(--kommander-text-color-dark);
 }
 
 .kommander-input button:hover {
