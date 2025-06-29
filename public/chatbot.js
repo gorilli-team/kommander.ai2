@@ -63,10 +63,12 @@
     const pollFnRef = useRef(null);
     const prevHandledBy = useRef('bot');
     const lastSentTextRef = useRef('');
+
     const isSendingRef = useRef(false);
     const [showRestartConfirm, setShowRestartConfirm] = useState(false);
 
     const restartConversation = () => {
+
       const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       conversationIdRef.current = newId;
       setConversationId(newId);
@@ -115,10 +117,12 @@
               '--kommander-primary-color',
               data.color,
             );
+
             document.documentElement.style.setProperty(
               '--kommander-secondary-color',
               data.color,
             );
+
           }
         })
         .catch(() => {});
@@ -285,7 +289,9 @@
         console.error("Failed to send message:", err);
       } finally {
         setIsTyping(false); // Hide typing indicator
+
         isSendingRef.current = false;
+
         if (pollFnRef.current) pollFnRef.current(true); // Manual poll after sending message
       }
     };
@@ -425,11 +431,13 @@
             },
             React.createElement(
               'button',
+
               { type: 'button', className: 'kommander-restart', onClick: () => setShowRestartConfirm(true), disabled: isTyping, 'aria-label': 'Ricomincia' },
               React.createElement(
                 'svg',
                 { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 1920 1920', width: '16', height: '16', fill: 'currentColor' },
                 React.createElement('path', { d: 'M960 0v112.941c467.125 0 847.059 379.934 847.059 847.059 0 467.125-379.934 847.059-847.059 847.059-467.125 0-847.059-379.934-847.059-847.059 0-267.106 126.607-515.915 338.824-675.727v393.374h112.94V112.941H0v112.941h342.89C127.058 407.38 0 674.711 0 960c0 529.355 430.645 960 960 960s960-430.645 960-960S1489.355 0 960 0' })
+
               )
             ),
             React.createElement('input', {
