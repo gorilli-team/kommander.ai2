@@ -401,7 +401,6 @@ body {
   background: var(--kommander-secondary-color);
   color: var(--kommander-text-color-light);
 }
-
 .kommander-restart svg {
   width: 16px;
   height: 16px;
@@ -455,7 +454,6 @@ body {
 .kommander-modal-cancel {
   background: var(--kommander-border-color);
   color: var(--kommander-text-color-dark);
-}
 
 .kommander-input button:hover {
   background: var(--kommander-secondary-color);
