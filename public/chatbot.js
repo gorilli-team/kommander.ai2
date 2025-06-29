@@ -38,13 +38,16 @@
     const [handledBy, setHandledBy] = useState('bot');
     const [conversationId, setConversationId] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [botName, setBotName] = useState('Kommander.ai');
+    const [botColor, setBotColor] = useState('#1E3A8A');
     const [isDarkMode, setIsDarkMode] = useState(() => {
       try {
-        return localStorage.getItem('kommander_dark_mode') === 'true';
+        const stored = localStorage.getItem('kommander_dark_mode');
+        if (stored !== null) return stored === 'true';
       } catch (e) {
         console.error("Failed to read dark mode from localStorage", e);
-        return false;
       }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
     });
 
     const viewportRef = useRef(null);
@@ -52,6 +55,23 @@
     const lastTimestampRef = useRef('');
     const pollFnRef = useRef(null);
     const prevHandledBy = useRef('bot');
+    const lastSentTextRef = useRef('');
+    const isSendingRef = useRef(false);
+    const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+
+    const restartConversation = () => {
+      const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      conversationIdRef.current = newId;
+      setConversationId(newId);
+      localStorage.setItem(storageKey, newId);
+      setMessages([]);
+      lastTimestampRef.current = '';
+    };
+
+    const confirmRestart = () => {
+      restartConversation();
+      setShowRestartConfirm(false);
+    };
 
     const toggleDarkMode = () => {
       setIsDarkMode(prevMode => {
@@ -69,10 +89,33 @@
       return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    function addMessage(role, text) {
+    function addMessage(role, text, updateTimestamp = true) {
       setMessages((prev) => [...prev, { role, text, time: formatTime() }]);
-      lastTimestampRef.current = new Date().toISOString();
+      if (updateTimestamp) {
+        lastTimestampRef.current = new Date().toISOString();
+      }
     }
+
+    useEffect(() => {
+      fetch(`${ORIGIN}/api/settings/${userId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!data) return;
+          if (data.name) setBotName(data.name);
+          if (data.color) {
+            setBotColor(data.color);
+            document.documentElement.style.setProperty(
+              '--kommander-primary-color',
+              data.color,
+            );
+            document.documentElement.style.setProperty(
+              '--kommander-secondary-color',
+              data.color,
+            );
+          }
+        })
+        .catch(() => {});
+    }, [userId]);
 
     const currentDate = new Date().toLocaleDateString('it-IT', {
       day: '2-digit',
@@ -88,9 +131,9 @@
 
     useEffect(() => {
       if (open && messages.length === 0) {
-        addMessage('assistant', 'Ciao, sono Kommander.ai! Come posso aiutarti oggi?');
+        addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi?`);
       }
-    }, [open]);
+    }, [open, botName]);
 
     const storageKey = `kommander_conversation_${userId}`;
 
@@ -125,7 +168,7 @@
       }
     };
 
-    const poll = async () => {
+    const poll = async (skipUserDup = false) => {
       const id = conversationIdRef.current;
       if (!id) return;
       try {
@@ -135,11 +178,14 @@
         if (res.ok) {
           const data = await res.json();
           setHandledBy(data.handledBy || 'bot');
-          const newMsgs = (data.messages || []).map((m) => ({
+          let newMsgs = (data.messages || []).map((m) => ({
             role: m.role,
             text: m.text,
             time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           }));
+          if (skipUserDup && newMsgs.length && newMsgs[0].role === 'user' && newMsgs[0].text === lastSentTextRef.current) {
+            newMsgs = newMsgs.slice(1);
+          }
           if (newMsgs.length) {
             lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
             setMessages((prev) => [...prev, ...newMsgs]);
@@ -174,9 +220,11 @@
 
     const sendMessage = async () => {
       const text = input.trim();
-      if (!text) return;
+      if (!text || isSendingRef.current) return;
+      isSendingRef.current = true;
 
-      addMessage('user', text);
+      addMessage('user', text, false);
+      lastSentTextRef.current = text;
       setIsTyping(true); // Show typing indicator
 
       const isHumanRequest = text.toLowerCase().includes('operatore umano');
@@ -230,7 +278,8 @@
         console.error("Failed to send message:", err);
       } finally {
         setIsTyping(false); // Hide typing indicator
-        if (pollFnRef.current) pollFnRef.current(); // Manual poll after sending message
+        isSendingRef.current = false;
+        if (pollFnRef.current) pollFnRef.current(true); // Manual poll after sending message
       }
     };
 
@@ -267,7 +316,7 @@
           React.createElement(
             'div',
             { className: 'kommander-header' },
-            React.createElement('span', { className: 'font-semibold' }, 'Kommander.ai – Trial'),
+            React.createElement('span', { className: 'font-semibold' }, botName + ' – Trial'),
             React.createElement(
               'div',
               { className: 'kommander-header-right' },
@@ -325,10 +374,14 @@
                   }),
                 React.createElement(
                   'div',
-                  {
-                    className: `kommander-msg kommander-${m.role}`,
-                  },
-                  React.createElement('p', null, m.text),
+                  { className: 'kommander-message-wrap' },
+                  React.createElement(
+                    'div',
+                    {
+                      className: `kommander-msg kommander-${m.role}`,
+                    },
+                    React.createElement('p', null, m.text),
+                  ),
                   React.createElement('p', { className: 'kommander-time' }, m.time),
                 ),
                 m.role === 'user' &&
@@ -363,6 +416,15 @@
               },
               className: 'kommander-input',
             },
+            React.createElement(
+              'button',
+              { type: 'button', className: 'kommander-restart', onClick: () => setShowRestartConfirm(true), disabled: isTyping, 'aria-label': 'Ricomincia' },
+              React.createElement(
+                'svg',
+                { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 1920 1920', width: '16', height: '16', fill: 'currentColor' },
+                React.createElement('path', { d: 'M960 0v112.941c467.125 0 847.059 379.934 847.059 847.059 0 467.125-379.934 847.059-847.059 847.059-467.125 0-847.059-379.934-847.059-847.059 0-267.106 126.607-515.915 338.824-675.727v393.374h112.94V112.941H0v112.941h342.89C127.058 407.38 0 674.711 0 960c0 529.355 430.645 960 960 960s960-430.645 960-960S1489.355 0 960 0' })
+              )
+            ),
             React.createElement('input', {
               value: input,
               onChange: (e) => setInput(e.target.value),
@@ -394,6 +456,34 @@
               )
             ),
           ),
+          showRestartConfirm &&
+            React.createElement(
+              'div',
+              { className: 'kommander-modal-overlay' },
+              React.createElement(
+                'div',
+                { className: 'kommander-modal' },
+                React.createElement(
+                  'p',
+                  null,
+                  'Ricominciare la conversazione?'
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'kommander-modal-buttons' },
+                  React.createElement(
+                    'button',
+                    { className: 'kommander-modal-confirm', onClick: confirmRestart },
+                    'S\u00ec'
+                  ),
+                  React.createElement(
+                    'button',
+                    { className: 'kommander-modal-cancel', onClick: () => setShowRestartConfirm(false) },
+                    'No'
+                  )
+                )
+              )
+            ),
         ),
     );
   }
