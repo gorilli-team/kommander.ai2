@@ -3,12 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
 import { Card, CardContent } from '@/frontend/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/frontend/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/frontend/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/frontend/components/ui/popover';
 import { cn } from '@/frontend/lib/utils';
 import { format } from 'date-fns';
 import { MoreVertical, UserCircle } from 'lucide-react';
 import AgentControlBar from './AgentControlBar';
+import { Input } from '@/frontend/components/ui/input';
 
 export interface ConversationMessageDisplay {
   role: 'user' | 'assistant' | 'agent';
@@ -199,7 +205,11 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                 }}
                 className="p-2 border-t flex gap-2"
               >
-                <input name="agentMsg" className="flex-1 border rounded px-2 py-1" placeholder="Scrivi una risposta" />
+                <Input
+                  name="agentMsg"
+                  className="flex-1"
+                  placeholder="Scrivi una risposta"
+                />
                 <button type="submit" className="px-3 py-1 rounded bg-primary text-primary-foreground">Invia</button>
               </form>
             )}
