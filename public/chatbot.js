@@ -38,6 +38,8 @@
     const [handledBy, setHandledBy] = useState('bot');
     const [conversationId, setConversationId] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [botName, setBotName] = useState('Kommander.ai');
+    const [botColor, setBotColor] = useState('#1E3A8A');
     const [isDarkMode, setIsDarkMode] = useState(() => {
       try {
         return localStorage.getItem('kommander_dark_mode') === 'true';
@@ -52,6 +54,17 @@
     const lastTimestampRef = useRef('');
     const pollFnRef = useRef(null);
     const prevHandledBy = useRef('bot');
+    const lastSentTextRef = useRef('');
+
+    const restartConversation = () => {
+      if (!window.confirm('Ricominciare la conversazione?')) return;
+      const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      conversationIdRef.current = newId;
+      setConversationId(newId);
+      localStorage.setItem(storageKey, newId);
+      setMessages([]);
+      lastTimestampRef.current = '';
+    };
 
     const toggleDarkMode = () => {
       setIsDarkMode(prevMode => {
@@ -69,10 +82,29 @@
       return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    function addMessage(role, text) {
+    function addMessage(role, text, updateTimestamp = true) {
       setMessages((prev) => [...prev, { role, text, time: formatTime() }]);
-      lastTimestampRef.current = new Date().toISOString();
+      if (updateTimestamp) {
+        lastTimestampRef.current = new Date().toISOString();
+      }
     }
+
+    useEffect(() => {
+      fetch(`${ORIGIN}/api/settings/${userId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!data) return;
+          if (data.name) setBotName(data.name);
+          if (data.color) {
+            setBotColor(data.color);
+            document.documentElement.style.setProperty(
+              '--kommander-primary-color',
+              data.color,
+            );
+          }
+        })
+        .catch(() => {});
+    }, [userId]);
 
     const currentDate = new Date().toLocaleDateString('it-IT', {
       day: '2-digit',
@@ -88,9 +120,9 @@
 
     useEffect(() => {
       if (open && messages.length === 0) {
-        addMessage('assistant', 'Ciao, sono Kommander.ai! Come posso aiutarti oggi?');
+        addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi?`);
       }
-    }, [open]);
+    }, [open, botName]);
 
     const storageKey = `kommander_conversation_${userId}`;
 
@@ -125,7 +157,7 @@
       }
     };
 
-    const poll = async () => {
+    const poll = async (skipUserDup = false) => {
       const id = conversationIdRef.current;
       if (!id) return;
       try {
@@ -135,11 +167,14 @@
         if (res.ok) {
           const data = await res.json();
           setHandledBy(data.handledBy || 'bot');
-          const newMsgs = (data.messages || []).map((m) => ({
+          let newMsgs = (data.messages || []).map((m) => ({
             role: m.role,
             text: m.text,
             time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           }));
+          if (skipUserDup && newMsgs.length && newMsgs[0].role === 'user' && newMsgs[0].text === lastSentTextRef.current) {
+            newMsgs = newMsgs.slice(1);
+          }
           if (newMsgs.length) {
             lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
             setMessages((prev) => [...prev, ...newMsgs]);
@@ -176,7 +211,8 @@
       const text = input.trim();
       if (!text) return;
 
-      addMessage('user', text);
+      addMessage('user', text, false);
+      lastSentTextRef.current = text;
       setIsTyping(true); // Show typing indicator
 
       const isHumanRequest = text.toLowerCase().includes('operatore umano');
@@ -230,7 +266,7 @@
         console.error("Failed to send message:", err);
       } finally {
         setIsTyping(false); // Hide typing indicator
-        if (pollFnRef.current) pollFnRef.current(); // Manual poll after sending message
+        if (pollFnRef.current) pollFnRef.current(true); // Manual poll after sending message
       }
     };
 
@@ -267,7 +303,7 @@
           React.createElement(
             'div',
             { className: 'kommander-header' },
-            React.createElement('span', { className: 'font-semibold' }, 'Kommander.ai – Trial'),
+            React.createElement('span', { className: 'font-semibold' }, botName + ' – Trial'),
             React.createElement(
               'div',
               { className: 'kommander-header-right' },
@@ -363,6 +399,17 @@
               },
               className: 'kommander-input',
             },
+            React.createElement(
+              'button',
+              { type: 'button', className: 'kommander-restart', onClick: restartConversation, disabled: isTyping, 'aria-label': 'Ricomincia' },
+              React.createElement(
+                'svg',
+                { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', width: '16', height: '16', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round', strokeLinejoin: 'round' },
+                React.createElement('polyline', { points: '1 4 1 10 7 10' }),
+                React.createElement('polyline', { points: '23 20 23 14 17 14' }),
+                React.createElement('path', { d: 'M20.49 9A9 9 0 0 0 5.5 5.5L1 10' })
+              )
+            ),
             React.createElement('input', {
               value: input,
               onChange: (e) => setInput(e.target.value),
