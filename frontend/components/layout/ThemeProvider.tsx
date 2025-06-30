@@ -25,10 +25,11 @@ const lightTheme = {
   },
 };
 
+// Dark mode ora è veramente nero
 const darkTheme = {
   colors: {
-    background: "#1A202C",
-    foreground: "#F0F2F5",
+    background: "#000000", // Pure black invece di grigio scuro
+    foreground: "#F5F5F5", // Light gray text
   },
 };
 

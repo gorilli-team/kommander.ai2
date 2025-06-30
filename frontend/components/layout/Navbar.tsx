@@ -12,7 +12,7 @@ export default function Navbar() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-background py-2 pr-4">
-      <Link href="/training" aria-label="Go to Training page" className="ml-4 flex w-16 justify-center">
+      <Link href="/training" aria-label="Go to Training page" className="ml-4 flex w-14 justify-center">
         <KommanderIcon />
       </Link>
       <div className="flex items-center gap-4">

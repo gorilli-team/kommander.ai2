@@ -9,6 +9,7 @@ body {
 
 @layer base {
   :root {
+    /* Light Theme */
     --background: 220 13% 95%; /* Very light gray #F0F2F5 */
     --foreground: 220 13% 10%; /* Dark charcoal for text */
     --card: 0 0% 100%; /* White cards */
@@ -45,38 +46,39 @@ body {
   }
 
   .dark {
-    --background: 220 13% 10%; /* Dark Slate Gray/Charcoal #1A202C */
-    --foreground: 220 13% 95%; /* Light Gray text #F0F2F5 */
-    --card: 220 13% 15%; /* Slightly Lighter Charcoal for cards */
-    --card-foreground: 220 13% 95%;
-    --popover: 220 13% 15%;
-    --popover-foreground: 220 13% 95%;
-    --primary: 221 79% 58%; /* New Blue for dark mode (brighter) */
+    /* True Black Dark Theme */
+    --background: 0 0% 0%; /* Pure Black #000000 */
+    --foreground: 0 0% 95%; /* Light text on black */
+    --card: 0 0% 3%; /* Very dark cards #080808 */
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 5%; /* Slightly lighter for popovers */
+    --popover-foreground: 0 0% 95%;
+    --primary: 221 79% 58%; /* Bright blue for contrast */
     --primary-foreground: 0 0% 100%; /* White text on primary */
-    --secondary: 220 13% 25%; /* Darker gray for secondary elements */
-    --secondary-foreground: 220 13% 95%;
-    --muted: 220 13% 20%; /* Muted dark gray */
-    --muted-foreground: 220 10% 65%;
-    --accent: 220 70% 45%; /* Dark mode Accent Blue */
-    --accent-foreground: 0 0% 100%; /* White text on dark mode accent */
-    --destructive: 0 62.8% 30.6%;
+    --secondary: 0 0% 8%; /* Very dark secondary */
+    --secondary-foreground: 0 0% 90%;
+    --muted: 0 0% 10%; /* Dark muted */
+    --muted-foreground: 0 0% 60%;
+    --accent: 221 70% 50%; /* Blue accent */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 20%; /* Border color for dark theme */
-    --input: 220 13% 20%; /* Input background / border for dark theme */
-    --ring: 221 79% 58%; /* New Blue for rings in dark mode */
-    --chart-1: 221 79% 58%; /* Dark Mode Primary Blue */
-    --chart-2: 220 70% 45%; /* Dark Mode Accent Blue */
-    --chart-3: 215 55% 50%; /* Dark Mode Distinct Mid-Blue */
+    --border: 0 0% 15%; /* Dark borders */
+    --input: 0 0% 8%; /* Dark input background */
+    --ring: 221 79% 58%; /* Blue focus rings */
+    --chart-1: 221 79% 58%;
+    --chart-2: 220 70% 50%;
+    --chart-3: 215 60% 55%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --sidebar-background: 220 13% 8%; /* Very dark for sidebar */
-    --sidebar-foreground: 220 13% 85%;
-    --sidebar-primary: 221 65% 50%; /* Adjusted Sidebar Blue for dark theme */
-    --sidebar-primary-foreground: 0 0% 100%; /* White text on sidebar primary (dark theme) */
-    --sidebar-accent: 220 60% 35%; /* Darker blue for sidebar accent (dark theme) */
-    --sidebar-accent-foreground: 0 0% 90%; /* Light gray text for sidebar accent (dark theme) */
-    --sidebar-border: 220 13% 20%;
-    --sidebar-ring: 221 65% 50%; /* Adjusted Sidebar Blue for ring (dark theme) */
+    --sidebar-background: 0 0% 2%; /* Almost black sidebar */
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 221 70% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 80%;
+    --sidebar-border: 0 0% 10%;
+    --sidebar-ring: 221 70% 55%;
   }
 }
 

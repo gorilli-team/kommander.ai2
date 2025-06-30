@@ -37,7 +37,7 @@ export default function Sidebar() {
               <label
                 htmlFor={item.id}
                 className={cn(
-                  "relative flex h-10 w-full cursor-pointer items-center justify-center rounded-md p-2 ease-in-out duration-300 group mb-2 last:mb-0",
+                  "relative flex h-10 w-full cursor-pointer items-center justify-center rounded-md p-2 ease-in-out duration-300 group mb-3 last:mb-0",
                   "text-muted-foreground hover:bg-accent/70 hover:text-accent-foreground",
                   isActive ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" : "border-transparent"
                 )}

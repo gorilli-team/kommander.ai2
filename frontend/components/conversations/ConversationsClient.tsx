@@ -203,62 +203,69 @@ export default function ConversationsClient({ conversations: initial }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Analytics Dashboard */}
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+      {/* Overview sempre visibile */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-2 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
+            <MessageSquare className="h-5 w-5 text-blue-500" />
+          </div>
+          <h2 className="text-2xl font-bold">Overview</h2>
+        </div>
+        
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Totale Conversazioni</CardTitle>
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics.total}</div>
+              <p className="text-xs text-muted-foreground">Conversazioni totali</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Gestite da AI</CardTitle>
+              <Bot className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics.botHandled}</div>
+              <p className="text-xs text-muted-foreground">{analytics.botPercentage}% del totale</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Gestite da Operatori</CardTitle>
+              <User className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics.agentHandled}</div>
+              <p className="text-xs text-muted-foreground">{analytics.agentPercentage}% del totale</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Messaggi per Conversazione</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics.avgMessagesPerConversation}</div>
+              <p className="text-xs text-muted-foreground">Media messaggi</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+      
+      {/* Tabs per Conversazioni e Analytics */}
+      <Tabs defaultValue="conversations" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="conversations">Conversazioni</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="overview" className="space-y-4">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Totale Conversazioni</CardTitle>
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analytics.total}</div>
-                <p className="text-xs text-muted-foreground">Conversazioni totali</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Gestite da AI</CardTitle>
-                <Bot className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analytics.botHandled}</div>
-                <p className="text-xs text-muted-foreground">{analytics.botPercentage}% del totale</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Gestite da Operatori</CardTitle>
-                <User className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analytics.agentHandled}</div>
-                <p className="text-xs text-muted-foreground">{analytics.agentPercentage}% del totale</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Messaggi per Conversazione</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analytics.avgMessagesPerConversation}</div>
-                <p className="text-xs text-muted-foreground">Media messaggi</p>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
         
         <TabsContent value="conversations">
           {/* Enhanced Conversations Interface */}
@@ -328,8 +335,8 @@ export default function ConversationsClient({ conversations: initial }: Props) {
             </Card>
             
             {/* Conversations Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[70vh]">
-              <aside className="lg:col-span-1">
+            <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 min-h-[70vh]">
+              <aside className="lg:col-span-2">
                 <Card className="h-full">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -445,7 +452,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                 </Card>
               </aside>
 
-              <section className="lg:col-span-2">
+              <section className="lg:col-span-4">
                 {selected ? (
                   <Card className="h-full flex flex-col">
                     <CardHeader className="border-b">
