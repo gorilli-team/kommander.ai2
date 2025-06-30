@@ -190,7 +190,7 @@
           const data = await res.json();
           setHandledBy(data.handledBy || 'bot');
           let newMsgs = (data.messages || []).map((m) => ({
-            role: m.role,
+            role: m.role === 'assistant' ? 'assistant' : (m.role === 'agent' ? 'agent' : m.role),
             text: m.text,
             time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           }));
@@ -218,7 +218,7 @@
           poll();
         }
       });
-      interval = setInterval(poll, 1000); // Poll more frequently for a better real-time feel
+      interval = setInterval(poll, 3000); // Poll every 3 seconds for good balance between real-time and performance
       return () => interval && clearInterval(interval);
     }, [conversationId, userId, open]); // Added 'open' to dependency array
 
@@ -374,7 +374,7 @@
                 'div',
                 {
                   key: i,
-                  className: `kommander-row kommander-row-${m.role === 'user' ? 'user' : m.role}`,
+                  className: `kommander-row kommander-row-${m.role === 'user' ? 'user' : (m.role === 'agent' ? 'agent' : 'assistant')}`,
                 },
                 m.role !== 'user' &&
                   React.createElement('img', {

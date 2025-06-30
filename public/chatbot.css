@@ -313,11 +313,20 @@ body {
 }
 
 .kommander-agent {
-  background: var(--kommander-assistant-message-bg);
-  color: var(--kommander-text-color-dark);
-  border: 1px solid var(--kommander-assistant-message-border);
+  background: #dcfce7; /* Light green background for agent */
+  color: #166534; /* Dark green text */
+  border: 1px solid #22c55e; /* Green border */
+  border-left: 3px solid #22c55e; /* Thicker left border */
   border-bottom-left-radius: 4px;
   margin-left: 0;
+}
+
+/* Dark mode agent styles */
+.dark-mode .kommander-agent {
+  background: #064e3b; /* Dark green background */
+  color: #bbf7d0; /* Light green text */
+  border: 1px solid #22c55e;
+  border-left: 3px solid #22c55e;
 }
 
 .kommander-user p {
