@@ -176,9 +176,10 @@
             text: m.text,
             time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           }));
-          // Filter out duplicate user messages
-          if (skipUserDup && newMsgs.length) {
+          // Always filter out user messages that match what we just sent
+          if (skipUserDup && lastSentTextRef.current) {
             newMsgs = newMsgs.filter(msg => {
+              // Skip ALL user messages that match our last sent text
               if (msg.role === 'user' && msg.text === lastSentTextRef.current) {
                 return false; // Skip this duplicate
               }
@@ -189,6 +190,10 @@
             lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
             setMessages((prev) => [...prev, ...newMsgs]);
             setIsTyping(false); // Stop typing indicator if new messages arrive
+          }
+          // Clear lastSentText after processing to prevent future false positives
+          if (skipUserDup) {
+            lastSentTextRef.current = '';
           }
         }
       } catch (err) {
@@ -414,11 +419,11 @@
               value: input,
               onChange: (e) => setInput(e.target.value),
               placeholder: 'Scrivi qui…',
-              disabled: isTyping // Disable input while typing
+              disabled: isTyping || isSendingRef.current // Disable input while typing or sending
             }),
             React.createElement(
               'button',
-              { type: 'submit', 'aria-label': 'Invia', disabled: isTyping || !input.trim() },
+              { type: 'submit', 'aria-label': 'Invia', disabled: isTyping || !input.trim() || isSendingRef.current },
               React.createElement(
                 'svg',
                 {
