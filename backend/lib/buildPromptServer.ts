@@ -19,6 +19,22 @@ interface FileSummaryForPrompt {
 export interface DocumentSnippet {
   fileName: string;
   snippet: string;
+  relevance?: number;
+  pageNumber?: number;
+  section?: string;
+}
+
+export interface SourceReference {
+  type: 'faq' | 'document';
+  title: string;
+  relevance: number;
+  content?: string;
+  metadata?: {
+    fileName?: string;
+    pageNumber?: number;
+    section?: string;
+    faqId?: string;
+  };
 }
 
 export function buildPromptServer(
@@ -29,7 +45,7 @@ export function buildPromptServer(
   history: ChatMessage[] = [],
   fileSummaries: FileSummaryForPrompt[] = [],
   settings?: { name?: string; personality?: string; traits?: string[] }
-): ChatMessage[] {
+): { messages: ChatMessage[]; sources: SourceReference[] } {
   
   const botName = settings?.name || 'Kommander.ai';
   let context = `Sei ${botName}, un assistente AI utile.`;
@@ -83,11 +99,61 @@ export function buildPromptServer(
     context = "Sei Kommander.ai, un assistente AI utile. Rispondi alla query dell'utente.\n\n"
   }
   
+  // Track sources used in the response
+  const sources: SourceReference[] = [];
+  
+  // Add FAQ sources
+  faqs.forEach(faq => {
+    sources.push({
+      type: 'faq',
+      title: faq.question,
+      relevance: calculateRelevance(userMessage, faq.question + ' ' + faq.answer),
+      content: faq.answer,
+      metadata: {
+        faqId: faq._id?.toString()
+      }
+    });
+  });
+  
+  // Add document sources
+  extractedTextSnippets.forEach(snippet => {
+    sources.push({
+      type: 'document',
+      title: snippet.fileName,
+      relevance: snippet.relevance || calculateRelevance(userMessage, snippet.snippet),
+      content: snippet.snippet.substring(0, 200) + (snippet.snippet.length > 200 ? '...' : ''),
+      metadata: {
+        fileName: snippet.fileName,
+        pageNumber: snippet.pageNumber,
+        section: snippet.section
+      }
+    });
+  });
+  
+  // Sort sources by relevance
+  sources.sort((a, b) => b.relevance - a.relevance);
+  
   const messages: ChatMessage[] = [{ role: 'system', content: context.trim() }];
 
   history.forEach(msg => messages.push(msg));
   
   messages.push({ role: 'user', content: userMessage });
 
-  return messages;
+  return { messages, sources };
+}
+
+// Simple relevance calculation based on keyword matching
+function calculateRelevance(query: string, content: string): number {
+  const queryWords = query.toLowerCase().split(/\s+/).filter(word => word.length > 2);
+  const contentWords = content.toLowerCase().split(/\s+/);
+  
+  let matches = 0;
+  queryWords.forEach(queryWord => {
+    if (contentWords.some(contentWord => contentWord.includes(queryWord) || queryWord.includes(contentWord))) {
+      matches++;
+    }
+  });
+  
+  return Math.min(matches / queryWords.length, 1.0);
+}
 }

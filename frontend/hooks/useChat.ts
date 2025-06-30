@@ -99,14 +99,15 @@ export function useChat() {
           }
         });
       } else if (result.response) {
-        // Parse sources from response if available
-        // This is a placeholder - you'd implement actual source parsing based on your backend
-        const mockSources: MessageSource[] = [
-          { type: 'document', title: 'User Documentation', relevance: 0.85 },
-          { type: 'faq', title: 'How to get started?', relevance: 0.72 }
-        ];
+        // Use real sources from the backend response
+        const realSources: MessageSource[] = result.sources || [];
         
-        addMessage('assistant', result.response, mockSources, isRetry);
+        addMessage('assistant', result.response, realSources, isRetry);
+        
+        // Update conversation ID if it's a new conversation
+        if (result.conversationId && !conversationId) {
+          setConversationId(result.conversationId);
+        }
         
         if (isRetry) {
           toast({ title: "Response Regenerated", description: "I've provided a new response for you." });

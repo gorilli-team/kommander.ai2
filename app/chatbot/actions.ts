@@ -3,11 +3,13 @@
 
 import { connectToDatabase } from '@/backend/lib/mongodb';
 import { getOpenAI } from '@/backend/lib/openai';
-import { buildPromptServer, type ChatMessage, type DocumentSnippet } from '@/backend/lib/buildPromptServer';
+import { buildPromptServer, type ChatMessage, type DocumentSnippet, type SourceReference } from '@/backend/lib/buildPromptServer';
 import type { Faq } from '@/backend/schemas/faq';
 import { getFileContent } from '@/app/training/actions';
 import { auth } from '@/frontend/auth'; // Import auth for session
 import { getSettings } from '@/app/settings/actions';
+import { ConversationService } from '@/backend/lib/conversationService';
+import { ConversationMessage, MessageSource } from '@/backend/schemas/conversation';
 
 import mammoth from 'mammoth';
 
@@ -60,7 +62,8 @@ export async function generateChatResponse(
   userMessage: string,
   history: ChatMessage[],
   userIdOverride?: string,
-): Promise<{ response?: string; error?: string }> {
+  conversationId?: string
+): Promise<{ response?: string; error?: string; sources?: MessageSource[]; conversationId?: string }> {
   const session = await auth();
   const userIdToUse = userIdOverride || session?.user?.id;
   if (!userIdToUse) {
@@ -132,7 +135,7 @@ export async function generateChatResponse(
     }
 
     const userSettings = await getSettings();
-    const messages = buildPromptServer(
+    const { messages, sources } = buildPromptServer(
       userMessage,
       faqs,
       filesForPromptContext,
@@ -142,6 +145,7 @@ export async function generateChatResponse(
       userSettings || undefined,
     );
 
+    const startTime = Date.now();
     const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
@@ -149,6 +153,7 @@ export async function generateChatResponse(
       temperature: 0.7,
       max_tokens: 1000,
     });
+    const processingTime = Date.now() - startTime;
 
     const assistantResponse = completion.choices[0]?.message?.content;
 
@@ -156,7 +161,66 @@ export async function generateChatResponse(
       return { error: 'AI non ha restituito una risposta.' };
     }
 
-    return { response: assistantResponse.trim() };
+    // Convert sources to MessageSource format
+    const messageSources: MessageSource[] = sources
+      .filter(source => source.relevance > 0.3) // Only include relevant sources
+      .slice(0, 5) // Limit to top 5 sources
+      .map(source => ({
+        type: source.type,
+        title: source.title,
+        relevance: source.relevance,
+        content: source.content,
+        metadata: source.metadata
+      }));
+
+    // Handle conversation persistence
+    const conversationService = new ConversationService();
+    let finalConversationId = conversationId;
+
+    try {
+      // Create conversation if it doesn't exist
+      if (!finalConversationId) {
+        const newConversationId = await conversationService.createConversation(
+          userIdToUse,
+          `Chat ${new Date().toLocaleDateString()}`
+        );
+        finalConversationId = newConversationId.toString();
+      }
+
+      // Add user message
+      const userMsg: ConversationMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: userMessage,
+        timestamp: new Date()
+      };
+      await conversationService.addMessage(finalConversationId, userMsg);
+
+      // Add assistant response
+      const assistantMsg: ConversationMessage = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: assistantResponse.trim(),
+        timestamp: new Date(),
+        sources: messageSources,
+        metadata: {
+          processingTime,
+          model: 'gpt-3.5-turbo',
+          tokenCount: completion.usage?.total_tokens
+        }
+      };
+      await conversationService.addMessage(finalConversationId, assistantMsg);
+
+    } catch (convError) {
+      console.error('Error saving conversation:', convError);
+      // Don't fail the response if conversation saving fails
+    }
+
+    return { 
+      response: assistantResponse.trim(),
+      sources: messageSources,
+      conversationId: finalConversationId
+    };
 
   } catch (error: any) {
     return { error: `Impossibile generare la risposta della chat a causa di un errore del server. ${error.message}` };
