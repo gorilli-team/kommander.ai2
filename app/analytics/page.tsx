@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/frontend/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/frontend/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/frontend/components/ui/select';
 import { Badge } from '@/frontend/components/ui/badge';
@@ -209,7 +209,7 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Conversation Trends</CardTitle>
-                <CardDescription>Daily conversation volume over time</CardDescription>
+                <p className="text-sm text-muted-foreground">Daily conversation volume over time</p>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -229,7 +229,7 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Popular Topics</CardTitle>
-                <CardDescription>Most discussed topics this {timeframe}</CardDescription>
+                <p className="text-sm text-muted-foreground">Most discussed topics this {timeframe}</p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -256,7 +256,7 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Source Usage Distribution</CardTitle>
-                <CardDescription>How your AI sources information</CardDescription>
+                <p className="text-sm text-muted-foreground">How your AI sources information</p>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -285,7 +285,7 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Source Metrics</CardTitle>
-                <CardDescription>Detailed breakdown of information sources</CardDescription>
+                <p className="text-sm text-muted-foreground">Detailed breakdown of information sources</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
@@ -326,7 +326,7 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Response Time Distribution</CardTitle>
-                <CardDescription>Performance breakdown by response speed</CardDescription>
+                <p className="text-sm text-muted-foreground">Performance breakdown by response speed</p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -385,7 +385,7 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Key Performance Indicators</CardTitle>
-                <CardDescription>Overall system performance metrics</CardDescription>
+                <p className="text-sm text-muted-foreground">Overall system performance metrics</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -417,7 +417,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader>
               <CardTitle>User Engagement Patterns</CardTitle>
-              <CardDescription>Activity patterns throughout the day</CardDescription>
+              <p className="text-sm text-muted-foreground">Activity patterns throughout the day</p>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>

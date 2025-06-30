@@ -117,7 +117,7 @@ async function getConversationTrends(db: any, userId: string, startDate: Date, e
 
   const results = await db.collection('conversations').aggregate(pipeline).toArray();
   
-  return results.map(item => ({
+  return results.map((item: any) => ({
     date: item._id,
     conversations: item.conversations,
     messages: item.messages

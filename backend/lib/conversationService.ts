@@ -1,5 +1,5 @@
 import { MongoClient, Db, ObjectId } from 'mongodb';
-import { connectMongoDB } from '@/backend/lib/mongodb';
+import { connectToDatabase } from '@/backend/lib/mongodb';
 import { 
   Conversation, 
   ConversationMessage, 
@@ -12,11 +12,12 @@ export class ConversationService {
   private db: Db | null = null;
 
   async connect() {
-    if (!this.client) {
-      this.client = await connectMongoDB();
-      this.db = this.client.db();
+    if (!this.db) {
+      const { client, db } = await connectToDatabase();
+      this.client = client;
+      this.db = db;
     }
-    return this.db;
+    return this.db!;
   }
 
   async createConversation(userId: string, title?: string): Promise<ObjectId> {

@@ -110,7 +110,7 @@ export function buildPromptServer(
       relevance: calculateRelevance(userMessage, faq.question + ' ' + faq.answer),
       content: faq.answer,
       metadata: {
-        faqId: faq._id?.toString()
+        faqId: faq.id?.toString()
       }
     });
   });
@@ -155,5 +155,4 @@ function calculateRelevance(query: string, content: string): number {
   });
   
   return Math.min(matches / queryWords.length, 1.0);
-}
 }
