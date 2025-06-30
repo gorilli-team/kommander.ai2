@@ -134,6 +134,22 @@ body {
   }
 }
 
+/* Mobile-specific fixes */
+@media (max-width: 639px) {
+  .kommander-msg {
+    max-width: 85%; /* Increase max-width on mobile */
+    min-width: 120px; /* Ensure enough width for text */
+  }
+  
+  .kommander-messages {
+    padding: 8px; /* Reduce padding on mobile */
+  }
+  
+  .kommander-row {
+    gap: 8px; /* Reduce gap on mobile */
+  }
+}
+
 .kommander-header {
   padding: 12px 16px;
   border-bottom: 1px solid var(--kommander-border-color);
@@ -281,16 +297,19 @@ body {
 
 .kommander-msg {
   max-width: 75%; /* Allow messages to take up more width */
+  min-width: 100px; /* Ensure minimum width to prevent vertical text */
   padding: 8px 12px;
   border-radius: 14px;
   box-shadow: 0 4px 10px var(--kommander-message-shadow); /* More pronounced shadow */
   border: 1px solid transparent; /* Base border */
   word-wrap: break-word;
   overflow-wrap: break-word;
+  white-space: pre-wrap; /* Preserve spaces and line breaks */
   transition: all 0.3s ease; /* Smooth transition for dark mode */
   animation: kommander-message-slide-in 0.4s ease-out forwards;
   transform: translateY(10px);
   opacity: 0;
+  display: block; /* Ensure block display */
 }
 .kommander-msg p {
   margin: 0;

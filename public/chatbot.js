@@ -381,7 +381,7 @@
                     className: 'kommander-avatar',
                     src:
                       m.role === 'agent'
-                        ? 'https://placehold.co/40x40/444/FFFFFF.png?text=A'
+                        ? 'https://placehold.co/40x40/22c55e/FFFFFF.png?text=A'
                         : 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
                     alt: m.role
                   }),
@@ -407,11 +407,13 @@
             ),
             isTyping && React.createElement(
               'div',
-              { className: 'kommander-row kommander-row-assistant' },
+              { className: `kommander-row kommander-row-${handledBy === 'agent' ? 'agent' : 'assistant'}` },
               React.createElement('img', {
                 className: 'kommander-avatar',
-                src: 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
-                alt: 'Kommander.ai'
+                src: handledBy === 'agent' 
+                  ? 'https://placehold.co/40x40/22c55e/FFFFFF.png?text=A'
+                  : 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
+                alt: handledBy === 'agent' ? 'Operatore' : 'Kommander.ai'
               }),
               React.createElement(
                 'div',
