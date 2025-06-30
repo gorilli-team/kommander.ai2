@@ -234,9 +234,13 @@
       if (isHumanRequest) {
         addMessage(
           'assistant',
-          'Certamente! Ti metto subito in contatto con uno specialista. Nel frattempo, se vuoi, puoi continuare a farmi domande: potrei gi\u00e0 aiutarti a trovare una soluzione mentre attendi la risposta di un operatore.'
+          'Certamente! Ti metto subito in contatto con uno specialista. Nel frattempo, se vuoi, puoi continuare a farmi domande: potrei già aiutarti a trovare una soluzione mentre attendi la risposta di un operatore.'
         );
         setIsTyping(false);
+        setInput('');
+        isSendingRef.current = false;
+        // DO NOT call API for human operator requests - this prevents AI from generating response
+        return;
       }
 
       setInput('');
@@ -270,7 +274,7 @@
         if (data.handledBy) {
           setHandledBy(data.handledBy);
         }
-        if (data.reply && !isHumanRequest) {
+        if (data.reply) {
           addMessage('assistant', data.reply);
         } else if (data.error) {
           addMessage('system', 'Si è verificato un errore: ' + data.error);
