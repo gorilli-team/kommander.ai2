@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, MessageCircle, MessageSquare, Settings as SettingsIcon, type LucideIcon } from 'lucide-react';
+import { BookOpen, MessageCircle, MessageSquare, BarChart3, Settings as SettingsIcon, type LucideIcon } from 'lucide-react';
 import { cn } from '@/frontend/lib/utils';
 import React from 'react';
 
@@ -18,6 +18,7 @@ const navItems: NavItem[] = [
   { href: '/training', label: 'Training', icon: BookOpen, id: 'sidebar-training' },
   { href: '/chatbot-trial', label: 'Chatbot Trial', icon: MessageCircle, id: 'sidebar-chatbot' },
   { href: '/conversations', label: 'Conversazioni', icon: MessageSquare, id: 'sidebar-conversations' },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3, id: 'sidebar-analytics' },
   { href: '/settings', label: 'Settings', icon: SettingsIcon, id: 'sidebar-settings' },
 ];
 
