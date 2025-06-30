@@ -38,15 +38,13 @@
   }
 
   function ChatbotWidget({ userId }) {
-    const { useState, useRef, useEffect, useCallback } = React;
+    const { useState, useRef, useEffect } = React;
     const [open, setOpen] = useState(false);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [handledBy, setHandledBy] = useState('bot');
     const [conversationId, setConversationId] = useState('');
     const [isTyping, setIsTyping] = useState(false);
-    const [isConnected, setIsConnected] = useState(true);
-    const [unreadCount, setUnreadCount] = useState(0);
     const [botName, setBotName] = useState('Kommander.ai');
     const [botColor, setBotColor] = useState('#1E3A8A');
     const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -58,7 +56,6 @@
       }
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
     });
-    const [isMinimized, setIsMinimized] = useState(false);
 
     const viewportRef = useRef(null);
     const conversationIdRef = useRef('');
@@ -101,19 +98,12 @@
       return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    const addMessage = useCallback((role, text, updateTimestamp = true) => {
-      const newMessage = { role, text, time: formatTime(), id: Date.now() + Math.random() };
-      setMessages((prev) => [...prev, newMessage]);
-      
-      // Update unread count for assistant messages when widget is closed
-      if (role === 'assistant' && !open) {
-        setUnreadCount(prev => prev + 1);
-      }
-      
+    function addMessage(role, text, updateTimestamp = true) {
+      setMessages((prev) => [...prev, { role, text, time: formatTime() }]);
       if (updateTimestamp) {
         lastTimestampRef.current = new Date().toISOString();
       }
-    }, [open]);
+    }
 
     useEffect(() => {
       fetch(`${ORIGIN}/api/settings/${userId}`)
@@ -151,13 +141,10 @@
     }, [messages, isTyping]);
 
     useEffect(() => {
-      if (open) {
-        setUnreadCount(0); // Clear unread count when opened
-        if (messages.length === 0) {
-          addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi?`);
-        }
+      if (open && messages.length === 0) {
+        addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi?`);
       }
-    }, [open, botName, addMessage]);
+    }, [open, botName]);
 
     const storageKey = `kommander_conversation_${userId}`;
 
@@ -242,24 +229,21 @@
       prevHandledBy.current = handledBy;
     }, [handledBy]);
 
-    const sendMessage = useCallback(async () => {
+    const sendMessage = async () => {
       const text = input.trim();
       if (!text || isSendingRef.current) return;
       isSendingRef.current = true;
 
       addMessage('user', text, false);
       lastSentTextRef.current = text;
-      setIsTyping(true);
-      setIsConnected(true);
+      setIsTyping(true); // Show typing indicator
 
-      const isHumanRequest = text.toLowerCase().includes('operatore umano') || 
-                           text.toLowerCase().includes('human operator') ||
-                           text.toLowerCase().includes('agente umano');
+      const isHumanRequest = text.toLowerCase().includes('operatore umano');
 
       if (isHumanRequest) {
         addMessage(
           'assistant',
-          'Certamente! Ti metto subito in contatto con uno specialista. Nel frattempo, se vuoi, puoi continuare a farmi domande: potrei già aiutarti a trovare una soluzione mentre attendi la risposta di un operatore.'
+          'Certamente! Ti metto subito in contatto con uno specialista. Nel frattempo, se vuoi, puoi continuare a farmi domande: potrei gi\u00e0 aiutarti a trovare una soluzione mentre attendi la risposta di un operatore.'
         );
         setIsTyping(false);
       }
@@ -298,26 +282,19 @@
         if (data.reply && !isHumanRequest) {
           addMessage('assistant', data.reply);
         } else if (data.error) {
-          addMessage('system', '⚠️ Si è verificato un errore: ' + data.error);
-          setIsConnected(false);
+          addMessage('system', 'Si è verificato un errore: ' + data.error);
         }
       } catch (err) {
-        addMessage('system', '🔌 Connessione persa. Riprova tra qualche istante.');
-        setIsConnected(false);
+        addMessage('system', 'Ops! Non riusciamo a connetterci. Riprova più tardi.');
         console.error("Failed to send message:", err);
       } finally {
         setIsTyping(false); // Hide typing indicator
 
         isSendingRef.current = false;
 
-        if (pollFnRef.current) pollFnRef.current(true);
-        
-        // Re-establish connection check
-        setTimeout(() => {
-          setIsConnected(true);
-        }, 3000);
+        if (pollFnRef.current) pollFnRef.current(true); // Manual poll after sending message
       }
-    }, [input, addMessage]);
+    };
 
     return React.createElement(
       React.Fragment,
