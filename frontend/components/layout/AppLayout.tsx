@@ -14,12 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative flex flex-col min-h-screen bg-background">
-      {showAuthElements && (
-        <Navbar 
-          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          sidebarOpen={sidebarOpen}
-        />
-      )}
+      {showAuthElements && <Navbar />}
 
       {/* Mobile sidebar overlay */}
       {showAuthElements && sidebarOpen && (
@@ -29,14 +24,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Sidebar */}
       {showAuthElements && (
-        <div className={cn(
-          "fixed left-4 top-[calc(5rem+1px)] z-50 flex flex-col items-start space-y-3 transition-transform duration-300",
-          "lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        )}>
-          <Sidebar onItemClick={() => setSidebarOpen(false)} />
+        <div className="fixed left-4 top-[calc(5rem+1px)] z-30 flex flex-col items-start space-y-3">
+          <Sidebar />
         </div>
       )}
 
