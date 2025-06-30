@@ -4,14 +4,15 @@ import { deleteConversation, getConversation, setConversationHandledBy } from '@
 
 export async function DELETE(
   request: Request,
-  { params }: any
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    await deleteConversation(session.user.id, params.id);
+    const { id } = await params;
+    await deleteConversation(session.user.id, id);
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
@@ -20,13 +21,14 @@ export async function DELETE(
 
 export async function GET(
   request: Request,
-  { params }: any
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const conv = await getConversation(session.user.id, params.id);
+  const { id } = await params;
+  const conv = await getConversation(session.user.id, id);
   if (!conv) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
@@ -35,7 +37,7 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: any
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -45,6 +47,7 @@ export async function POST(
   if (handledBy !== 'bot' && handledBy !== 'agent') {
     return NextResponse.json({ error: 'Invalid handledBy' }, { status: 400 });
   }
-  await setConversationHandledBy(session.user.id, params.id, handledBy);
+  const { id } = await params;
+  await setConversationHandledBy(session.user.id, id, handledBy);
   return NextResponse.json({ success: true });
 }

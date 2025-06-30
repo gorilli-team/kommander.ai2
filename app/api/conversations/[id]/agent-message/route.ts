@@ -4,7 +4,7 @@ import { appendMessages } from '@/app/conversations/actions';
 
 export async function POST(
   request: Request,
-  { params }: any,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -14,7 +14,8 @@ export async function POST(
   if (!text || !text.trim()) {
     return NextResponse.json({ error: 'Missing text' }, { status: 400 });
   }
-  await appendMessages(session.user.id, params.id, [
+  const { id } = await params;
+  await appendMessages(session.user.id, id, [
     { role: 'agent', text, timestamp: new Date().toISOString() },
   ]);
   return NextResponse.json({ success: true });
