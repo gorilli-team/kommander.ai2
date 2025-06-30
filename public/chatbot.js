@@ -175,25 +175,23 @@
             role: m.role === 'assistant' ? 'assistant' : (m.role === 'agent' ? 'agent' : m.role),
             text: m.text,
             time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: m.timestamp // Keep original timestamp for deduplication
           }));
-          // Always filter out user messages that match what we just sent
-          if (skipUserDup && lastSentTextRef.current) {
-            newMsgs = newMsgs.filter(msg => {
-              // Skip ALL user messages that match our last sent text
-              if (msg.role === 'user' && msg.text === lastSentTextRef.current) {
-                return false; // Skip this duplicate
-              }
-              return true;
-            });
-          }
+          
+          // COMPLETE filtering logic to prevent ALL user message duplicates
+          newMsgs = newMsgs.filter(msg => {
+            // NEVER include user messages from polling - they should only come from local addMessage
+            if (msg.role === 'user') {
+              console.log('Filtering out user message from polling:', msg.text);
+              return false;
+            }
+            return true;
+          });
+          
           if (newMsgs.length) {
             lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
             setMessages((prev) => [...prev, ...newMsgs]);
             setIsTyping(false); // Stop typing indicator if new messages arrive
-          }
-          // Clear lastSentText after processing to prevent future false positives
-          if (skipUserDup) {
-            lastSentTextRef.current = '';
           }
         }
       } catch (err) {
