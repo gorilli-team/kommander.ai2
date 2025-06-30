@@ -30,6 +30,9 @@ export async function POST(request: Request) {
     const existing = conversationId ? await getConversation(userId, convId) : null;
     const handledBy = existing?.handledBy || 'bot';
 
+    // Check if user is requesting human operator
+    const isHumanRequest = message.toLowerCase().includes('operatore umano');
+    
     if (handledBy === 'agent') {
       await appendMessages(
         userId,
@@ -38,6 +41,24 @@ export async function POST(request: Request) {
         site,
       );
       return NextResponse.json({ conversationId: convId, handledBy }, { headers: corsHeaders });
+    }
+    
+    // If user requests human operator, add system message to conversation
+    if (isHumanRequest) {
+      await appendMessages(
+        userId,
+        convId,
+        [
+          { role: 'user', text: message, timestamp: new Date().toISOString() },
+          { role: 'system', text: '🔄 L\'utente ha richiesto l\'intervento di un operatore umano', timestamp: new Date().toISOString() }
+        ],
+        site,
+      );
+      return NextResponse.json({ 
+        reply: 'Certamente! Ti metto subito in contatto con uno specialista. Nel frattempo, se vuoi, puoi continuare a farmi domande: potrei già aiutarti a trovare una soluzione mentre attendi la risposta di un operatore.',
+        conversationId: convId, 
+        handledBy 
+      }, { headers: corsHeaders });
     }
 
     const result = await generateChatResponse(message, chatHistory, userId);

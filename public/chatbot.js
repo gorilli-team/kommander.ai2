@@ -227,7 +227,10 @@
 
       addMessage('user', text, false);
       lastSentTextRef.current = text;
-      setIsTyping(true); // Show typing indicator
+      // Only show typing indicator if not handled by human agent
+      if (handledBy !== 'agent') {
+        setIsTyping(true);
+      }
 
       const isHumanRequest = text.toLowerCase().includes('operatore umano');
 
