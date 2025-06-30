@@ -47,15 +47,7 @@
     const [isTyping, setIsTyping] = useState(false);
     const [botName, setBotName] = useState('Kommander.ai');
     const [botColor, setBotColor] = useState('#1E3A8A');
-    const [isDarkMode, setIsDarkMode] = useState(() => {
-      try {
-        const stored = localStorage.getItem('kommander_dark_mode');
-        if (stored !== null) return stored === 'true';
-      } catch (e) {
-        console.error("Failed to read dark mode from localStorage", e);
-      }
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    });
+    // Always use light mode
 
     const viewportRef = useRef(null);
     const conversationIdRef = useRef('');
@@ -82,17 +74,7 @@
       setShowRestartConfirm(false);
     };
 
-    const toggleDarkMode = () => {
-      setIsDarkMode(prevMode => {
-        const newMode = !prevMode;
-        try {
-          localStorage.setItem('kommander_dark_mode', newMode.toString());
-        } catch (e) {
-          console.error("Failed to write dark mode to localStorage", e);
-        }
-        return newMode;
-      });
-    };
+    // Dark mode functionality removed
 
     function formatTime() {
       return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -194,8 +176,14 @@
             text: m.text,
             time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           }));
-          if (skipUserDup && newMsgs.length && newMsgs[0].role === 'user' && newMsgs[0].text === lastSentTextRef.current) {
-            newMsgs = newMsgs.slice(1);
+          // Filter out duplicate user messages
+          if (skipUserDup && newMsgs.length) {
+            newMsgs = newMsgs.filter(msg => {
+              if (msg.role === 'user' && msg.text === lastSentTextRef.current) {
+                return false; // Skip this duplicate
+              }
+              return true;
+            });
           }
           if (newMsgs.length) {
             lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
@@ -325,7 +313,7 @@
       open &&
         React.createElement(
           'div',
-          { className: `kommander-window ${isDarkMode ? 'dark-mode' : ''}` },
+          { className: 'kommander-window' },
           React.createElement(
             'div',
             { className: 'kommander-header' },
@@ -335,27 +323,7 @@
               { className: 'kommander-header-right' },
               React.createElement('span', { className: 'kommander-badge' }, 'Online'),
               React.createElement('span', { className: 'kommander-date' }, currentDate),
-              React.createElement(
-                'button',
-                {
-                  onClick: toggleDarkMode,
-                  'aria-label': 'Toggle Dark Mode',
-                  className: 'kommander-toggle-dark-mode',
-                  title: isDarkMode ? 'Disattiva Modalità Scura' : 'Attiva Modalità Scura'
-                },
-                isDarkMode ?
-                  React.createElement(
-                    'svg',
-                    { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'currentColor', width: '16', height: '16' },
-                    React.createElement('path', { d: 'M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.894 6.106a.75.75 0 0 0-1.06-1.06l-1.591 1.59a.75.75 0 1 0 1.06 1.06l1.591-1.59ZM21.75 12a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1 0-1.5H21a.75.75 0 0 1 .75.75ZM18.894 17.894a.75.75 0 0 0-1.06 1.06l1.591 1.591a.75.75 0 1 0 1.06-1.06l-1.591-1.591ZM12 18.75a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25a.75.75 0 0 1 .75-.75ZM5.003 18.894a.75.75 0 0 0 1.06-1.06l-1.59-1.591a.75.75 0 1 0-1.06 1.06l1.59 1.591ZM3 12.75a.75.75 0 0 1-.75-.75H.75a.75.75 0 0 1 0-1.5H2.25c.414 0 .75.336.75.75Z' })
-                  )
-                  :
-                  React.createElement(
-                    'svg',
-                    { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'currentColor', width: '16', height: '16' },
-                    React.createElement('path', { d: 'M9.528 1.714a.75.75 0 0 0-.829 1.074 11.25 11.25 0 0 1 7.029 7.029.75.75 0 0 0 1.074-.829 12.75 12.75 0 0 0-8.274-8.274ZM10.5 12a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12 3.75a.75.75 0 0 1 .75.75v.75a.75.75 0 0 1-1.5 0V4.5a.75.75 0 0 1 .75-.75ZM5.25 5.25a.75.75 0 0 0 0 1.06h.001l.447.447a.75.75 0 1 0 1.06-1.06l-.447-.447a.75.75 0 0 0-1.06 0ZM4.5 12a.75.75 0 0 1 .75-.75H5.25a.75.75 0 0 1 0 1.5H4.5a.75.75 0 0 1-.75-.75ZM7.029 18.894a.75.75 0 0 0-1.06-1.06l-1.591 1.59a.75.75 0 1 0 1.06 1.06l1.59-1.591ZM12 18.75a.75.75 0 0 1-.75.75v.75a.75.75 0 0 1 1.5 0v-.75a.75.75 0 0 1-.75-.75ZM17.894 17.029a.75.75 0 1 0-1.06 1.06l1.59 1.591a.75.75 0 1 0 1.06-1.06l-1.591-1.59ZM19.5 12a.75.75 0 0 1 .75-.75h.75a.75.75 0 0 1 0 1.5h-.75a.75.75 0 0 1-.75-.75ZM18.894 5.003a.75.75 0 0 0-1.06-1.06l-1.59 1.59a.75.75 0 0 0 1.06 1.06l1.59-1.591ZM12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM9.528 1.714a.75.75 0 0 0-.829 1.074 11.25 11.25 0 0 1 7.029 7.029.75.75 0 0 0 1.074-.829 12.75 12.75 0 0 0-8.274-8.274ZM10.5 12a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12 3.75a.75.75 0 0 1 .75.75v.75a.75.75 0 0 1-1.5 0V4.5a.75.75 0 0 1 .75-.75ZM5.25 5.25a.75.75 0 0 0 0 1.06h.001l.447.447a.75.75 0 1 0 1.06-1.06l-.447-.447a.75.75 0 0 0-1.06 0ZM4.5 12a.75.75 0 0 1 .75-.75H5.25a.75.75 0 0 1 0 1.5H4.5a.75.75 0 0 1-.75-.75ZM7.029 18.894a.75.75 0 0 0-1.06-1.06l-1.591 1.59a.75.75 0 1 0 1.06 1.06l1.59-1.591ZM12 18.75a.75.75 0 0 1-.75.75v.75a.75.75 0 0 1 1.5 0v-.75a.75.75 0 0 1-.75-.75ZM17.894 17.029a.75.75 0 1 0-1.06 1.06l1.59 1.591a.75.75 0 1 0 1.06-1.06l-1.591-1.59ZM19.5 12a.75.75 0 0 1 .75-.75h.75a.75.75 0 0 1 0 1.5h-.75a.75.75 0 0 1-.75-.75ZM18.894 5.003a.75.75 0 0 0-1.06-1.06l-1.59 1.59a.75.75 0 0 0 1.06 1.06l1.59-1.591Z' })
-                  )
-              ),
+              // Dark mode toggle removed
               React.createElement(
                 'button',
                 { onClick: () => setOpen(false), 'aria-label': 'Chiudi chatbot', className: 'kommander-close' },

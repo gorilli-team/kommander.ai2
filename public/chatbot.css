@@ -20,20 +20,7 @@
   --kommander-assistant-message-border: var(--kommander-border-color);
 }
 
-.kommander-window.dark-mode {
-  --kommander-text-color-light: #ffffff;
-  --kommander-text-color-dark: #e2e8f0;
-  --kommander-bg-light: var(--kommander-bg-dark-window);
-  --kommander-border-color: #4a5568;
-  --kommander-shadow-color: rgba(0, 0, 0, 0.5);
-  --kommander-message-shadow: rgba(0, 0, 0, 0.3);
-  --kommander-time-color: #a0aec0;
-  --kommander-input-bg: var(--kommander-bg-dark-message);
-  --kommander-input-text: #e2e8f0;
-  --kommander-user-message-bg: #4a5568; /* Darker blue for dark mode user messages */
-  --kommander-assistant-message-bg: var(--kommander-bg-dark-message);
-  --kommander-assistant-message-border: #4a5568;
-}
+/* Dark mode styles removed - always use light theme */
 
 body {
   font-family: 'Inter', sans-serif;
@@ -540,10 +527,7 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.kommander-window.dark-mode .kommander-modal {
-  background: var(--kommander-bg-dark-message);
-  color: var(--kommander-text-color-light);
-}
+/* Dark mode modal styles removed */
 
 .kommander-modal-buttons {
   display: flex;
