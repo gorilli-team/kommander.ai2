@@ -90,7 +90,11 @@ export function useWidgetChat(userId: string) {
           }));
           if (newMsgs.length) {
             lastTimestampRef.current = newMsgs[newMsgs.length - 1].timestamp.toISOString();
-            setMessages((prev) => [...prev, ...newMsgs]);
+            setMessages((prev) => {
+              const existing = new Set(prev.map((msg: Message) => msg.id));
+              const unique = newMsgs.filter((msg: Message) => !existing.has(msg.id));
+              return unique.length ? [...prev, ...unique] : prev;
+            });
           }
         }
       } catch {
