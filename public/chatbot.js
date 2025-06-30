@@ -416,7 +416,7 @@
               React.createElement(
                 'div',
                 { className: 'kommander-msg kommander-assistant kommander-typing' },
-                React.createElement('p', null, '...')
+                React.createElement('p', null, React.createElement('span', { className: 'kommander-typing-dots' }))
               )
             )
           ),
