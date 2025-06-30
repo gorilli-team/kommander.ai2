@@ -16,30 +16,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="relative flex flex-col min-h-screen bg-background">
       {showAuthElements && <Navbar />}
 
-      {/* Mobile sidebar overlay */}
-      {showAuthElements && sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden" 
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {showAuthElements && (
-        <div className="fixed left-4 top-[4.2rem] z-30 flex flex-col items-start space-y-3">
-          <Sidebar />
-        </div>
-      )}
-
-      <main
-        className={cn(
-          "flex-1 overflow-y-auto transition-all duration-300",
-          showAuthElements 
-            ? "pt-20 p-4 sm:p-6 lg:pl-20 xl:pl-24 2xl:pl-28"
-            : "p-4 sm:p-6"
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        {showAuthElements && (
+          <div className="fixed left-4 top-4 z-30 flex flex-col items-start space-y-3">
+            <Sidebar />
+          </div>
         )}
-      >
-        {children}
-      </main>
+
+        {/* Main content */}
+        <main
+          className={cn(
+            "flex-1 overflow-y-auto transition-all duration-300",
+            showAuthElements 
+              ? "p-4 sm:p-6 lg:pl-20 xl:pl-24 2xl:pl-28"
+              : "p-4 sm:p-6"
+          )}
+        >
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

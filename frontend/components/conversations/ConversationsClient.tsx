@@ -82,31 +82,76 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 min-h-[80vh]">
-      <aside className="md:w-72 w-full md:flex-shrink-0">
-        <ScrollArea className="h-full bg-card border border-border rounded-lg">
-          {conversations.map((c) => {
-            const last = c.messages[c.messages.length - 1];
-            return (
-              <div
-                key={c.id}
-                className={cn(
-                  'p-3 flex items-start gap-2 border-b border-border last:border-b-0',
-                  selectedId === c.id ? 'bg-muted' : 'hover:bg-accent'
-                )}
-              >
-                <div className="flex-1 cursor-pointer min-w-0" onClick={() => setSelectedId(c.id)}>
-                  <p className="text-sm font-medium truncate block max-w-full">
-                    {last?.text || 'Nuova conversazione'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {c.updatedAt ? format(new Date(c.updatedAt), 'Pp') : ''}
-                  </p>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[70vh]">
+      <aside className="lg:col-span-1">
+        <Card className="h-full">
+          <div className="p-4 border-b">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              Conversazioni Recenti
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {conversations.length} conversazioni trovate
+            </p>
+          </div>
+          <ScrollArea className="h-[calc(70vh-8rem)]">
+            <div className="p-2">
+              {conversations.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="h-12 w-12 text-muted-foreground mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <p className="text-muted-foreground">Nessuna conversazione ancora</p>
+                  <p className="text-sm text-muted-foreground mt-1">Le conversazioni appariranno qui</p>
                 </div>
-              </div>
-            );
-          })}
-        </ScrollArea>
+              ) : (
+                conversations.map((c) => {
+                  const last = c.messages[c.messages.length - 1];
+                  const isSelected = selectedId === c.id;
+                  return (
+                    <div
+                      key={c.id}
+                      className={cn(
+                        'p-3 rounded-lg mb-2 cursor-pointer transition-all duration-200 border',
+                        isSelected 
+                          ? 'bg-primary/10 border-primary/20 shadow-sm' 
+                          : 'hover:bg-muted/50 border-transparent hover:border-border'
+                      )}
+                      onClick={() => setSelectedId(c.id)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          "w-2 h-2 rounded-full mt-2 flex-shrink-0",
+                          isSelected ? "bg-primary" : "bg-muted-foreground"
+                        )} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {last?.text || 'Nuova conversazione'}
+                          </p>
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-xs text-muted-foreground">
+                              {c.updatedAt ? format(new Date(c.updatedAt), 'dd/MM HH:mm') : ''}
+                            </p>
+                            <span className={cn(
+                              "text-xs px-2 py-0.5 rounded-full",
+                              c.handledBy === 'agent' 
+                                ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                                : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                            )}>
+                              {c.handledBy === 'agent' ? 'Operatore' : 'AI'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
+        </Card>
       </aside>
 
       <section className="flex-1">
