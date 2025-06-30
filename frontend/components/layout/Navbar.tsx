@@ -11,9 +11,12 @@ export default function Navbar() {
   const showProfile = pathname !== '/login';
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-background py-2 pr-4">
-      <Link href="/training" aria-label="Go to Training page" className="ml-4 flex w-16 justify-center">
+    <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-background/95 backdrop-blur-sm border-b border-border h-16 px-4">
+      <Link href="/training" aria-label="Go to Training page" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
         <KommanderIcon />
+        <span className="text-xl font-bold text-primary hidden sm:block">
+          Kommander.ai
+        </span>
       </Link>
       <div className="flex items-center gap-4">
         <ThemeToggle />
