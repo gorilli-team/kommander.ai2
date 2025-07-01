@@ -11,6 +11,7 @@ import { Badge } from '@/frontend/components/ui/badge';
 import { Send, User, Bot, AlertTriangle, Headphones, FileText, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/frontend/lib/utils';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 function ChatMessage({ message }: { message: Message }) {
   const [showSources, setShowSources] = useState(false);
@@ -50,7 +51,14 @@ function ChatMessage({ message }: { message: Message }) {
           isSystem ? 'bg-destructive/10 text-destructive-foreground border border-destructive/30 rounded-bl-none' : ''
         )}
       >
-        <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{message.content}</p>
+        {isUser ? (
+          <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{message.content}</p>
+        ) : (
+          <MarkdownRenderer 
+            content={message.content} 
+            className="text-xs sm:text-sm leading-relaxed"
+          />
+        )}
         
         {/* Source Citations */}
         {hasSources && (
