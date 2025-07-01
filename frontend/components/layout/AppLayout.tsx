@@ -25,7 +25,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {showAuthElements && (
-        <div className="fixed left-4 top-20 z-30 flex flex-col items-start space-y-3">
+        <div className="fixed left-4 top-[4.5rem] z-30 flex flex-col items-start space-y-3">
           <Sidebar />
         </div>
       )}
@@ -34,7 +34,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         className={cn(
           "flex-1 overflow-y-auto transition-all duration-300",
           showAuthElements 
-            ? "pt-16 p-4 sm:p-6 lg:pl-[6rem] xl:pl-[6.25rem] 2xl:pl-[6.5rem] lg:pr-16" 
+            ? "p-4 sm:p-6 lg:pl-[6rem] xl:pl-[6.25rem] 2xl:pl-[6.5rem] lg:pr-16" 
             : "p-4 sm:p-6"
         )}
       >
