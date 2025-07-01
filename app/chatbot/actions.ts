@@ -226,6 +226,9 @@ export async function generateChatResponse(
 
     const userSettings = await getSettings();
     
+    // Inizializza il client OpenAI
+    const openai = getOpenAI();
+    
     // PRIMO PASSAGGIO: L'AI si immedesima nella personalità
     const personalityPrompt = await buildPersonalityImmersionPrompt(userMessage, userSettings);
     const personalityResponse = await openai.chat.completions.create({
@@ -285,7 +288,6 @@ export async function generateChatResponse(
     }
 
     const startTime = Date.now();
-    const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: messages,
