@@ -4,17 +4,33 @@ import type { ChatbotSettingsDocument } from '@/backend/schemas/settings';
 
 export const dynamic = 'force-dynamic';
 
+// Add CORS headers for cross-origin requests from external websites
+function addCorsHeaders(response: NextResponse) {
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+  return response;
+}
+
+export async function OPTIONS() {
+  return addCorsHeaders(new NextResponse(null, { status: 200 }));
+}
+
 export async function GET(_req: Request, { params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
-  if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+  if (!userId) {
+    return addCorsHeaders(NextResponse.json({ error: 'Missing userId' }, { status: 400 }));
+  }
   const { db } = await connectToDatabase();
   const doc = await db.collection<ChatbotSettingsDocument>('chatbot_settings').findOne({ userId });
-  return NextResponse.json(doc || {});
+  return addCorsHeaders(NextResponse.json(doc || {}));
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
-  if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+  if (!userId) {
+    return addCorsHeaders(NextResponse.json({ error: 'Missing userId' }, { status: 400 }));
+  }
   
   const settings = await req.json();
   const { db } = await connectToDatabase();
@@ -26,5 +42,5 @@ export async function PUT(req: Request, { params }: { params: Promise<{ userId: 
       { upsert: true }
     );
   
-  return NextResponse.json({ success: true });
+  return addCorsHeaders(NextResponse.json({ success: true }));
 }
