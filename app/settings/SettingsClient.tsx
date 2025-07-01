@@ -9,6 +9,7 @@ import { Checkbox } from '@/frontend/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
 import { saveSettings } from './actions';
 import { PersonalityTester } from './personality-tester';
+import { TemplateGallery } from './template-gallery';
 
 const traitOptions = [
   { value: 'avventuroso', label: '🦁 Avventuroso' },
@@ -34,6 +35,7 @@ export default function SettingsClient({ initialSettings }: Props) {
   const [personality, setPersonality] = useState(initialSettings?.personality || 'neutral');
   const [traits, setTraits] = useState<Trait[]>(initialSettings?.traits || []);
   const [saving, setSaving] = useState(false);
+  const [showTemplateGallery, setShowTemplateGallery] = useState(false);
 
   const toggleTrait = (t: Trait) => {
     setTraits(prev => {
@@ -52,11 +54,56 @@ export default function SettingsClient({ initialSettings }: Props) {
     setSaving(false);
   };
 
+  const handleApplyTemplate = (templateSettings: any) => {
+    // Apply template settings to current state
+    if (templateSettings.personality?.name) {
+      setName(templateSettings.personality.name);
+    }
+    if (templateSettings.appearance?.primaryColor) {
+      setColor(templateSettings.appearance.primaryColor);
+    }
+    if (templateSettings.behavior?.formality) {
+      const formalityMap = {
+        casual: 'casual',
+        professional: 'neutral', 
+        formal: 'formal'
+      };
+      setPersonality(formalityMap[templateSettings.behavior.formality] || 'neutral');
+    }
+    if (templateSettings.personality?.traits) {
+      const availableTraits = traitOptions.map(t => t.value);
+      const filteredTraits = templateSettings.personality.traits
+        .filter((trait: string) => availableTraits.includes(trait as Trait))
+        .slice(0, 3);
+      setTraits(filteredTraits);
+    }
+    setShowTemplateGallery(false);
+  };
+
   return (
     <div className="">
       <div className="mx-auto max-w-4xl">
         {/* Header Section */}
         <div className="mb-8 text-center">
+          {/* Quick Actions */}
+          <div className="flex justify-center gap-3 mb-6">
+            <Button
+              type="button"
+              onClick={() => setShowTemplateGallery(true)}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <span className="mr-2">✨</span>
+              Browse Templates
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="px-6 py-2.5 rounded-xl font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
+            >
+              <span className="mr-2">🧪</span>
+              Personality Test
+            </Button>
+          </div>
           <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-gradient-to-r from-gray-500 to-gray-600 text-white">
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -266,6 +313,31 @@ export default function SettingsClient({ initialSettings }: Props) {
           </div>
         </form>
         
+        {/* Template Gallery Modal */}
+        {showTemplateGallery && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Template Gallery</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTemplateGallery(false)}
+                  className="rounded-lg"
+                >
+                  ✕
+                </Button>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                <TemplateGallery 
+                  onApplyTemplate={handleApplyTemplate}
+                  currentSettings={{ name, color, personality, traits }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Personality Tester Card */}
         {session?.user?.id && (
           <div className="mt-8">
