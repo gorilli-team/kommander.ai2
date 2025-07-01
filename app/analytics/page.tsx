@@ -16,6 +16,8 @@ import {
   Star, Search, Download, RefreshCw, Calendar,
   HelpCircle, BookOpen, Zap, Target
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface AnalyticsData {
   overview: {
@@ -58,11 +60,13 @@ interface AnalyticsData {
 
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [sentimentData, setSentimentData] = useState<any>(null);
   const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month'>('week');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchAnalytics();
+    fetchSentimentAnalytics();
   }, [timeframe]);
 
   const fetchAnalytics = async () => {
@@ -75,6 +79,41 @@ export default function AnalyticsPage() {
       console.error('Error fetching analytics:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportToPDF = async () => {
+    const input = document.getElementsByClassName('container')[0];
+    html2canvas(input).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF();
+      pdf.addImage(imgData, 'PNG', 0, 0);
+      pdf.save('download.pdf');
+    });
+  };
+
+  const exportToCSV = async () => {
+    const csvData = [];
+    csvData.push(['Date', 'Conversations', 'Messages']);
+    data.conversationTrends.forEach(row => {
+      csvData.push([row.date, row.conversations, row.messages]);
+    });
+    const csvContent = 'data:text/csv;charset=utf-8,' + csvData.map(e => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'analytics.csv');
+    document.body.appendChild(link);
+    link.click();
+  };
+
+  const fetchSentimentAnalytics = async () => {
+    try {
+      const response = await fetch(`/api/analytics/sentiment?timeframe=${timeframe}`);
+      const sentimentData = await response.json();
+      setSentimentData(sentimentData);
+    } catch (error) {
+      console.error('Error fetching sentiment analytics:', error);
     }
   };
 
@@ -117,24 +156,27 @@ export default function AnalyticsPage() {
           <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
           <p className="text-muted-foreground">Insights into your AI assistant's performance</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Select value={timeframe} onValueChange={(value: 'day' | 'week' | 'month') => setTimeframe(value)}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">Today</SelectItem>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={fetchAnalytics} variant="outline" size="icon">
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Overview Cards */}
+      <div className="flex items-center space-x-2">
+        <Select value={timeframe} onValueChange={(value: 'day' | 'week' | 'month') => setTimeframe(value)}>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="day">Today</SelectItem>
+            <SelectItem value="week">This Week</SelectItem>
+            <SelectItem value="month">This Month</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button onClick={fetchAnalytics} variant="outline" size="icon">
+          <RefreshCw className="w-4 h-4" />
+        </Button>
+        <Button onClick={exportToPDF} variant="outline" size="icon">
+          <Download className="w-4 h-4" />
+        </Button>
+        <Button onClick={exportToCSV} variant="outline" size="icon">
+          <Download className="w-4 h-4" />
+        </Button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -196,11 +238,12 @@ export default function AnalyticsPage() {
 
       {/* Main Analytics Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="sources">Sources</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="engagement">Engagement</TabsTrigger>
+          <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -432,6 +475,120 @@ export default function AnalyticsPage() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="sentiment" className="space-y-4">
+          {sentimentData ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Sentiment Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Sentiment Distribution</CardTitle>
+                  <p className="text-sm text-muted-foreground">Overall conversation sentiment</p>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Positive', value: sentimentData.overview.sentimentDistribution.positive, color: '#059669' },
+                          { name: 'Neutral', value: sentimentData.overview.sentimentDistribution.neutral, color: '#6b7280' },
+                          { name: 'Negative', value: sentimentData.overview.sentimentDistribution.negative, color: '#dc2626' }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {[
+                          { name: 'Positive', value: sentimentData.overview.sentimentDistribution.positive, color: '#059669' },
+                          { name: 'Neutral', value: sentimentData.overview.sentimentDistribution.neutral, color: '#6b7280' },
+                          { name: 'Negative', value: sentimentData.overview.sentimentDistribution.negative, color: '#dc2626' }
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Top Topics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Popular Topics</CardTitle>
+                  <p className="text-sm text-muted-foreground">Most discussed topics</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {sentimentData.topTopics.slice(0, 5).map((topic: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <span className="text-sm font-medium capitalize">{topic.topic.replace('_', ' ')}</span>
+                        <Badge variant="secondary">{topic.count}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Category Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Conversation Categories</CardTitle>
+                  <p className="text-sm text-muted-foreground">Types of conversations</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {sentimentData.categoryDistribution.slice(0, 5).map((category: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <span className="text-sm font-medium capitalize">{category.category.replace('_', ' ')}</span>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-20 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full" 
+                              style={{ width: `${category.percentage}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-sm text-muted-foreground">{category.count}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Satisfaction Score */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Customer Satisfaction</CardTitle>
+                  <p className="text-sm text-muted-foreground">Overall satisfaction score</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-green-600 mb-2">
+                      {sentimentData.overview.averageSatisfaction}%
+                    </div>
+                    <Progress value={sentimentData.overview.averageSatisfaction} className="h-3 mb-2" />
+                    <div className="text-sm text-muted-foreground">
+                      Based on {sentimentData.overview.totalConversations} conversations
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p>Loading sentiment analysis...</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

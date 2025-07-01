@@ -3,15 +3,16 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useChat, type Message } from '@/frontend/hooks/useChat';
-import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
+import { Button } from '@/frontend/components/ui/button';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/frontend/components/ui/avatar';
-import { Badge } from '@/frontend/components/ui/badge';
-import { Send, User, Bot, AlertTriangle, Headphones, FileText, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { format } from 'date-fns';
+import { Bot, Send, Mic } from 'lucide-react';
 import { cn } from '@/frontend/lib/utils';
+import { formatDate } from '@/frontend/lib/formatDate';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { useChat } from '@/frontend/hooks/useChat';
+import VoiceRecorder from './VoiceRecorder';
 
 function ChatMessage({ message }: { message: Message }) {
   const [showSources, setShowSources] = useState(false);
@@ -124,6 +125,7 @@ export default function ChatUI({
 }: ChatUIProps) {
   const { messages, isLoading, sendMessage } = useChat();
   const [inputValue, setInputValue] = useState('');
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -139,6 +141,11 @@ export default function ChatUI({
       sendMessage(inputValue);
       setInputValue('');
     }
+  };
+
+  const handleVoiceTranscription = (text: string) => {
+    setInputValue(text);
+    setShowVoiceRecorder(false);
   };
 
   return (
@@ -185,7 +192,16 @@ export default function ChatUI({
         </div>
       </ScrollArea>
 
-      <div className="p-3 sm:p-4 border-t border-border bg-background/50 rounded-b-lg">
+      <div className="p-3 sm:p-4 border-t border-border bg-background/50 rounded-b-lg space-y-3">
+        {showVoiceRecorder && (
+          <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-900">
+            <VoiceRecorder 
+              onTranscriptionComplete={handleVoiceTranscription}
+              disabled={isLoading}
+            />
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="flex items-center space-x-2 sm:space-x-3">
           <Input
             type="text"
@@ -197,6 +213,19 @@ export default function ChatUI({
             aria-label="Chat input"
             autoComplete="off"
           />
+          
+          <Button
+            type="button"
+            onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
+            variant="outline"
+            size="icon"
+            aria-label="Voice input"
+            className="h-9 w-9 sm:h-10 sm:w-10"
+            disabled={isLoading}
+          >
+            <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
+          
           <Button 
             type="submit" 
             disabled={isLoading || !inputValue.trim()} 
