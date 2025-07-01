@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       }, { headers: corsHeaders });
     }
 
-    const result = await generateChatResponse(message, chatHistory, userId);
+    const result = await generateChatResponse(message, chatHistory, userId, convId);
 
     if (result.error) {
       return NextResponse.json(
@@ -70,6 +70,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // Salva i messaggi nella conversazione
     await appendMessages(
       userId,
       convId,

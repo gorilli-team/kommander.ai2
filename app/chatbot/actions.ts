@@ -328,53 +328,13 @@ export async function generateChatResponse(
         metadata: source.metadata
       }));
 
-    // Handle conversation persistence
-    const conversationService = new ConversationService();
-    let finalConversationId = conversationId;
-
-    try {
-      // Create conversation if it doesn't exist
-      if (!finalConversationId) {
-        const newConversationId = await conversationService.createConversation(
-          userIdToUse,
-          `Chat ${new Date().toLocaleDateString()}`
-        );
-        finalConversationId = newConversationId.toString();
-      }
-
-      // Add user message
-      const userMsg: ConversationMessage = {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        content: userMessage,
-        timestamp: new Date()
-      };
-      await conversationService.addMessage(finalConversationId, userMsg);
-
-      // Add assistant response
-      const assistantMsg: ConversationMessage = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: assistantResponse.trim(),
-        timestamp: new Date(),
-        sources: messageSources,
-        metadata: {
-          processingTime,
-          model: 'gpt-3.5-turbo',
-          tokenCount: completion.usage?.total_tokens
-        }
-      };
-      await conversationService.addMessage(finalConversationId, assistantMsg);
-
-    } catch (convError) {
-      console.error('Error saving conversation:', convError);
-      // Don't fail the response if conversation saving fails
-    }
+    // Conversation persistence is handled by the calling endpoint
+    // to avoid duplication between different calling contexts
 
     return { 
       response: assistantResponse.trim(),
       sources: messageSources,
-      conversationId: finalConversationId
+      conversationId: conversationId
     };
 
   } catch (error: any) {
