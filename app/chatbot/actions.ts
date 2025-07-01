@@ -10,6 +10,7 @@ import { auth } from '@/frontend/auth'; // Import auth for session
 import { getSettings } from '@/app/settings/actions';
 import { ConversationService } from '@/backend/lib/conversationService';
 import { ConversationMessage, MessageSource } from '@/backend/schemas/conversation';
+import { analyticsService } from '@/backend/lib/analytics';
 
 import mammoth from 'mammoth';
 
@@ -313,6 +314,10 @@ export async function generateChatResponse(
     const assistantResponse = completion.choices[0]?.message?.content;
 
     if (!assistantResponse) {
+      // Track error
+      if (conversationId) {
+        await analyticsService.trackError(userIdToUse, conversationId, 'no_ai_response');
+      }
       return { error: 'AI non ha restituito una risposta.' };
     }
 
@@ -327,6 +332,48 @@ export async function generateChatResponse(
         content: source.content,
         metadata: source.metadata
       }));
+
+    // Track analytics events
+    if (conversationId) {
+      const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Track message sent
+      await analyticsService.trackMessageSent(
+        userIdToUse,
+        conversationId,
+        messageId,
+        userMessage.length
+      );
+      
+      // Track response generated
+      await analyticsService.trackResponseGenerated(
+        userIdToUse,
+        conversationId,
+        messageId,
+        processingTime,
+        completion.usage?.total_tokens,
+        'gpt-3.5-turbo'
+      );
+      
+      // Track source usage
+      for (const source of messageSources) {
+        if (source.metadata?.faqId) {
+          await analyticsService.trackSourceUsed(
+            userIdToUse,
+            conversationId,
+            'faq',
+            source.metadata.faqId
+          );
+        } else if (source.metadata?.fileName) {
+          await analyticsService.trackSourceUsed(
+            userIdToUse,
+            conversationId,
+            'document',
+            source.metadata.fileName
+          );
+        }
+      }
+    }
 
     // Conversation persistence is handled by the calling endpoint
     // to avoid duplication between different calling contexts

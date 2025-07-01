@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/frontend/auth';
 import { ConversationService } from '@/backend/lib/conversationService';
 import { connectToDatabase } from '@/backend/lib/mongodb';
+import { analyticsService } from '@/backend/lib/analytics';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,77 +14,58 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const timeframe = searchParams.get('timeframe') as 'day' | 'week' | 'month' || 'week';
 
-    const conversationService = new ConversationService();
-    const { db } = await connectToDatabase();
+    // Get real analytics data
+    const analyticsData = await analyticsService.getAnalyticsSummary(session.user.id, timeframe);
 
-    // Get basic analytics from conversation service
-    const overviewData = await conversationService.getAnalyticsSummary(session.user.id, timeframe);
-
-    // Calculate date range
-    const endDate = new Date();
-    const startDate = new Date();
-    switch (timeframe) {
-      case 'day':
-        startDate.setHours(0, 0, 0, 0);
-        break;
-      case 'week':
-        startDate.setDate(startDate.getDate() - 7);
-        break;
-      case 'month':
-        startDate.setMonth(startDate.getMonth() - 1);
-        break;
-    }
-
-    // Get conversation trends
-    const conversationTrends = await getConversationTrends(db, session.user.id, startDate, endDate, timeframe);
-
-    // Get source usage distribution
-    const sourceUsage = [
-      {
-        name: 'FAQ Sources',
-        value: overviewData.faqSources || 0,
-        color: '#1a56db'
-      },
-      {
-        name: 'Document Sources',
-        value: overviewData.documentSources || 0,
-        color: '#7c3aed'
-      }
-    ];
-
-    // Get popular topics (simplified - would need NLP for real implementation)
-    const popularTopics = await getPopularTopics(db, session.user.id, startDate);
-
-    // Get user engagement patterns
-    const userEngagement = await getUserEngagement(db, session.user.id, startDate, timeframe);
-
-    // Mock response metrics (would be calculated from actual data)
-    const responseMetrics = {
-      avgResponseTime: overviewData.avgRating || 2.3,
-      fastResponses: Math.floor(overviewData.totalMessages * 0.6),
-      mediumResponses: Math.floor(overviewData.totalMessages * 0.3),
-      slowResponses: Math.floor(overviewData.totalMessages * 0.1)
-    };
-
-    const analyticsData = {
+    // Transform data for frontend compatibility
+    const response = {
       overview: {
-        totalConversations: overviewData.totalConversations,
-        totalMessages: overviewData.totalMessages,
-        avgMessagesPerConversation: overviewData.avgMessagesPerConversation,
-        avgRating: overviewData.avgRating || 4.2,
-        faqSources: overviewData.faqSources,
-        documentSources: overviewData.documentSources,
-        avgResponseTime: 2.3, // Would be calculated from actual processing times
-        activeUsers: 1 // Simplified for single user
+        totalConversations: analyticsData.totalConversations,
+        totalMessages: analyticsData.totalMessages,
+        avgMessagesPerConversation: analyticsData.avgMessagesPerConversation,
+        avgRating: analyticsData.avgRating,
+        faqSources: analyticsData.faqSources,
+        documentSources: analyticsData.documentSources,
+        avgResponseTime: analyticsData.avgResponseTime,
+        activeUsers: analyticsData.activeUsers
       },
-      conversationTrends,
-      sourceUsage,
-      popularTopics,
-      userEngagement,
-      responseMetrics
+      conversationTrends: analyticsData.dailyDistribution.map(item => ({
+        date: item.date,
+        conversations: Math.ceil(item.count / 2), // Approximate conversations from messages
+        messages: item.count
+      })),
+      sourceUsage: [
+        {
+          name: 'FAQ Sources',
+          value: analyticsData.faqSources,
+          color: '#1a56db'
+        },
+        {
+          name: 'Document Sources', 
+          value: analyticsData.documentSources,
+          color: '#7c3aed'
+        },
+        {
+          name: 'Direct Responses',
+          value: Math.max(0, analyticsData.totalMessages - analyticsData.faqSources - analyticsData.documentSources),
+          color: '#059669'
+        }
+      ],
+      popularTopics: analyticsData.topTopics,
+      userEngagement: analyticsData.hourlyDistribution.map(item => ({
+        timeSlot: `${item.hour.toString().padStart(2, '0')}:00`,
+        users: 1, // Single user for now
+        messages: item.count
+      })),
+      responseMetrics: {
+        avgResponseTime: analyticsData.avgResponseTime,
+        fastResponses: analyticsData.responseTimeDistribution.fast,
+        mediumResponses: analyticsData.responseTimeDistribution.medium,
+        slowResponses: analyticsData.responseTimeDistribution.slow
+      }
     };
 
-    return NextResponse.json(analyticsData);
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error fetching analytics:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
