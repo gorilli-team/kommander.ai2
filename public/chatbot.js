@@ -28,6 +28,23 @@
     document.head.appendChild(link);
   }
 
+  // Function to calculate contrasting text color
+  function getContrastTextColor(hexColor) {
+    // Remove # if present
+    const hex = hexColor.replace('#', '');
+    
+    // Convert to RGB
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    
+    // Calculate relative luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return white for dark colors, black for light colors
+    return luminance > 0.5 ? '#000000' : '#ffffff';
+  }
+
   async function ensureReact() {
     if (!window.React) {
       await loadScript(ORIGIN + '/react.production.min.js');
@@ -114,6 +131,13 @@
                 '--kommander-secondary-color',
                 data.color,
               );
+              
+              // Calculate and set contrasting text color for header
+              const contrastColor = getContrastTextColor(data.color);
+              document.documentElement.style.setProperty(
+                '--kommander-header-text-color',
+                contrastColor,
+              );
 
             }
           })
@@ -124,8 +148,8 @@
       
       fetchSettings();
       
-      // Poll for settings changes every 5 seconds
-      const interval = setInterval(fetchSettings, 5000);
+      // Poll for settings changes every 1 second
+      const interval = setInterval(fetchSettings, 1000);
       
       return () => clearInterval(interval);
     }, [userId]);
@@ -347,7 +371,7 @@
           React.createElement(
             'div',
             { className: 'kommander-header' },
-            React.createElement('span', { className: 'font-semibold' }, botName + ' – Trial'),
+            React.createElement('span', { className: 'font-semibold' }, botName),
             React.createElement(
               'div',
               { className: 'kommander-header-right' },
