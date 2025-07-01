@@ -47,8 +47,6 @@
     const [isTyping, setIsTyping] = useState(false);
     const [botName, setBotName] = useState('Kommander.ai');
     const [botColor, setBotColor] = useState('#1a1a1a');
-    const [darkMode, setDarkMode] = useState(false);
-
     const viewportRef = useRef(null);
     const conversationIdRef = useRef('');
     const lastTimestampRef = useRef('');
@@ -74,31 +72,6 @@
       setShowRestartConfirm(false);
     };
 
-    // Dark mode initialization
-    useEffect(() => {
-      const stored = localStorage.getItem('kommander-dark-mode');
-      if (stored === 'true') {
-        setDarkMode(true);
-        document.body.classList.add('dark-mode');
-      } else {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-          setDarkMode(true);
-          document.body.classList.add('dark-mode');
-        }
-      }
-    }, []);
-
-    const toggleDarkMode = () => {
-      const newDarkMode = !darkMode;
-      setDarkMode(newDarkMode);
-      localStorage.setItem('kommander-dark-mode', newDarkMode.toString());
-      if (newDarkMode) {
-        document.body.classList.add('dark-mode');
-      } else {
-        document.body.classList.remove('dark-mode');
-      }
-    };
 
     function formatTime() {
       return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -380,15 +353,6 @@
               { className: 'kommander-header-right' },
               React.createElement('span', { className: 'kommander-badge' }, 'Online'),
               React.createElement('span', { className: 'kommander-date' }, currentDate),
-              React.createElement(
-                'button',
-                {
-                  onClick: toggleDarkMode,
-                  'aria-label': darkMode ? 'Attiva modalità chiara' : 'Attiva modalità scura',
-                  className: 'kommander-toggle-dark-mode',
-                },
-                darkMode ? '☀️' : '🌙'
-              ),
               React.createElement(
                 'button',
                 { onClick: () => setOpen(false), 'aria-label': 'Chiudi chatbot', className: 'kommander-close' },

@@ -6,6 +6,7 @@ import { Button } from '@/frontend/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/frontend/components/ui/radio-group';
 import { Checkbox } from '@/frontend/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
+import { saveSettings } from './actions';
 
 const traitOptions = [
   { value: 'avventuroso', label: '🦁 Avventuroso' },
@@ -23,11 +24,6 @@ type Trait = typeof traitOptions[number]['value'];
 interface Props {
   initialSettings: any | null;
 }
-
-// Mock saveSettings function for demo
-const saveSettings = async (settings: any) => {
-  return new Promise(resolve => setTimeout(resolve, 1000));
-};
 
 export default function SettingsClient({ initialSettings }: Props) {
   const [name, setName] = useState(initialSettings?.name || 'Kommander.ai');

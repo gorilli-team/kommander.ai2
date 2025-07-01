@@ -2,102 +2,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --kommander-primary-color: #1a1a1a; /* Dark gray instead of blue */
-  --kommander-secondary-color: #2a2a2a; /* Darker gray instead of blue */
+  --kommander-primary-color: #1a1a1a;
+  --kommander-secondary-color: #2a2a2a;
   --kommander-text-color-light: #fff;
   --kommander-text-color-dark: #1f2937;
   --kommander-bg-light: #fff;
-  --kommander-bg-dark-window: #000000; /* Pure black */
-  --kommander-bg-dark-message: #080808; /* Very dark for messages */
   --kommander-border-color: #d1d5db;
-  --kommander-border-color-dark: #262626; /* Dark borders for dark mode */
   --kommander-shadow-color: rgba(0, 0, 0, 0.2);
   --kommander-message-shadow: rgba(0, 0, 0, 0.08);
   --kommander-time-color: #6b7280;
-  --kommander-time-color-dark: #9CA3AF; /* Time color for dark mode */
   --kommander-input-bg: #fff;
-  --kommander-input-bg-dark: #0a0a0a; /* Dark input for dark mode */
   --kommander-input-text: #000;
-  --kommander-input-text-dark: #f5f5f5; /* Light text for dark mode */
   --kommander-user-message-bg: var(--kommander-primary-color);
   --kommander-assistant-message-bg: var(--kommander-bg-light);
-  --kommander-assistant-message-bg-dark: var(--kommander-bg-dark-message);
   --kommander-assistant-message-border: var(--kommander-border-color);
-  --kommander-assistant-message-border-dark: var(--kommander-border-color-dark);
 }
 
-/* Dark Mode Styles */
-.dark-mode .kommander-window {
-  background: var(--kommander-bg-dark-window);
-  color: #f5f5f5;
-  border-color: var(--kommander-border-color-dark);
-}
-
-.dark-mode .kommander-header {
-  border-bottom-color: var(--kommander-border-color-dark);
-}
-
-.dark-mode .kommander-messages {
-  background-color: var(--kommander-bg-dark-window);
-  color: #f5f5f5;
-}
-
-.dark-mode .kommander-messages::-webkit-scrollbar-track {
-  background: var(--kommander-bg-dark-window);
-}
-
-.dark-mode .kommander-messages::-webkit-scrollbar-thumb {
-  background: var(--kommander-border-color-dark);
-  border-color: var(--kommander-bg-dark-window);
-}
-
-.dark-mode .kommander-assistant {
-  background: var(--kommander-assistant-message-bg-dark);
-  color: #f5f5f5;
-  border-color: var(--kommander-assistant-message-border-dark);
-}
-
-.dark-mode .kommander-assistant p {
-  color: #f5f5f5;
-}
-
-.dark-mode .kommander-agent p {
-  color: #bbf7d0;
-}
-
-.dark-mode .kommander-time {
-  color: var(--kommander-time-color-dark);
-}
-
-.dark-mode .kommander-typing {
-  background: var(--kommander-assistant-message-bg-dark);
-  border-color: var(--kommander-assistant-message-border-dark);
-}
-
-.dark-mode .kommander-typing p {
-  color: #f5f5f5;
-}
-
-.dark-mode .kommander-input {
-  background: var(--kommander-bg-dark-window);
-  border-top-color: var(--kommander-border-color-dark);
-}
-
-.dark-mode .kommander-input input {
-  background: var(--kommander-input-bg-dark) !important;
-  color: var(--kommander-input-text-dark) !important;
-  border-color: var(--kommander-border-color-dark);
-}
-
-.dark-mode .kommander-modal {
-  background: var(--kommander-bg-dark-window);
-  color: #f5f5f5;
-}
-
-.dark-mode .kommander-modal-cancel {
-  background: var(--kommander-border-color-dark);
-  color: #f5f5f5;
-}
 
 body {
   font-family: 'Inter', sans-serif;
