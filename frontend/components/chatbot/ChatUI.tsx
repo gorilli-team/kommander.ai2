@@ -7,11 +7,15 @@ import { Input } from '@/frontend/components/ui/input';
 import { Button } from '@/frontend/components/ui/button';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/frontend/components/ui/avatar';
-import { Bot, Send, Mic } from 'lucide-react';
+import { Badge } from '@/frontend/components/ui/badge';
+import { 
+  Bot, Send, Mic, FileText, ChevronUp, ChevronDown, 
+  HelpCircle, User, Headphones, AlertTriangle 
+} from 'lucide-react';
 import { cn } from '@/frontend/lib/utils';
 import { formatDate } from '@/frontend/lib/formatDate';
+import { format } from 'date-fns';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { useChat } from '@/frontend/hooks/useChat';
 import VoiceRecorder from './VoiceRecorder';
 
 function ChatMessage({ message }: { message: Message }) {

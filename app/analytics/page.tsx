@@ -16,8 +16,6 @@ import {
   Star, Search, Download, RefreshCw, Calendar,
   HelpCircle, BookOpen, Zap, Target
 } from 'lucide-react';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 
 interface AnalyticsData {
   overview: {
@@ -52,9 +50,9 @@ interface AnalyticsData {
   }>;
   responseMetrics: {
     avgResponseTime: number;
-    fastResponses: number; // <2s
-    mediumResponses: number; // 2-5s
-    slowResponses: number; // >5s
+    fastResponses: number;
+    mediumResponses: number;
+    slowResponses: number;
   };
 }
 
@@ -80,31 +78,6 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const exportToPDF = async () => {
-    const input = document.getElementsByClassName('container')[0];
-    html2canvas(input).then(canvas => {
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF();
-      pdf.addImage(imgData, 'PNG', 0, 0);
-      pdf.save('download.pdf');
-    });
-  };
-
-  const exportToCSV = async () => {
-    const csvData = [];
-    csvData.push(['Date', 'Conversations', 'Messages']);
-    data.conversationTrends.forEach(row => {
-      csvData.push([row.date, row.conversations, row.messages]);
-    });
-    const csvContent = 'data:text/csv;charset=utf-8,' + csvData.map(e => e.join(',')).join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', 'analytics.csv');
-    document.body.appendChild(link);
-    link.click();
   };
 
   const fetchSentimentAnalytics = async () => {
@@ -156,27 +129,24 @@ export default function AnalyticsPage() {
           <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
           <p className="text-muted-foreground">Insights into your AI assistant's performance</p>
         </div>
-      <div className="flex items-center space-x-2">
-        <Select value={timeframe} onValueChange={(value: 'day' | 'week' | 'month') => setTimeframe(value)}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="day">Today</SelectItem>
-            <SelectItem value="week">This Week</SelectItem>
-            <SelectItem value="month">This Month</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button onClick={fetchAnalytics} variant="outline" size="icon">
-          <RefreshCw className="w-4 h-4" />
-        </Button>
-        <Button onClick={exportToPDF} variant="outline" size="icon">
-          <Download className="w-4 h-4" />
-        </Button>
-        <Button onClick={exportToCSV} variant="outline" size="icon">
-          <Download className="w-4 h-4" />
-        </Button>
-      </div>
+        <div className="flex items-center space-x-2">
+          <Select value={timeframe} onValueChange={(value: 'day' | 'week' | 'month') => setTimeframe(value)}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="day">Today</SelectItem>
+              <SelectItem value="week">This Week</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={fetchAnalytics} variant="outline" size="icon">
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -199,7 +169,7 @@ export default function AnalyticsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{data.overview.totalMessages}</div>
             <Badge variant="secondary" className="mt-1">
-              {data.overview.totalMessages > 0 ? '+' : ''}{data.overview.totalMessages}
+              {data.overview.faqSources + data.overview.documentSources} sources
             </Badge>
           </CardContent>
         </Card>
@@ -211,7 +181,9 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.overview.avgResponseTime}s</div>
-            <Progress value={Math.max(0, 100 - (data.overview.avgResponseTime * 20))} className="mt-2" />
+            <Badge variant="secondary" className="mt-1">
+              Performance
+            </Badge>
           </CardContent>
         </Card>
 
@@ -221,22 +193,15 @@ export default function AnalyticsPage() {
             <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.overview.avgRating.toFixed(1)}/5</div>
-            <div className="flex mt-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`w-3 h-3 ${
-                    star <= data.overview.avgRating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                  }`}
-                />
-              ))}
-            </div>
+            <div className="text-2xl font-bold">{data.overview.avgRating}/5</div>
+            <Badge variant="secondary" className="mt-1">
+              Satisfaction
+            </Badge>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Analytics Tabs */}
+      {/* Analytics Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -252,54 +217,27 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Conversation Trends</CardTitle>
-                <p className="text-sm text-muted-foreground">Daily conversation volume over time</p>
+                <p className="text-sm text-muted-foreground">Daily conversation and message volume</p>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={data.conversationTrends}>
+                  <LineChart data={data.conversationTrends}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />
                     <Tooltip />
-                    <Area type="monotone" dataKey="conversations" stroke="#1a56db" fill="#1a56db" fillOpacity={0.3} />
-                    <Area type="monotone" dataKey="messages" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.3} />
-                  </AreaChart>
+                    <Line type="monotone" dataKey="conversations" stroke="#1a56db" strokeWidth={2} />
+                    <Line type="monotone" dataKey="messages" stroke="#7c3aed" strokeWidth={2} />
+                  </LineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            {/* Popular Topics */}
+            {/* Source Usage */}
             <Card>
               <CardHeader>
-                <CardTitle>Popular Topics</CardTitle>
-                <p className="text-sm text-muted-foreground">Most discussed topics this {timeframe}</p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {data.popularTopics.map((topic, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium">{topic.topic}</span>
-                        <Badge variant={topic.trend === 'up' ? 'default' : topic.trend === 'down' ? 'destructive' : 'secondary'}>
-                          {topic.trend === 'up' ? '↗' : topic.trend === 'down' ? '↘' : '→'}
-                        </Badge>
-                      </div>
-                      <span className="text-sm text-muted-foreground">{topic.count}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="sources" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Source Usage Pie Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Source Usage Distribution</CardTitle>
-                <p className="text-sm text-muted-foreground">How your AI sources information</p>
+                <CardTitle>Source Usage</CardTitle>
+                <p className="text-sm text-muted-foreground">Distribution of information sources</p>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -315,7 +253,7 @@ export default function AnalyticsPage() {
                       dataKey="value"
                     >
                       {data.sourceUsage.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -323,158 +261,7 @@ export default function AnalyticsPage() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-
-            {/* Source Metrics */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Source Metrics</CardTitle>
-                <p className="text-sm text-muted-foreground">Detailed breakdown of information sources</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-950 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <HelpCircle className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                    <span className="font-medium">FAQ Sources</span>
-                  </div>
-                  <span className="text-2xl font-bold text-gray-600 dark:text-gray-300">{data.overview.faqSources}</span>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-950 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <BookOpen className="w-5 h-5 text-purple-600" />
-                    <span className="font-medium">Document Sources</span>
-                  </div>
-                  <span className="text-2xl font-bold text-purple-600">{data.overview.documentSources}</span>
-                </div>
-
-                <div className="pt-2">
-                  <div className="text-sm text-muted-foreground mb-2">Source Efficiency</div>
-                  <Progress 
-                    value={(data.overview.faqSources / (data.overview.faqSources + data.overview.documentSources)) * 100} 
-                    className="h-2"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                    <span>FAQ-driven</span>
-                    <span>Document-driven</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="performance" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Response Time Distribution */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Response Time Distribution</CardTitle>
-                <p className="text-sm text-muted-foreground">Performance breakdown by response speed</p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Zap className="w-4 h-4 text-green-600" />
-                      <span className="text-sm">Fast (&lt;2s)</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-20 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-green-600 h-2 rounded-full" 
-                          style={{ width: `${(data.responseMetrics.fastResponses / (data.responseMetrics.fastResponses + data.responseMetrics.mediumResponses + data.responseMetrics.slowResponses)) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium">{data.responseMetrics.fastResponses}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4 text-yellow-600" />
-                      <span className="text-sm">Medium (2-5s)</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-20 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-yellow-600 h-2 rounded-full" 
-                          style={{ width: `${(data.responseMetrics.mediumResponses / (data.responseMetrics.fastResponses + data.responseMetrics.mediumResponses + data.responseMetrics.slowResponses)) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium">{data.responseMetrics.mediumResponses}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Target className="w-4 h-4 text-red-600" />
-                      <span className="text-sm">Slow (&gt;5s)</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-20 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-red-600 h-2 rounded-full" 
-                          style={{ width: `${(data.responseMetrics.slowResponses / (data.responseMetrics.fastResponses + data.responseMetrics.mediumResponses + data.responseMetrics.slowResponses)) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium">{data.responseMetrics.slowResponses}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Performance Metrics */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Key Performance Indicators</CardTitle>
-                <p className="text-sm text-muted-foreground">Overall system performance metrics</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">98.5%</div>
-                    <div className="text-sm text-muted-foreground">Uptime</div>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-950 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-600 dark:text-gray-300">97.2%</div>
-                    <div className="text-sm text-muted-foreground">Success Rate</div>
-                  </div>
-                </div>
-                
-                <div className="pt-2">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span>Performance Score</span>
-                    <span className="font-medium">Excellent</span>
-                  </div>
-                  <Progress value={92} className="h-3" />
-                  <div className="text-xs text-muted-foreground mt-1">Based on response time, accuracy, and user satisfaction</div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="engagement" className="space-y-4">
-          {/* User Engagement Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>User Engagement Patterns</CardTitle>
-              <p className="text-sm text-muted-foreground">Activity patterns throughout the day</p>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data.userEngagement}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="timeSlot" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="users" fill="#404040" name="Active Users" />
-                  <Bar dataKey="messages" fill="#7c3aed" name="Messages" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="sentiment" className="space-y-4">
@@ -517,51 +304,7 @@ export default function AnalyticsPage() {
                 </CardContent>
               </Card>
 
-              {/* Top Topics */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Popular Topics</CardTitle>
-                  <p className="text-sm text-muted-foreground">Most discussed topics</p>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {sentimentData.topTopics.slice(0, 5).map((topic: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <span className="text-sm font-medium capitalize">{topic.topic.replace('_', ' ')}</span>
-                        <Badge variant="secondary">{topic.count}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Category Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Conversation Categories</CardTitle>
-                  <p className="text-sm text-muted-foreground">Types of conversations</p>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {sentimentData.categoryDistribution.slice(0, 5).map((category: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <span className="text-sm font-medium capitalize">{category.category.replace('_', ' ')}</span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${category.percentage}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm text-muted-foreground">{category.count}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Satisfaction Score */}
+              {/* Customer Satisfaction */}
               <Card>
                 <CardHeader>
                   <CardTitle>Customer Satisfaction</CardTitle>
