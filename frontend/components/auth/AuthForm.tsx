@@ -20,7 +20,9 @@ import KommanderIcon from '@/frontend/components/layout/KommanderIcon';
 import { signIn } from 'next-auth/react';
 import { registerUser } from '@/app/actions/auth.actions'; // Chiamiamo registerUser
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
-import { AlertTriangle, CheckCircle2, UserPlus } from 'lucide-react'; // UserPlus per l'icona di registrazione
+import { Separator } from '@/frontend/components/ui/separator';
+import { AlertTriangle, CheckCircle2, UserPlus, Chrome, Github } from 'lucide-react'; // UserPlus per l'icona di registrazione
+import { Icons } from '@/frontend/components/ui/icons';
 
 type AuthView = 'login' | 'register'; // Viste semplificate
 
@@ -246,6 +248,54 @@ export default function AuthForm() {
             <AlertDescription className="text-green-700 dark:text-green-300">{success}</AlertDescription>
           </Alert>
         )}
+        {/* OAuth Providers Section */}
+        <div className="space-y-3 mb-6">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-11 flex items-center justify-center gap-3 border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+            onClick={() => signIn('google', { callbackUrl })}
+            disabled={isLoginPending || isRegisterPending}
+          >
+            <Icons.google className="h-5 w-5" />
+            Continue with Google
+          </Button>
+          
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-11 flex items-center justify-center gap-3 border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+            onClick={() => signIn('github', { callbackUrl })}
+            disabled={isLoginPending || isRegisterPending}
+          >
+            <Icons.github className="h-5 w-5" />
+            Continue with GitHub
+          </Button>
+          
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-11 flex items-center justify-center gap-3 border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+            onClick={() => signIn('microsoft-entra-id', { callbackUrl })}
+            disabled={isLoginPending || isRegisterPending}
+          >
+            <Icons.microsoft className="h-5 w-5" />
+            Continue with Microsoft
+          </Button>
+        </div>
+
+        {/* Separator */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <Separator className="w-full" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
+              Or continue with email
+            </span>
+          </div>
+        </div>
+
         {renderForm()}
         <div className="text-sm text-center mt-6">
           {view === 'login' && (
