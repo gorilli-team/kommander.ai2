@@ -121,7 +121,22 @@
     }
 
     function addMessage(role, text, updateTimestamp = true) {
-      setMessages((prev) => [...prev, { role, text, time: formatTime() }]);
+      setMessages((prev) => {
+        // Global deduplication: check if this exact message already exists
+        const isDuplicate = prev.some(msg => 
+          msg.role === role && 
+          msg.text === text
+        );
+        
+        if (isDuplicate) {
+          console.log('Preventing duplicate message:', role, text.substring(0, 50));
+          return prev; // Don't add duplicate
+        }
+        
+        console.log('Adding new message:', role, text.substring(0, 50));
+        return [...prev, { role, text, time: formatTime() }];
+      });
+      
       if (updateTimestamp) {
         lastTimestampRef.current = new Date().toISOString();
       }
@@ -193,7 +208,11 @@
     }, [messages, isTyping]);
 
     useEffect(() => {
-      if (open && messages.length === 0) {
+      // Only add welcome message if:
+      // 1. Chat is open
+      // 2. No messages exist
+      // 3. No existing conversation ID (means it's a fresh conversation)
+      if (open && messages.length === 0 && !conversationIdRef.current) {
         addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi?`);
       }
     }, [open, botName]);
@@ -390,7 +409,10 @@
 
         isSendingRef.current = false;
 
-        if (pollFnRef.current) pollFnRef.current(true); // Manual poll after sending message
+        // Manual poll with delay to get the response from database
+        setTimeout(() => {
+          if (pollFnRef.current) pollFnRef.current(true);
+        }, 1000); // 1 second delay to ensure server has saved the message
       }
     };
 
