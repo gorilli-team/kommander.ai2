@@ -80,6 +80,8 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
             // Add the trial class for custom styling
             container.className = 'trial-chatbot-widget';
             
+            console.log('[Dashboard] Initializing chatbot widget for userId:', userId);
+            
             // Initialize the chatbot in the container
             if (window.initKommanderChatbot) {
               window.initKommanderChatbot({ userId });
@@ -92,6 +94,8 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
                 }
                 setIsLoaded(true);
               }, 300);
+            } else {
+              console.error('[Dashboard] window.initKommanderChatbot not found');
             }
           }
         }, 100);
