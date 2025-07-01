@@ -49,7 +49,7 @@ export default function FaqList(props: FaqListProps) {
       const fetchedFaqsResult = await getFaqs();
       setFaqs(fetchedFaqsResult);
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to fetch FAQs.', variant: 'destructive' });
+      toast({ title: 'Errore', description: 'Impossibile caricare le FAQ.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -64,13 +64,13 @@ export default function FaqList(props: FaqListProps) {
     try {
       const response = await deleteFaq(id);
       if (response.error) {
-        toast({ title: 'Error', description: response.error, variant: 'destructive' });
+        toast({ title: 'Errore', description: response.error, variant: 'destructive' });
       } else {
-        toast({ title: 'Success', description: 'FAQ deleted successfully.' });
+        toast({ title: 'Successo', description: 'FAQ eliminata con successo.' });
         fetchFaqs(); 
       }
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete FAQ.', variant: 'destructive' });
+      toast({ title: 'Errore', description: 'Impossibile eliminare la FAQ.', variant: 'destructive' });
     }
   };
 
@@ -137,14 +137,14 @@ export default function FaqList(props: FaqListProps) {
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
               <Button variant="default" size="sm" className="h-9">
-                <PlusCircle className="mr-2 h-4 w-4" /> Add New FAQ
+                <PlusCircle className="mr-2 h-4 w-4" /> Aggiungi Nuova FAQ
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
-                <DialogTitle className="font-headline text-2xl">Add New FAQ</DialogTitle>
+                <DialogTitle className="font-headline text-2xl">Aggiungi Nuova FAQ</DialogTitle>
                 <DialogDescription>
-                  Fill in the question and answer to add a new FAQ to your knowledge base.
+                  Compila la domanda e la risposta per aggiungere una nuova FAQ alla tua base di conoscenza.
                 </DialogDescription>
               </DialogHeader>
               <FaqForm onSuccess={handleAddSuccess} />
@@ -156,7 +156,7 @@ export default function FaqList(props: FaqListProps) {
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search FAQs..."
+                placeholder="Cerca FAQ..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="h-9 pl-8 w-full sm:w-48 md:w-64 bg-background"
@@ -172,10 +172,10 @@ export default function FaqList(props: FaqListProps) {
             <div className="flex flex-col items-center justify-center py-10 text-center bg-muted/30 rounded-md">
               <Info className="w-12 h-12 text-muted-foreground mb-3" />
               <p className="text-lg font-medium text-foreground">
-                {searchTerm ? "No FAQs Match Your Search" : "No FAQs Yet"}
+                {searchTerm ? "Nessuna FAQ Corrisponde alla Ricerca" : "Nessuna FAQ Ancora"}
               </p>
               <p className="text-muted-foreground">
-                {searchTerm ? `Try a different search term or clear the search.` : `Click "Add New FAQ" to create your first one.`}
+                {searchTerm ? `Prova un termine di ricerca diverso o pulisci la ricerca.` : `Clicca "Aggiungi Nuova FAQ" per crearne la prima.`}
               </p>
             </div>
           ) : (
@@ -194,25 +194,25 @@ export default function FaqList(props: FaqListProps) {
                     <p className="whitespace-pre-wrap">{faqItem.answer}</p>
                     <div className="mt-4 flex space-x-2 justify-end">
                       <Button variant="outline" size="sm" onClick={() => handleEdit(faqItem)}>
-                        <Edit3 className="w-4 h-4 mr-1.5" /> Edit
+                        <Edit3 className="w-4 h-4 mr-1.5" /> Modifica
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="destructive" size="sm">
-                            <Trash2 className="w-4 h-4 mr-1.5" /> Delete
+                            <Trash2 className="w-4 h-4 mr-1.5" /> Elimina
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogTitle>Sei sicuro?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete this FAQ.
+                              Questa azione non può essere annullata. Questo eliminerà permanentemente questa FAQ.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>Annulla</AlertDialogCancel>
                             <AlertDialogAction onClick={() => handleDelete(faqItem.id)}>
-                              Delete
+                              Elimina
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -233,9 +233,9 @@ export default function FaqList(props: FaqListProps) {
         }}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle className="font-headline text-2xl">Edit FAQ</DialogTitle>
+              <DialogTitle className="font-headline text-2xl">Modifica FAQ</DialogTitle>
               <DialogDescription>
-                Modify the question or answer for this FAQ.
+                Modifica la domanda o la risposta per questa FAQ.
               </DialogDescription>
             </DialogHeader>
             <FaqForm

@@ -50,22 +50,22 @@ export default function FaqForm({ faq, onSuccess }: FaqFormProps) {
 
       if (response.error) {
         toast({
-          title: 'Error',
+          title: 'Errore',
           description: response.error,
           variant: 'destructive',
         });
       } else {
         toast({
-          title: 'Success',
-          description: faq?.id ? 'FAQ updated successfully.' : 'FAQ created successfully.',
+          title: 'Successo',
+          description: faq?.id ? 'FAQ aggiornata con successo.' : 'FAQ creata con successo.',
         });
         form.reset({ question: '', answer: '' }); 
         if (onSuccess) onSuccess();
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred.',
+        title: 'Errore',
+        description: 'Si è verificato un errore inaspettato.',
         variant: 'destructive',
       });
     } finally {
@@ -82,9 +82,9 @@ export default function FaqForm({ faq, onSuccess }: FaqFormProps) {
             name="question"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Question</FormLabel>
+                <FormLabel>Domanda</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter the question" {...field} className="bg-background" />
+                  <Input placeholder="Inserisci la domanda" {...field} className="bg-background" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -95,9 +95,9 @@ export default function FaqForm({ faq, onSuccess }: FaqFormProps) {
             name="answer"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Answer</FormLabel>
+                <FormLabel>Risposta</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Enter the answer" {...field} rows={5} className="bg-background" />
+                  <Textarea placeholder="Inserisci la risposta" {...field} rows={5} className="bg-background" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -105,7 +105,7 @@ export default function FaqForm({ faq, onSuccess }: FaqFormProps) {
           />
           <div className="flex justify-end">
             <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-              {isSubmitting ? (faq?.id ? 'Updating...' : 'Adding...') : (faq?.id ? 'Update FAQ' : 'Add FAQ')}
+              {isSubmitting ? (faq?.id ? 'Aggiornamento...' : 'Aggiunta...') : (faq?.id ? 'Aggiorna FAQ' : 'Aggiungi FAQ')}
             </Button>
           </div>
         </form>

@@ -164,7 +164,7 @@ export default function FileUploader({
               dragActive ? 'text-primary' : 'text-muted-foreground'
             }`} />
             <p className="mb-2 text-sm text-center text-muted-foreground">
-              <span className="font-semibold text-primary">Click to upload</span> or drag and drop
+              <span className="font-semibold text-primary">Clicca per caricare</span> o trascina e rilascia
             </p>
             <div className="flex flex-wrap justify-center gap-1 mb-2">
               {acceptedFormats.map((format) => (
@@ -173,7 +173,7 @@ export default function FileUploader({
                 </Badge>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground text-center">Maximum file size: {maxFileSize}MB</p>
+            <p className="text-xs text-muted-foreground text-center">Dimensione massima file: {maxFileSize}MB</p>
             <Input
               id="file-input-modal"
               type="file"
@@ -212,26 +212,26 @@ export default function FileUploader({
 
           {isUploading && (
             <div className="space-y-2">
-              <p className="text-sm text-primary">Processing: {selectedFile?.name}</p>
+              <p className="text-sm text-primary">Elaborazione: {selectedFile?.name}</p>
               <Progress value={uploadProgress} className="w-full" />
             </div>
           )}
           
           {error && (
             <Alert variant="destructive">
-              <AlertTitle>Upload Error</AlertTitle>
+              <AlertTitle>Errore Caricamento</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
           {successMessage && !isUploading && (
             <Alert variant="default" className="border-green-500 bg-green-50 text-green-700">
-               <AlertTitle className="text-green-800">Success</AlertTitle>
+               <AlertTitle className="text-green-800">Successo</AlertTitle>
               <AlertDescription>{successMessage}</AlertDescription>
             </Alert>
           )}
 
           <Button type="submit" disabled={!selectedFile || isUploading} className="w-full sm:w-auto">
-            {isUploading ? 'Processing...' : 'Upload and Process File'}
+            {isUploading ? 'Elaborazione...' : 'Carica ed Elabora File'}
           </Button>
         </form>
     </div>

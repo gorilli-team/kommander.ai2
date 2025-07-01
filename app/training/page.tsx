@@ -26,11 +26,11 @@ export default function TrainingPage() {
           </div>
         </div>
         <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-          Training Center
+          Centro di Addestramento
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Build your AI's knowledge base by managing FAQs and uploading documents. 
-          The more you train, the smarter your assistant becomes.
+          Costruisci la base di conoscenza della tua AI gestendo FAQ e caricando documenti. 
+          Più addestri, più intelligente diventa il tuo assistente.
         </p>
       </div>
 
@@ -38,34 +38,34 @@ export default function TrainingPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card className="border-l-4 border-l-gray-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Knowledge Base</CardTitle>
+            <CardTitle className="text-sm font-medium">Base di Conoscenza</CardTitle>
             <HelpCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Active</div>
-            <p className="text-xs text-muted-foreground">FAQs and documents ready</p>
+            <div className="text-2xl font-bold">Attiva</div>
+            <p className="text-xs text-muted-foreground">FAQ e documenti pronti</p>
           </CardContent>
         </Card>
         
         <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">AI Status</CardTitle>
+            <CardTitle className="text-sm font-medium">Stato AI</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">Online</div>
-            <p className="text-xs text-muted-foreground">Ready to learn and assist</p>
+            <p className="text-xs text-muted-foreground">Pronta ad imparare e assistere</p>
           </CardContent>
         </Card>
         
         <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Training Quality</CardTitle>
+            <CardTitle className="text-sm font-medium">Qualità Addestramento</CardTitle>
             <Brain className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">Excellent</div>
-            <p className="text-xs text-muted-foreground">Well-trained knowledge base</p>
+            <div className="text-2xl font-bold text-purple-600">Eccellente</div>
+            <p className="text-xs text-muted-foreground">Base di conoscenza ben addestrata</p>
           </CardContent>
         </Card>
       </div>
@@ -76,13 +76,13 @@ export default function TrainingPage() {
           <TabsList className="grid w-full max-w-md grid-cols-2 h-12">
             <TabsTrigger value="faqs" className="flex items-center space-x-2 text-base">
               <HelpCircle className="h-4 w-4" />
-              <span>FAQs</span>
-              <Badge variant="secondary" className="ml-1">Smart</Badge>
+              <span>FAQ</span>
+              <Badge variant="secondary" className="ml-1">Intelligente</Badge>
             </TabsTrigger>
             <TabsTrigger value="files" className="flex items-center space-x-2 text-base">
               <FileText className="h-4 w-4" />
-              <span>Documents</span>
-              <Badge variant="secondary" className="ml-1">AI-Ready</Badge>
+              <span>Documenti</span>
+              <Badge variant="secondary" className="ml-1">AI-Pronto</Badge>
             </TabsTrigger>
           </TabsList>
         </div>
@@ -92,10 +92,10 @@ export default function TrainingPage() {
             <CardHeader>
               <div className="flex items-center space-x-2">
                 <HelpCircle className="h-5 w-5 text-primary" />
-                <CardTitle>Frequently Asked Questions</CardTitle>
+                <CardTitle>Domande Frequenti</CardTitle>
               </div>
               <p className="text-sm text-muted-foreground">
-                Create question-answer pairs to help your AI provide instant, accurate responses.
+Crea coppie domanda-risposta per aiutare la tua AI a fornire risposte istantanee e accurate.
               </p>
             </CardHeader>
             <CardContent>
@@ -109,10 +109,10 @@ export default function TrainingPage() {
             <CardHeader>
               <div className="flex items-center space-x-2">
                 <Upload className="h-5 w-5 text-primary" />
-                <CardTitle>Document Library</CardTitle>
+                <CardTitle>Libreria Documenti</CardTitle>
               </div>
               <p className="text-sm text-muted-foreground">
-                Upload documents, PDFs, and files to expand your AI's knowledge base automatically.
+Carica documenti, PDF e file per espandere automaticamente la base di conoscenza della tua AI.
               </p>
             </CardHeader>
             <CardContent>
@@ -127,25 +127,25 @@ export default function TrainingPage() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
             <BookOpen className="h-5 w-5" />
-            <span>Training Tips</span>
+            <span>Consigli per l'Addestramento</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div className="space-y-2">
-              <h4 className="font-semibold text-gray-800 dark:text-gray-200">📝 FAQ Best Practices:</h4>
+              <h4 className="font-semibold text-gray-800 dark:text-gray-200">📝 Migliori Pratiche FAQ:</h4>
               <ul className="space-y-1 text-gray-700 dark:text-gray-300">
-                <li>• Use natural, conversational questions</li>
-                <li>• Provide comprehensive, helpful answers</li>
-                <li>• Cover common customer inquiries</li>
+                <li>• Usa domande naturali e colloquiali</li>
+                <li>• Fornisci risposte complete e utili</li>
+                <li>• Copri le domande comuni dei clienti</li>
               </ul>
             </div>
             <div className="space-y-2">
-              <h4 className="font-semibold text-gray-800 dark:text-gray-200">📄 Document Guidelines:</h4>
+              <h4 className="font-semibold text-gray-800 dark:text-gray-200">📄 Linee Guida Documenti:</h4>
               <ul className="space-y-1 text-gray-700 dark:text-gray-300">
-                <li>• Upload relevant business documents</li>
-                <li>• Include product manuals and guides</li>
-                <li>• Keep content updated and accurate</li>
+                <li>• Carica documenti aziendali rilevanti</li>
+                <li>• Includi manuali e guide di prodotto</li>
+                <li>• Mantieni i contenuti aggiornati e accurati</li>
               </ul>
             </div>
           </div>

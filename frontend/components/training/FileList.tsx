@@ -44,7 +44,7 @@ export default function FileList() {
       const fetchedFiles = await getUploadedFiles();
       setFiles(fetchedFiles);
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to fetch files.', variant: 'destructive' });
+      toast({ title: 'Errore', description: 'Impossibile caricare i file.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -64,13 +64,13 @@ export default function FileList() {
     try {
       const response = await deleteDocument(id);
       if (response.error) {
-        toast({ title: 'Error', description: response.error, variant: 'destructive' });
+        toast({ title: 'Errore', description: response.error, variant: 'destructive' });
       } else {
-        toast({ title: 'Success', description: 'File deleted successfully.' });
+        toast({ title: 'Successo', description: 'File eliminato con successo.' });
         fetchFiles();
       }
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete file.', variant: 'destructive' });
+      toast({ title: 'Errore', description: 'Impossibile eliminare il file.', variant: 'destructive' });
     }
   };
 
@@ -117,14 +117,14 @@ export default function FileList() {
         <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
           <DialogTrigger asChild>
             <Button variant="default" size="sm" className="h-9">
-              <UploadCloud className="mr-2 h-4 w-4" /> Upload Documents
+              <UploadCloud className="mr-2 h-4 w-4" /> Carica Documenti
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle className="font-headline text-2xl">Upload Documents</DialogTitle>
+              <DialogTitle className="font-headline text-2xl">Carica Documenti</DialogTitle>
               <DialogDescription>
-                Upload PDF, DOCX, or TXT files to be processed and added to the knowledge base.
+                Carica file PDF, DOCX o TXT per essere elaborati e aggiunti alla base di conoscenza.
               </DialogDescription>
             </DialogHeader>
             <FileUploader onUploadComplete={handleUploadComplete} />
@@ -136,7 +136,7 @@ export default function FileList() {
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search file names..."
+              placeholder="Cerca nomi file..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="h-9 pl-8 w-full sm:w-48 md:w-64 bg-background"
@@ -152,10 +152,10 @@ export default function FileList() {
           <div className="flex flex-col items-center justify-center py-10 text-center bg-muted/30 rounded-md">
             <Info className="w-12 h-12 text-muted-foreground mb-3" />
             <p className="text-lg font-medium text-foreground">
-              {searchTerm ? "No Files Match Your Search" : "No Files Uploaded Yet"}
+              {searchTerm ? "Nessun File Corrisponde alla Ricerca" : "Nessun File Caricato Ancora"}
             </p>
             <p className="text-muted-foreground">
-              {searchTerm ? "Try a different search term or clear the search." : 'Click "Upload Documents" to add your first file.'}
+              {searchTerm ? "Prova un termine di ricerca diverso o pulisci la ricerca." : 'Clicca "Carica Documenti" per aggiungere il tuo primo file.'}
             </p>
           </div>
         ) : (
@@ -167,27 +167,27 @@ export default function FileList() {
                   <div className="overflow-hidden">
                     <p className="text-sm font-medium text-foreground truncate" title={file.fileName}>{file.fileName}</p>
                     <p className="text-xs text-muted-foreground">
-                      Type: {file.originalFileType.split('/').pop()?.toUpperCase()} | Uploaded: {file.uploadedAt ? formatDate(file.uploadedAt, 'P p') : 'N/A'}
+                      Tipo: {file.originalFileType.split('/').pop()?.toUpperCase()} | Caricato: {file.uploadedAt ? formatDate(file.uploadedAt, 'P p') : 'N/A'}
                     </p>
                   </div>
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm">
-                      <Trash2 className="w-4 h-4 mr-0 sm:mr-1.5" /> <span className="hidden sm:inline">Delete</span>
+                      <Trash2 className="w-4 h-4 mr-0 sm:mr-1.5" /> <span className="hidden sm:inline">Elimina</span>
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogTitle>Sei sicuro?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the file &quot;{file.fileName}&quot; and its associated data.
+                        Questa azione non può essere annullata. Questo eliminerà permanentemente il file &quot;{file.fileName}&quot; e i suoi dati associati.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>Annulla</AlertDialogCancel>
                       <AlertDialogAction onClick={() => handleDelete(file.id)}>
-                        Delete
+                        Elimina
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
