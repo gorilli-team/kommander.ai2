@@ -250,7 +250,8 @@ export default function AuthForm() {
         )}
         {/* OAuth Providers Section */}
         <div className="space-y-3 mb-6">
-          <Button
+          {/* Google temporarily disabled - configure GOOGLE_CLIENT_ID first */}
+          {/* <Button
             type="button"
             variant="outline"
             className="w-full h-11 flex items-center justify-center gap-3 border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -259,7 +260,7 @@ export default function AuthForm() {
           >
             <Icons.google className="h-5 w-5" />
             Continue with Google
-          </Button>
+          </Button> */}
           
           <Button
             type="button"
