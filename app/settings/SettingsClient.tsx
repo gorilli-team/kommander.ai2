@@ -1,12 +1,14 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Input } from '@/frontend/components/ui/input';
 import { Button } from '@/frontend/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/frontend/components/ui/radio-group';
 import { Checkbox } from '@/frontend/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
 import { saveSettings } from './actions';
+import { PersonalityTester } from './personality-tester';
 
 const traitOptions = [
   { value: 'avventuroso', label: '🦁 Avventuroso' },
@@ -26,6 +28,7 @@ interface Props {
 }
 
 export default function SettingsClient({ initialSettings }: Props) {
+  const { data: session } = useSession();
   const [name, setName] = useState(initialSettings?.name || 'Kommander.ai');
   const [color, setColor] = useState(initialSettings?.color || '#6366f1');
   const [personality, setPersonality] = useState(initialSettings?.personality || 'neutral');
@@ -262,6 +265,13 @@ export default function SettingsClient({ initialSettings }: Props) {
             </div>
           </div>
         </form>
+        
+        {/* Personality Tester Card */}
+        {session?.user?.id && (
+          <div className="mt-8">
+            <PersonalityTester userId={session.user.id} />
+          </div>
+        )}
       </div>
     </div>
   );

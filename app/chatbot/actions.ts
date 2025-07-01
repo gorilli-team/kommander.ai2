@@ -145,13 +145,48 @@ export async function generateChatResponse(
       userSettings || undefined,
     );
 
+    // Configura i parametri del modello in base alla personalità
+    let temperature = 0.7; // Default
+    let maxTokens = 1000;
+    
+    if (userSettings?.personality) {
+      switch (userSettings.personality) {
+        case 'casual':
+          temperature = 0.9; // Più creativo e spontaneo
+          maxTokens = 1200; // Risposte più lunghe per essere più colloquiale
+          break;
+        case 'formal':
+          temperature = 0.5; // Più preciso e strutturato
+          maxTokens = 1000; // Risposte concise e professionali
+          break;
+        case 'neutral':
+        default:
+          temperature = 0.7; // Equilibrato
+          maxTokens = 1000;
+          break;
+      }
+    }
+    
+    // Aggiusta la temperatura in base ai caratteri
+    if (userSettings?.traits) {
+      if (userSettings.traits.includes('energetico') || userSettings.traits.includes('divertente')) {
+        temperature = Math.min(temperature + 0.1, 1.0); // Più creativo
+      }
+      if (userSettings.traits.includes('professionista') || userSettings.traits.includes('convincente')) {
+        temperature = Math.max(temperature - 0.1, 0.3); // Più preciso
+      }
+      if (userSettings.traits.includes('avventuroso')) {
+        maxTokens = Math.min(maxTokens + 200, 1500); // Risposte più elaborate
+      }
+    }
+
     const startTime = Date.now();
     const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: messages,
-      temperature: 0.7,
-      max_tokens: 1000,
+      temperature: temperature,
+      max_tokens: maxTokens,
     });
     const processingTime = Date.now() - startTime;
 
