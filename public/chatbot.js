@@ -113,12 +113,24 @@
 
     useEffect(() => {
       const fetchSettings = () => {
+        console.log('[Chatbot] Fetching settings for userId:', userId);
         fetch(`${ORIGIN}/api/settings/${userId}`)
-          .then((res) => (res.ok ? res.json() : null))
+          .then((res) => {
+            console.log('[Chatbot] Settings response status:', res.status);
+            return res.ok ? res.json() : null;
+          })
           .then((data) => {
-            if (!data) return;
-            if (data.name) setBotName(data.name);
+            console.log('[Chatbot] Settings data received:', data);
+            if (!data) {
+              console.log('[Chatbot] No settings found for userId:', userId);
+              return;
+            }
+            if (data.name) {
+              console.log('[Chatbot] Setting bot name to:', data.name);
+              setBotName(data.name);
+            }
             if (data.color) {
+              console.log('[Chatbot] Setting bot color to:', data.color);
               setBotColor(data.color);
               document.documentElement.style.setProperty(
                 '--kommander-primary-color',
@@ -132,7 +144,9 @@
 
             }
           })
-          .catch(() => {});
+          .catch((err) => {
+            console.error('[Chatbot] Error fetching settings:', err);
+          });
       };
       
       fetchSettings();
