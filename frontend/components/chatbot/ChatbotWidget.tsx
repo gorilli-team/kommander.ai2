@@ -27,13 +27,22 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
   const [botColor, setBotColor] = useState('#1E3A8A');
 
   useEffect(() => {
-    fetch(`/api/settings/${userId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.name) setBotName(data.name);
-        if (data.color) setBotColor(data.color);
-      })
-      .catch(() => {});
+    const fetchSettings = () => {
+      fetch(`/api/settings/${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.name) setBotName(data.name);
+          if (data.color) setBotColor(data.color);
+        })
+        .catch(() => {});
+    };
+    
+    fetchSettings();
+    
+    // Poll for settings changes every 5 seconds
+    const interval = setInterval(fetchSettings, 5000);
+    
+    return () => clearInterval(interval);
   }, [userId]);
 
   useEffect(() => {
@@ -51,10 +60,10 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
 
   useEffect(() => {
     if (open && messages.length === 0) {
-      addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi?`);
+      addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi? 👋`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, botName]);
 
   const currentDate = format(new Date(), 'dd MMM yyyy', { locale: it });
 
@@ -87,7 +96,10 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
             className="fixed inset-0 sm:bottom-20 sm:right-4 sm:inset-auto z-50 flex w-full h-full sm:w-[400px] sm:h-[600px] flex-col bg-card border border-border rounded-none sm:rounded-lg shadow-xl"
           >
             <div className="px-4 py-3 flex items-center justify-between rounded-t-lg text-white" style={{ backgroundColor: botColor }}>
-              <span className="font-semibold">{botName} – Trial</span>
+              <div className="flex items-center space-x-2">
+                <span className="font-semibold">{botName}</span>
+                <Badge className="bg-white/20 text-white border-none text-xs">Live Preview</Badge>
+              </div>
               <div className="flex items-center gap-2">
                 <Badge className="bg-green-600 text-white border-none">Online</Badge>
                 <span className="text-sm">{currentDate}</span>
