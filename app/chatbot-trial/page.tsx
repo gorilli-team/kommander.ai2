@@ -1,5 +1,5 @@
 import InfoPanel from './InfoPanel';
-import ChatbotWidget from '@/frontend/components/chatbot/ChatbotWidget';
+import RealChatbotWidget from './RealChatbotWidget';
 import { auth } from "@/frontend/auth";
 import { getSettings } from '@/app/settings/actions';
 
@@ -40,7 +40,7 @@ export default async function ChatbotTrialPage() {
             </div>
           </div>
           
-          <ChatbotWidget userId={userId} />
+          <RealChatbotWidget userId={userId} />
         </div>
       </div>
     </div>
