@@ -112,26 +112,35 @@
     }
 
     useEffect(() => {
-      fetch(`${ORIGIN}/api/settings/${userId}`)
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (!data) return;
-          if (data.name) setBotName(data.name);
-          if (data.color) {
-            setBotColor(data.color);
-            document.documentElement.style.setProperty(
-              '--kommander-primary-color',
-              data.color,
-            );
+      const fetchSettings = () => {
+        fetch(`${ORIGIN}/api/settings/${userId}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (!data) return;
+            if (data.name) setBotName(data.name);
+            if (data.color) {
+              setBotColor(data.color);
+              document.documentElement.style.setProperty(
+                '--kommander-primary-color',
+                data.color,
+              );
 
-            document.documentElement.style.setProperty(
-              '--kommander-secondary-color',
-              data.color,
-            );
+              document.documentElement.style.setProperty(
+                '--kommander-secondary-color',
+                data.color,
+              );
 
-          }
-        })
-        .catch(() => {});
+            }
+          })
+          .catch(() => {});
+      };
+      
+      fetchSettings();
+      
+      // Poll for settings changes every 5 seconds
+      const interval = setInterval(fetchSettings, 5000);
+      
+      return () => clearInterval(interval);
     }, [userId]);
 
     const currentDate = new Date().toLocaleDateString('it-IT', {
