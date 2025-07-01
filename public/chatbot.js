@@ -248,7 +248,7 @@
             timestamp: m.timestamp // Keep original timestamp for deduplication
           }));
           
-          // COMPLETE filtering logic to prevent ALL user message duplicates
+          // COMPLETE filtering logic to prevent ALL message duplicates
           newMsgs = newMsgs.filter(msg => {
             // NEVER include user messages from polling - they should only come from local addMessage
             if (msg.role === 'user') {
@@ -260,7 +260,37 @@
           
           if (newMsgs.length) {
             lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
-            setMessages((prev) => [...prev, ...newMsgs]);
+            
+            // Add new messages with deduplication
+            setMessages((prevMessages) => {
+              const combinedMessages = [...prevMessages];
+              
+              newMsgs.forEach(newMsg => {
+                // Check if this message already exists (prevent assistant duplicates)
+                const isDuplicate = combinedMessages.some(existingMsg => {
+                  // Exact text match for same role
+                  if (existingMsg.role === newMsg.role && existingMsg.text === newMsg.text) {
+                    // If both have timestamps, check they're within 30 seconds
+                    if (existingMsg.timestamp && newMsg.timestamp) {
+                      return Math.abs(new Date(existingMsg.timestamp) - new Date(newMsg.timestamp)) < 30000;
+                    }
+                    // If one doesn't have timestamp, consider it duplicate if text matches exactly
+                    return true;
+                  }
+                  return false;
+                });
+                
+                if (!isDuplicate) {
+                  combinedMessages.push(newMsg);
+                  console.log('Added new message from polling:', newMsg.role, newMsg.text.substring(0, 50));
+                } else {
+                  console.log('Filtered duplicate message from polling:', newMsg.role, newMsg.text.substring(0, 50));
+                }
+              });
+              
+              return combinedMessages;
+            });
+            
             setIsTyping(false); // Stop typing indicator if new messages arrive
           }
         }
@@ -347,11 +377,11 @@
         if (data.handledBy) {
           setHandledBy(data.handledBy);
         }
-        if (data.reply) {
-          addMessage('assistant', data.reply);
-        } else if (data.error) {
+        if (data.error) {
           addMessage('system', 'Si è verificato un errore: ' + data.error);
         }
+        // NON aggiungere data.reply immediatamente - arriverà tramite polling
+        // Questo evita duplicazioni
       } catch (err) {
         addMessage('system', 'Ops! Non riusciamo a connetterci. Riprova più tardi.');
         console.error("Failed to send message:", err);
