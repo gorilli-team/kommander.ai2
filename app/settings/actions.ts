@@ -6,13 +6,19 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/frontend/auth';
 import { ObjectId } from 'mongodb';
 
-export async function getSettings(): Promise<ChatbotSettingsDocument | null> {
-  const session = await auth();
-  if (!session?.user?.id) return null;
+export async function getSettings(userId?: string): Promise<ChatbotSettingsDocument | null> {
+  let userIdToUse = userId;
+  
+  if (!userIdToUse) {
+    const session = await auth();
+    if (!session?.user?.id) return null;
+    userIdToUse = session.user.id;
+  }
+  
   const { db } = await connectToDatabase();
   const doc = await db
     .collection<ChatbotSettingsDocument>('chatbot_settings')
-    .findOne({ userId: session.user.id });
+    .findOne({ userId: userIdToUse });
   return doc || null;
 }
 

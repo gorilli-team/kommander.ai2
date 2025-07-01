@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { generateChatResponse } from '@/app/chatbot/actions';
+import { generateChatResponseForUI } from '@/app/chatbot/actions';
 import type { ChatMessage } from '@/backend/lib/buildPromptServer';
 import { useToast } from '@/frontend/hooks/use-toast';
 
@@ -83,7 +83,7 @@ export function useChat() {
       .map((msg) => ({ role: msg.role as 'user' | 'assistant', content: msg.content }));
       
     try {
-      const result = await generateChatResponse(userMessageContent, historyForAI);
+      const result = await generateChatResponseForUI(userMessageContent, historyForAI, conversationId || undefined);
       
       if (result.error) {
         const errorMsg = `I encountered an error: ${result.error}`;

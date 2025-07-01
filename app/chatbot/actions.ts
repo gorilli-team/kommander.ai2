@@ -146,6 +146,20 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
 }
 
 
+// Action per il chatbot principale che gestisce l'autenticazione automaticamente
+export async function generateChatResponseForUI(
+  userMessage: string,
+  history: ChatMessage[],
+  conversationId?: string
+): Promise<{ response?: string; error?: string; sources?: MessageSource[]; conversationId?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: 'User not authenticated.' };
+  }
+  
+  return generateChatResponse(userMessage, history, session.user.id, conversationId);
+}
+
 export async function generateChatResponse(
   userMessage: string,
   history: ChatMessage[],
@@ -224,7 +238,7 @@ export async function generateChatResponse(
       }
     }
 
-    const userSettings = await getSettings();
+    const userSettings = await getSettings(userIdToUse);
     
     // Inizializza il client OpenAI
     const openai = getOpenAI();
