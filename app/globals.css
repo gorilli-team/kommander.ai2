@@ -53,32 +53,32 @@ body {
     --card-foreground: 0 0% 95%;
     --popover: 0 0% 5%; /* Slightly lighter for popovers */
     --popover-foreground: 0 0% 95%;
-    --primary: 221 79% 58%; /* Bright blue for contrast */
+    --primary: 0 0% 20%; /* Dark gray instead of blue */
     --primary-foreground: 0 0% 100%; /* White text on primary */
     --secondary: 0 0% 8%; /* Very dark secondary */
     --secondary-foreground: 0 0% 90%;
     --muted: 0 0% 10%; /* Dark muted */
     --muted-foreground: 0 0% 60%;
-    --accent: 221 70% 50%; /* Blue accent */
+    --accent: 0 0% 15%; /* Dark gray accent instead of blue */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 15%; /* Dark borders */
     --input: 0 0% 8%; /* Dark input background */
-    --ring: 221 79% 58%; /* Blue focus rings */
-    --chart-1: 221 79% 58%;
-    --chart-2: 220 70% 50%;
-    --chart-3: 215 60% 55%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --ring: 0 0% 25%; /* Dark gray focus rings instead of blue */
+    --chart-1: 0 0% 20%; /* Dark gray charts */
+    --chart-2: 0 0% 25%;
+    --chart-3: 0 0% 30%;
+    --chart-4: 43 74% 66%; /* Keep yellow/orange for variety */
+    --chart-5: 27 87% 67%; /* Keep orange for variety */
     --sidebar-background: 0 0% 2%; /* Almost black sidebar */
     --sidebar-foreground: 0 0% 85%;
-    --sidebar-primary: 221 70% 55%;
+    --sidebar-primary: 0 0% 18%; /* Dark gray sidebar primary */
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 12%;
     --sidebar-accent-foreground: 0 0% 80%;
     --sidebar-border: 0 0% 10%;
-    --sidebar-ring: 221 70% 55%;
+    --sidebar-ring: 0 0% 25%; /* Dark gray sidebar ring */
   }
 }
 
