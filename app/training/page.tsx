@@ -36,7 +36,7 @@ export default function TrainingPage() {
 
       {/* Quick Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-gray-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Knowledge Base</CardTitle>
             <HelpCircle className="h-4 w-4 text-muted-foreground" />
@@ -123,9 +123,9 @@ export default function TrainingPage() {
       </Tabs>
 
       {/* Training Tips */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+      <Card className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 border-gray-200 dark:border-gray-800">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
+          <CardTitle className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
             <BookOpen className="h-5 w-5" />
             <span>Training Tips</span>
           </CardTitle>
@@ -133,16 +133,16 @@ export default function TrainingPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div className="space-y-2">
-              <h4 className="font-semibold text-blue-800 dark:text-blue-200">📝 FAQ Best Practices:</h4>
-              <ul className="space-y-1 text-blue-700 dark:text-blue-300">
+              <h4 className="font-semibold text-gray-800 dark:text-gray-200">📝 FAQ Best Practices:</h4>
+              <ul className="space-y-1 text-gray-700 dark:text-gray-300">
                 <li>• Use natural, conversational questions</li>
                 <li>• Provide comprehensive, helpful answers</li>
                 <li>• Cover common customer inquiries</li>
               </ul>
             </div>
             <div className="space-y-2">
-              <h4 className="font-semibold text-blue-800 dark:text-blue-200">📄 Document Guidelines:</h4>
-              <ul className="space-y-1 text-blue-700 dark:text-blue-300">
+              <h4 className="font-semibold text-gray-800 dark:text-gray-200">📄 Document Guidelines:</h4>
+              <ul className="space-y-1 text-gray-700 dark:text-gray-300">
                 <li>• Upload relevant business documents</li>
                 <li>• Include product manuals and guides</li>
                 <li>• Keep content updated and accurate</li>

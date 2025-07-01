@@ -46,7 +46,7 @@
     const [conversationId, setConversationId] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [botName, setBotName] = useState('Kommander.ai');
-    const [botColor, setBotColor] = useState('#1E3A8A');
+    const [botColor, setBotColor] = useState('#1a1a1a');
     const [darkMode, setDarkMode] = useState(false);
 
     const viewportRef = useRef(null);

@@ -206,8 +206,8 @@ export default function ConversationsClient({ conversations: initial }: Props) {
       {/* Overview sempre visibile */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
-          <div className="p-2 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
-            <MessageSquare className="h-5 w-5 text-blue-500" />
+          <div className="p-2 bg-gradient-to-br from-gray-500/10 to-gray-600/10 rounded-lg border border-gray-200/50 dark:border-gray-800/50">
+            <MessageSquare className="h-5 w-5 text-gray-600 dark:text-gray-300" />
           </div>
           <h2 className="text-2xl font-bold">Overview</h2>
         </div>
@@ -340,7 +340,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                 <Card className="h-full">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5 text-blue-500" />
+                    <MessageSquare className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                       Conversazioni
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
@@ -424,8 +424,8 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                                       className={cn(
                                         "text-xs",
                                         c.handledBy === 'agent' 
-                                          ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                                          : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                          : "bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                       )}
                                     >
                                       {c.handledBy === 'agent' ? (
@@ -478,7 +478,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                             className={cn(
                               selected.handledBy === 'agent' 
                                 ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                                : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                                : "bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300"
                             )}
                           >
                             {selected.handledBy === 'agent' ? (
@@ -506,7 +506,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                                       ? "bg-primary text-primary-foreground"
                                       : isAgent
                                       ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                                      : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                                      : "bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                   )}>
                                     {isUser ? (
                                       <User className="h-4 w-4" />
@@ -614,13 +614,13 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Bot className="h-4 w-4 text-blue-500" />
+                      <Bot className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                       <span>Gestite da AI</span>
                     </div>
                     <span className="font-bold">{analytics.botPercentage}%</span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${analytics.botPercentage}%` }} />
+                    <div className="bg-gray-500 h-2 rounded-full" style={{ width: `${analytics.botPercentage}%` }} />
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

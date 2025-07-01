@@ -288,12 +288,12 @@ export default function AnalyticsPage() {
                 <p className="text-sm text-muted-foreground">Detailed breakdown of information sources</p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-950 rounded-lg">
                   <div className="flex items-center space-x-2">
-                    <HelpCircle className="w-5 h-5 text-blue-600" />
+                    <HelpCircle className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                     <span className="font-medium">FAQ Sources</span>
                   </div>
-                  <span className="text-2xl font-bold text-blue-600">{data.overview.faqSources}</span>
+                  <span className="text-2xl font-bold text-gray-600 dark:text-gray-300">{data.overview.faqSources}</span>
                 </div>
                 
                 <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-950 rounded-lg">
@@ -393,8 +393,8 @@ export default function AnalyticsPage() {
                     <div className="text-2xl font-bold text-green-600">98.5%</div>
                     <div className="text-sm text-muted-foreground">Uptime</div>
                   </div>
-                  <div className="text-center p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">97.2%</div>
+                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-950 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-600 dark:text-gray-300">97.2%</div>
                     <div className="text-sm text-muted-foreground">Success Rate</div>
                   </div>
                 </div>
@@ -426,7 +426,7 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="timeSlot" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="users" fill="#1a56db" name="Active Users" />
+                  <Bar dataKey="users" fill="#404040" name="Active Users" />
                   <Bar dataKey="messages" fill="#7c3aed" name="Messages" />
                 </BarChart>
               </ResponsiveContainer>
