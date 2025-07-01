@@ -52,6 +52,32 @@
     if (!window.ReactDOM) {
       await loadScript(ORIGIN + '/react-dom.production.min.js');
     }
+    if (!window.marked) {
+      await loadScript(ORIGIN + '/marked.min.js');
+    }
+  }
+  
+  // Function to render markdown to HTML
+  function renderMarkdown(text) {
+    if (!window.marked) {
+      return text; // Fallback to plain text if marked not loaded
+    }
+    
+    try {
+      // Configure marked options
+      marked.setOptions({
+        breaks: true, // Convert \n to <br>
+        gfm: true, // GitHub Flavored Markdown
+        sanitize: false, // Allow HTML (we trust our content)
+        headerIds: false, // Don't generate IDs for headers
+        mangle: false // Don't mangle autolinked emails
+      });
+      
+      return marked.parse(text);
+    } catch (error) {
+      console.error('Error parsing markdown:', error);
+      return text; // Fallback to plain text on error
+    }
   }
 
   function ChatbotWidget({ userId }) {
@@ -414,7 +440,12 @@
                     {
                       className: `kommander-msg kommander-${m.role}`,
                     },
-                    React.createElement('p', null, m.text),
+                    m.role === 'user' 
+                      ? React.createElement('p', null, m.text)
+                      : React.createElement('div', {
+                          className: 'kommander-markdown',
+                          dangerouslySetInnerHTML: { __html: renderMarkdown(m.text) }
+                        }),
                   ),
                   React.createElement('p', { className: 'kommander-time' }, m.time),
                 ),

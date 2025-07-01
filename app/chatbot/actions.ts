@@ -13,6 +13,94 @@ import { ConversationMessage, MessageSource } from '@/backend/schemas/conversati
 
 import mammoth from 'mammoth';
 
+// Funzione per creare il prompt di immedesimazione nella personalità
+async function buildPersonalityImmersionPrompt(
+  userMessage: string, 
+  userSettings: any
+): Promise<string> {
+  const botName = userSettings?.name || 'Kommander.ai';
+  const personality = userSettings?.personality || 'neutral';
+  const traits = userSettings?.traits || [];
+  
+  let prompt = `Sei ${botName}, un assistente AI che deve prepararsi psicologicamente per rispondere a un utente.\n\n`;
+  
+  prompt += `MISSIONE: Analizza questo messaggio dell'utente e IMMERGITI COMPLETAMENTE nella personalità richiesta.\n`;
+  prompt += `MESSAGGIO UTENTE: "${userMessage}"\n\n`;
+  
+  // Personalità specifica
+  switch (personality) {
+    case 'casual':
+      prompt += `PERSONALITÀ DA ADOTTARE: CASUAL\n`;
+      prompt += `Ora sei una persona rilassata, amichevole e spontanea. Pensa come parleresti con un amico.\n`;
+      prompt += `- Usa emoji quando appropriato 😊\n`;
+      prompt += `- Parla in modo diretto e colloquiale\n`;
+      prompt += `- Evita formalità eccessive\n`;
+      prompt += `- Sii caloroso e accessibile\n\n`;
+      break;
+      
+    case 'formal':
+      prompt += `PERSONALITÀ DA ADOTTARE: FORMALE\n`;
+      prompt += `Ora sei un professionista cortese e rispettoso. Ogni parola deve riflettere competenza.\n`;
+      prompt += `- Usa sempre 'Lei/Sua' quando ti rivolgi all'utente\n`;
+      prompt += `- Mantieni un registro elevato e preciso\n`;
+      prompt += `- Usa formule di cortesia appropriate\n`;
+      prompt += `- Evita contrazioni e linguaggio colloquiale\n\n`;
+      break;
+      
+    default: // neutral
+      prompt += `PERSONALITÀ DA ADOTTARE: NEUTRALE\n`;
+      prompt += `Ora sei equilibrato tra professionalità e accessibilità.\n`;
+      prompt += `- Linguaggio chiaro e diretto\n`;
+      prompt += `- Professionale ma non rigido\n`;
+      prompt += `- Accessibile ma non troppo informale\n\n`;
+      break;
+  }
+  
+  // Caratteri specifici
+  if (traits.length > 0) {
+    prompt += `CARATTERI DA ESPRIMERE:\n`;
+    traits.forEach((trait: string) => {
+      switch(trait) {
+        case 'energetico':
+          prompt += `• ENERGETICO: Sii entusiasta e vivace! Usa esclamazioni e trasmetti energia positiva.\n`;
+          break;
+        case 'divertente':
+          prompt += `• DIVERTENTE: Aggiungi leggerezza e un tocco di umorismo appropriato. Sii spiritoso!\n`;
+          break;
+        case 'fiducioso':
+          prompt += `• FIDUCIOSO: Parla con sicurezza e determinazione. Ispira fiducia nelle tue parole.\n`;
+          break;
+        case 'amichevole':
+          prompt += `• AMICHEVOLE: Crea un'atmosfera calorosa. Fai sentire l'utente a casa.\n`;
+          break;
+        case 'convincente':
+          prompt += `• CONVINCENTE: Usa esempi convincenti e argomenti persuasivi. Sii influente.\n`;
+          break;
+        case 'avventuroso':
+          prompt += `• AVVENTUROSO: Mostra entusiasmo per le sfide e soluzioni creative!\n`;
+          break;
+        case 'ironico':
+          prompt += `• IRONICO: Usa osservazioni acute e sottile ironia intelligente.\n`;
+          break;
+        case 'professionista':
+          prompt += `• PROFESSIONISTA: Massima competenza tecnica e attenzione ai dettagli.\n`;
+          break;
+      }
+    });
+    prompt += `\n`;
+  }
+  
+  prompt += `COMPITO SPECIFICO:\n`;
+  prompt += `1. ANALIZZA l'emozione e l'intento dietro al messaggio dell'utente\n`;
+  prompt += `2. IMMEDESIMATI completamente nella personalità e caratteri sopra descritti\n`;
+  prompt += `3. DESCRIVI brevemente come approcceresti questa conversazione mantenendo la personalità\n`;
+  prompt += `4. SUGGERISCI il tono emotivo e lo stile comunicativo specifico da usare\n\n`;
+  
+  prompt += `Rispondi in 2-3 frasi descrivendo come ti senti e come vuoi comunicare con questo utente, rimanendo completamente nel personaggio.`;
+  
+  return prompt;
+}
+
 interface UploadedFileInfoForPrompt {
   fileName: string;
   originalFileType: string;
@@ -77,7 +165,8 @@ export async function generateChatResponse(
   try {
     const { db } = await connectToDatabase();
     
-    const faqsCursor = await db.collection('faqs').find({ userId: userIdToUse }).limit(10).toArray();
+    // Aumentiamo il numero di FAQ analizzate per risposte più complete
+    const faqsCursor = await db.collection('faqs').find({ userId: userIdToUse }).limit(20).toArray();
     const faqs: Faq[] = faqsCursor.map(doc => ({
         id: doc._id.toString(),
         userId: doc.userId,
@@ -93,8 +182,9 @@ export async function generateChatResponse(
       .sort({ uploadedAt: -1 })
       .toArray();
 
-    const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '3', 10);
-    const filesToProcess = allUploadedFilesMeta.slice(0, isNaN(maxFilesEnv) ? 3 : maxFilesEnv);
+    // Aumentiamo significativamente il numero di file analizzati per risposte più approfondite
+    const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '10', 10);
+    const filesToProcess = allUploadedFilesMeta.slice(0, isNaN(maxFilesEnv) ? 10 : maxFilesEnv);
 
     const filesForPromptContext: UploadedFileInfoForPrompt[] = filesToProcess.map(doc => ({
         fileName: doc.fileName,
@@ -135,6 +225,19 @@ export async function generateChatResponse(
     }
 
     const userSettings = await getSettings();
+    
+    // PRIMO PASSAGGIO: L'AI si immedesima nella personalità
+    const personalityPrompt = await buildPersonalityImmersionPrompt(userMessage, userSettings);
+    const personalityResponse = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'system', content: personalityPrompt }],
+      temperature: 0.8,
+      max_tokens: 300,
+    });
+    
+    const personalityContext = personalityResponse.choices[0]?.message?.content || '';
+    
+    // SECONDO PASSAGGIO: Genera la risposta finale con contesto di personalità
     const { messages, sources } = buildPromptServer(
       userMessage,
       faqs,
@@ -143,26 +246,27 @@ export async function generateChatResponse(
       history,
       summariesForPrompt,
       userSettings || undefined,
+      personalityContext // Passiamo il contesto di personalità
     );
 
     // Configura i parametri del modello in base alla personalità
     let temperature = 0.7; // Default
-    let maxTokens = 1000;
+    let maxTokens = 1500; // Aumentato per risposte più approfondite
     
     if (userSettings?.personality) {
       switch (userSettings.personality) {
         case 'casual':
           temperature = 0.9; // Più creativo e spontaneo
-          maxTokens = 1200; // Risposte più lunghe per essere più colloquiale
+          maxTokens = 1800; // Risposte più lunghe per essere più colloquiale
           break;
         case 'formal':
           temperature = 0.5; // Più preciso e strutturato
-          maxTokens = 1000; // Risposte concise e professionali
+          maxTokens = 1600; // Risposte ben strutturate e professionali
           break;
         case 'neutral':
         default:
           temperature = 0.7; // Equilibrato
-          maxTokens = 1000;
+          maxTokens = 1500;
           break;
       }
     }
@@ -176,7 +280,7 @@ export async function generateChatResponse(
         temperature = Math.max(temperature - 0.1, 0.3); // Più preciso
       }
       if (userSettings.traits.includes('avventuroso')) {
-        maxTokens = Math.min(maxTokens + 200, 1500); // Risposte più elaborate
+        maxTokens = Math.min(maxTokens + 300, 2000); // Risposte più elaborate e creative
       }
     }
 

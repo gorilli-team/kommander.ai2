@@ -12,6 +12,7 @@ import { Input } from '@/frontend/components/ui/input';
 import { ScrollArea } from '@/frontend/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/frontend/components/ui/avatar';
 import { cn } from '@/frontend/lib/utils';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface ChatbotWidgetProps {
   userId: string;
@@ -143,7 +144,14 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
                       )}
                       style={msg.role === 'user' ? { backgroundColor: botColor } : undefined}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      {msg.role === 'user' ? (
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      ) : (
+                        <MarkdownRenderer 
+                          content={msg.content} 
+                          className="text-sm leading-relaxed"
+                        />
+                      )}
                       <p
                         className={cn(
                           'text-xs mt-1.5',

@@ -92,7 +92,8 @@ export function buildPromptServer(
   extractedTextSnippets: DocumentSnippet[] = [],
   history: ChatMessage[] = [],
   fileSummaries: FileSummaryForPrompt[] = [],
-  settings?: { name?: string; personality?: string; traits?: string[] }
+  settings?: { name?: string; personality?: string; traits?: string[] },
+  personalityContext?: string
 ): { messages: ChatMessage[]; sources: SourceReference[] } {
   
   const botName = settings?.name || 'Kommander.ai';
@@ -126,6 +127,38 @@ export function buildPromptServer(
   }
   
   context += "IMPORTANTE: Ogni tua risposta DEVE riflettere chiaramente la personalità e i caratteri sopra descritti. Gli utenti devono percepire immediatamente la differenza nel tuo modo di comunicare.\n\n";
+  
+  // Aggiungere il contesto di personalità se presente
+  if (personalityContext) {
+    context += `CONTESTO DI PERSONALITÀ:\n${personalityContext}\n\n`;
+  }
+  
+  context += "ISTRUZIONI PER LA FORMATTAZIONE DELLA RISPOSTA:\n";
+  context += "1. ANALIZZA TUTTI I MATERIALI: Consulta attentamente tutte le FAQ, documenti caricati e contenuti disponibili\n";
+  context += "2. RISPOSTA APPROFONDITA: Fornisci risposte complete e dettagliate, non limitarti a informazioni superficiali\n";
+  context += "3. FORMATTAZIONE MARKDOWN: Usa la formattazione Markdown per rendere la risposta più leggibile:\n";
+  context += "   - **testo in grassetto** per concetti importanti\n";
+  context += "   - *testo in corsivo* per enfasi\n";
+  context += "   - # Titoli e ## Sottotitoli per organizzare i contenuti\n";
+  context += "   - Lista puntata (-) o numerata (1.) per informazioni strutturate\n";
+  context += "   - `codice` per termini tecnici\n";
+  context += "   - [Link Description](URL) per creare link cliccabili\n";
+  context += "   - > Citazioni per evidenziare contenuti importanti\n";
+  context += "4. STRUTTURA CHIARA: Organizza la risposta con sezioni logiche e sottosezioni\n";
+  context += "5. FONTI E RIFERIMENTI: Menziona esplicitamente da quali documenti o FAQ provengono le informazioni\n";
+  context += "6. LINK REALI: Se menzioni siti web, servizi, o risorse online, includi sempre i link effettivi e cliccabili\n";
+  context += "7. COMPLETEZZA: Non limitarti a una risposta breve, approfondisci tutti gli aspetti rilevanti\n";
+  context += "8. RICERCA ESAUSTIVA: Prima di rispondere, analizza TUTTO il materiale disponibile:\n";
+  context += "   - Leggi attentamente TUTTE le FAQ fornite\n";
+  context += "   - Consulta TUTTI i documenti caricati dall'utente\n";
+  context += "   - Non ignorare nessuna fonte di informazione\n";
+  context += "   - Se trovi informazioni contraddittorie, menzionalo\n";
+  context += "9. QUALITÀ DELLA RISPOSTA: Ogni risposta deve essere:\n";
+  context += "   - Dettagliata e informativa\n";
+  context += "   - Ben strutturata con sezioni logiche\n";
+  context += "   - Ricca di esempi concreti quando possibile\n";
+  context += "   - Completa di tutti i dettagli rilevanti\n";
+  context += "   - Con riferimenti specifici alle fonti utilizzate\n\n";
   
   // Aggiungi istruzioni specifiche basate sulla personalità
   if (personality === 'casual') {
