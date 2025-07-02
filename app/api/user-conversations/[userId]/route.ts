@@ -12,7 +12,14 @@ export async function GET(
     const endUserId = searchParams.get('endUserId');
     
     if (!userId) {
-      return NextResponse.json({ error: 'userId è richiesto' }, { status: 400 });
+      return NextResponse.json({ error: 'userId è richiesto' }, { 
+        status: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      });
     }
 
     const { db } = await connectToDatabase();
@@ -64,13 +71,26 @@ export async function GET(
     return NextResponse.json({ 
       conversations: formattedConversations,
       total: formattedConversations.length 
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      }
     });
 
   } catch (error) {
     console.error('Errore nel recupero delle conversazioni:', error);
     return NextResponse.json(
       { error: 'Errore interno del server' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      }
     );
   }
 }
