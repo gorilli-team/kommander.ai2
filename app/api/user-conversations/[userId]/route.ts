@@ -1,25 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connect } from '@/backend/database';
-import { WidgetConversation } from '@/backend/schemas/widgetClient';
+import { connectToDatabase } from '@/backend/lib/mongodb';
+import type { ConversationDocument } from '@/backend/schemas/conversation';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
   try {
-    await connect();
-    
     const { userId } = params;
     
     if (!userId) {
       return NextResponse.json({ error: 'userId è richiesto' }, { status: 400 });
     }
 
+    const { db } = await connectToDatabase();
+    
     // Recupera tutte le conversazioni per questo utente, ordinate per data di ultimo messaggio
-    const conversations = await WidgetConversation.find({ userId })
+    const conversations = await db
+      .collection<ConversationDocument>('conversations')
+      .find({ userId })
       .sort({ updatedAt: -1 })
-      .select('_id messages updatedAt createdAt')
-      .lean();
+      .toArray();
 
     // Mappa le conversazioni per includere informazioni utili
     const formattedConversations = conversations.map(conv => {
@@ -28,7 +29,7 @@ export async function GET(
       const lastMessage = conv.messages?.[conv.messages.length - 1];
       
       return {
-        id: conv._id.toString(),
+        id: conv.conversationId,
         preview: firstUserMessage?.text?.substring(0, 50) || 'Conversazione senza titolo',
         lastMessage: lastMessage?.timestamp || conv.updatedAt,
         messagesCount: conv.messages?.length || 0,
