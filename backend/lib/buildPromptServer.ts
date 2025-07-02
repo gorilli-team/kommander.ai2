@@ -218,19 +218,17 @@ export function buildPromptServer(
   
   // Aggiungi il contenuto dei file embedded se presente
   if (hasEmbeddedFiles && embeddedFileContent) {
-    context += "🚨 PRIORITÀ ASSOLUTA: L'UTENTE HA CARICATO NUOVI FILE DIRETTAMENTE! 🚨\n\n";
-    context += "⭐ CONTENUTO DEI FILE CARICATI DALL'UTENTE (DA ANALIZZARE PRIORITARIAMENTE):\n\n";
+    context += "📎 IMPORTANTE: L'UTENTE HA CARICATO DEI FILE DIRETTAMENTE!\n\n";
+    context += "📄 CONTENUTO DEI FILE CARICATI DALL'UTENTE:\n\n";
     context += embeddedFileContent + "\n\n";
-    context += "🔥 ISTRUZIONI CRITICHE E NON NEGOZIABILI:\n";
-    context += "1. ⚠️  IGNORA COMPLETAMENTE tutti i file nel database/training se l'utente ha caricato file nuovi\n";
-    context += "2. 🎯 ANALIZZA ESCLUSIVAMENTE il contenuto dei file caricati sopra riportati\n";
-    context += "3. 📋 RISPONDI SOLO in base al contenuto EFFETTIVO dei file appena caricati\n";
-    context += "4. ❌ NON menzionare mai file del database quando l'utente ha caricato file nuovi\n";
-    context += "5. ✅ HAI ACCESSO COMPLETO al contenuto dei file caricati - usalo!\n";
-    context += "6. 🔍 CITA specificamente le informazioni trovate NEI FILE CARICATI\n";
-    context += "7. 📝 Se l'utente chiede un riassunto, riassumi SOLO i file caricati\n";
-    context += "8. 💯 Tutte le risposte devono basarsi ESCLUSIVAMENTE sui file caricati dall'utente\n";
-    context += "\n🚫 NON USARE MAI contenuti dal database quando ci sono file caricati dall'utente!\n\n";
+    context += "🔍 ISTRUZIONI PER L'ANALISI DEI FILE CARICATI:\n";
+    context += "1. ✅ HAI ACCESSO COMPLETO al contenuto dei file caricati sopra riportati\n";
+    context += "2. 📋 ANALIZZA E USA il contenuto effettivo dei file quando rilevante\n";
+    context += "3. 🎯 Se l'utente fa domande sui file caricati, rispondi basandoti sul loro contenuto\n";
+    context += "4. 📝 Se l'utente chiede un riassunto dei file caricati, riassumi il contenuto fornito\n";
+    context += "5. 🔍 CITA specificamente le informazioni trovate nei file caricati quando le usi\n";
+    context += "6. ⚡ Usa SIA i file caricati che le informazioni del database per risposte complete\n";
+    context += "\n💡 Ricorda: Hai accesso al contenuto testuale completo dei file caricati!\n\n";
   }
   
   context += "Usa le seguenti informazioni per rispondere alla query dell'utente:\n\n";
@@ -243,8 +241,8 @@ export function buildPromptServer(
     context += "\n";
   }
 
-  // SOLO se NON ci sono file embedded, mostra i file del database
-  if (!hasEmbeddedFiles && uploadedFilesInfo.length > 0) {
+  // Sempre mostra i file del database (funzionamento normale)
+  if (uploadedFilesInfo.length > 0) {
     context += "L'utente ha caricato i seguenti file a cui puoi fare riferimento per nome, se pertinente:\n";
     uploadedFilesInfo.forEach(file => {
       context += `- Nome File: "${file.fileName}", Tipo: ${file.originalFileType}\n`;
@@ -271,8 +269,6 @@ export function buildPromptServer(
       const recentFileName = uploadedFilesInfo[0]?.fileName || "un file caricato di recente";
       context += `Nota: Non è stato possibile estrarre o non è stato trovato alcun contenuto testuale nel file (${recentFileName}), ma sii consapevole che esiste.\n\n`;
     }
-  } else if (hasEmbeddedFiles) {
-    context += "\n⚠️ ATTENZIONE: Stai ignorando tutti i file del database perché l'utente ha caricato file nuovi direttamente.\n\n";
   }
 
 
