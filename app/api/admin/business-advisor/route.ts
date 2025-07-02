@@ -31,9 +31,11 @@ export async function GET(request: NextRequest) {
         const pricingRecommendations = await businessAdvisor.getPricingRecommendations(
           clientAnalyses,
           [
-            { name: 'Basic', price: 19, features: ['100 messages/month', 'Basic support'] },
-            { name: 'Pro', price: 49, features: ['1000 messages/month', 'Priority support', 'Analytics'] },
-            { name: 'Enterprise', price: 99, features: ['Unlimited', 'Custom features', 'Dedicated support'] }
+            { name: 'Starter', price: 299, features: ['1 chatbot', '10K msg/mese', 'Support email'] },
+            { name: 'Professional', price: 699, features: ['5 chatbot', '50K msg/mese', 'Analytics avanzate', 'Priority support'] },
+            { name: 'Business', price: 1299, features: ['15 chatbot', '200K msg/mese', 'Multi-settore', 'Custom integrations'] },
+            { name: 'Enterprise', price: 2499, features: ['Unlimited chatbot', 'Unlimited msg', 'White-label', 'Dedicated support'] },
+            { name: 'Enterprise Plus', price: 4999, features: ['On-premise', 'Custom AI models', '24/7 support', 'SLA garantito'] }
           ]
         );
 

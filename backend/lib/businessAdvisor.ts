@@ -41,41 +41,51 @@ class BusinessAdvisor {
       const profitableClients = costData.filter(c => c.monthlyProjection < 10).length;
 
       const prompt = `
-Sei un esperto consulente di business e pricing strategy per un'azienda SaaS di chatbot AI.
+Sei un esperto consulente di business e pricing strategy per KOMMANDER.AI - una piattaforma SaaS enterprise di chatbot AI multi-settore.
+
+CONTESTO BUSINESS:
+- TARGET: Clienti enterprise multi-settore (e-commerce, healthcare, legal, finance, etc.)
+- POSIZIONAMENTO: Premium enterprise con piani da €299 a €4999
+- COMPETITOR PRINCIPALE: Keplero AI (Italia) - analizza competitive gap
+- MARGINI TARGET: 88-95% tipici SaaS enterprise
+- FASE: Startup in crescita con focus su high-value clients
 
 DATI ANALIZZATI:
-- Totale clienti: ${totalClients}
+- Totale clienti enterprise: ${totalClients}
 - Costo medio API per cliente/mese: $${avgCostPerClient.toFixed(2)}
-- Clienti ad alto rischio (spesa elevata): ${highRiskClients}
-- Clienti profittevoli (bassa spesa): ${profitableClients}
+- Clienti high-usage (target ideale): ${highRiskClients}
+- Clienti low-usage (possibili upgrade): ${profitableClients}
 
-PIANI ATTUALI:
-${currentPlans.map(plan => `- ${plan.name}: $${plan.price}/mese`).join('\n')}
+PIANI ENTERPRISE ATTUALI:
+${currentPlans.map(plan => `- ${plan.name}: €${plan.price}/mese`).join('\n')}
 
-ANALIZZA questi dati e fornisci:
-1. Raccomandazioni di pricing per massimizzare profitti
-2. Analisi di mercato per chatbot AI/SaaS
-3. Margini di profitto ottimali
-4. Strategie per ridurre costi API
-5. Confronto con competitor principali
+ANALIZZA e fornisci strategia enterprise specifica:
+1. Pricing optimization per mercato italiano enterprise
+2. Competitive analysis vs Keplero AI
+3. Strategie di differenziazione multi-settore
+4. Bundle pricing per clienti con multiple vertical
+5. Margini ottimali per sostenibilità e crescita
+6. Strategie per ridurre costi API e aumentare ARPU
 
 Rispondi in formato JSON con questa struttura:
 {
   "plans": [
     {
-      "name": "Piano",
-      "suggestedPrice": numero,
-      "reasoning": "motivo",
-      "targetMargin": numero
+      "name": "Piano Enterprise",
+      "suggestedPrice": numero_euro,
+      "reasoning": "motivo specifico per enterprise",
+      "targetMargin": numero_percentuale,
+      "competitiveAdvantage": "vs Keplero AI"
     }
   ],
   "marketAnalysis": {
-    "industryAverage": numero,
-    "positioning": "strategia",
-    "trends": ["trend1", "trend2"]
+    "enterpriseAverage": numero_euro,
+    "positioning": "strategia vs Keplero",
+    "trends": ["trend enterprise specifici"],
+    "kepleCompetitiveGap": "opportunità vs competitor"
   },
-  "optimizations": ["suggerimento1", "suggerimento2"],
-  "riskAssessment": "valutazione rischi"
+  "optimizations": ["suggerimenti enterprise-specific"],
+  "riskAssessment": "valutazione per business enterprise"
 }
 `;
 

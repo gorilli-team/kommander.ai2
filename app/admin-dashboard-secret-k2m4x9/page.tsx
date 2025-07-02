@@ -353,15 +353,21 @@ const AdminDashboard = () => {
                           {index + 1}
                         </div>
                         <div>
-                          <div className="font-medium">{client.clientId}</div>
-                          <div className="text-sm text-gray-500">{client.totalRequests} richieste</div>
+                          <div className="font-medium">
+                            {client.clientEmail || client.clientId}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {client.companyName && <span>{client.companyName} • </span>}
+                            {client.totalRequests} richieste
+                            {client.sector && <span> • {client.sector}</span>}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right space-x-2">
                         <Badge className={getRiskColor(client.riskLevel)}>
                           {client.riskLevel}
                         </Badge>
-                        <div className="font-bold">${client.monthlyProjection.toFixed(2)}/mese</div>
+                        <div className="font-bold">€{client.monthlyProjection.toFixed(2)}/mese</div>
                         <div className="text-sm text-gray-500">{client.suggestedPlan}</div>
                       </div>
                     </div>

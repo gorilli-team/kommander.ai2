@@ -1,6 +1,7 @@
 
 import OpenAI from "openai";
 import { costTracker, calculateApiCost } from './costTracking';
+import { getClientInfo } from './clientIdentification';
 
 let openai: OpenAI | null = null;
 
@@ -53,9 +54,14 @@ export async function createTrackedChatCompletion(
       
       const { inputCost, outputCost, totalCost } = calculateApiCost(model, inputTokens, outputTokens);
       
+      // Ottieni informazioni cliente dettagliate
+      const clientInfo = trackingInfo.userId ? await getClientInfo(trackingInfo.userId) : null;
+      
       await costTracker.trackApiUsage({
         userId: trackingInfo.userId,
-        clientId: trackingInfo.clientId,
+        clientId: trackingInfo.clientId || clientInfo?.userId,
+        clientEmail: clientInfo?.clientEmail,
+        companyName: clientInfo?.companyName,
         conversationId: trackingInfo.conversationId,
         model,
         inputTokens,
@@ -69,7 +75,12 @@ export async function createTrackedChatCompletion(
         endpoint: trackingInfo.endpoint,
         userMessage: trackingInfo.userMessage,
         assistantResponse: completion.choices[0]?.message?.content,
-        metadata: trackingInfo.metadata
+        metadata: {
+          ...trackingInfo.metadata,
+          sector: clientInfo?.sector,
+          planType: clientInfo?.planType,
+          botCount: clientInfo?.botCount
+        }
       });
     }
     

@@ -1,8 +1,16 @@
 import { MongoClient, Collection } from 'mongodb';
 import { getMongoClient } from './mongodb';
 
-// Prezzi OpenAI aggiornati (gennaio 2024)
+// Prezzi OpenAI aggiornati (Dicembre 2024) - Verificati per accuratezza
 export const OPENAI_PRICING = {
+  'gpt-4o': {
+    input: 0.0025,    // $0.0025 per 1K token di input
+    output: 0.01      // $0.01 per 1K token di output
+  },
+  'gpt-4o-mini': {
+    input: 0.00015,   // $0.00015 per 1K token di input
+    output: 0.0006    // $0.0006 per 1K token di output
+  },
   'gpt-4-turbo': {
     input: 0.01,      // $0.01 per 1K token di input
     output: 0.03      // $0.03 per 1K token di output
@@ -12,8 +20,47 @@ export const OPENAI_PRICING = {
     output: 0.06      // $0.06 per 1K token di output
   },
   'gpt-3.5-turbo': {
-    input: 0.0015,    // $0.0015 per 1K token di input
-    output: 0.002     // $0.002 per 1K token di output
+    input: 0.0005,    // $0.0005 per 1K token di input (aggiornato)
+    output: 0.0015    // $0.0015 per 1K token di output (aggiornato)
+  }
+};
+
+// Piani enterprise personalizzati per il business multi-settore
+export const ENTERPRISE_PRICING_TIERS = {
+  starter: {
+    name: 'Starter',
+    price: 299,
+    currency: 'EUR',
+    features: ['1 chatbot', '10K msg/mese', 'Support email'],
+    targetMargin: 0.88 // 88% margine tipico SaaS enterprise
+  },
+  professional: {
+    name: 'Professional', 
+    price: 699,
+    currency: 'EUR',
+    features: ['5 chatbot', '50K msg/mese', 'Analytics avanzate', 'Priority support'],
+    targetMargin: 0.90
+  },
+  business: {
+    name: 'Business',
+    price: 1299,
+    currency: 'EUR', 
+    features: ['15 chatbot', '200K msg/mese', 'Multi-settore', 'Custom integrations'],
+    targetMargin: 0.92
+  },
+  enterprise: {
+    name: 'Enterprise',
+    price: 2499,
+    currency: 'EUR',
+    features: ['Unlimited chatbot', 'Unlimited msg', 'White-label', 'Dedicated support'],
+    targetMargin: 0.94
+  },
+  enterprise_plus: {
+    name: 'Enterprise Plus',
+    price: 4999,
+    currency: 'EUR',
+    features: ['On-premise', 'Custom AI models', '24/7 support', 'SLA garantito'],
+    targetMargin: 0.95 // 95% margine per tier massimo
   }
 };
 
@@ -22,6 +69,8 @@ export interface ApiUsageRecord {
   timestamp: Date;
   userId?: string;
   clientId?: string;
+  clientEmail?: string;      // EMAIL PRIMARIO per identificazione
+  companyName?: string;      // Nome azienda del cliente
   conversationId?: string;
   model: string;
   inputTokens: number;
@@ -41,6 +90,9 @@ export interface ApiUsageRecord {
     traits?: string[];
     hasUploadedFiles?: boolean;
     fileTypes?: string[];
+    sector?: string;         // Settore cliente (e-commerce, healthcare, etc.)
+    planType?: string;       // Piano attuale del cliente
+    botCount?: number;       // Numero di bot utilizzati
   };
 }
 
@@ -90,7 +142,11 @@ class CostTracker {
       await this.collection.createIndex({ timestamp: -1 });
       await this.collection.createIndex({ userId: 1, timestamp: -1 });
       await this.collection.createIndex({ clientId: 1, timestamp: -1 });
+      await this.collection.createIndex({ clientEmail: 1, timestamp: -1 }); // Nuovo indice per email
+      await this.collection.createIndex({ companyName: 1, timestamp: -1 }); // Nuovo indice per azienda
       await this.collection.createIndex({ conversationId: 1 });
+      await this.collection.createIndex({ 'metadata.sector': 1 }); // Indice per settore
+      await this.collection.createIndex({ 'metadata.planType': 1 }); // Indice per piano
     }
     return this.collection;
   }
