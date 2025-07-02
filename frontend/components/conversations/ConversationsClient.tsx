@@ -61,10 +61,19 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   const [selectedId, setSelectedId] = useState(initial[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBy, setFilterBy] = useState<'all' | 'bot' | 'agent'>('all');
+  const [siteFilter, setSiteFilter] = useState<'all' | string>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'widget' | 'dashboard'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'messages'>('newest');
   const [isExporting, setIsExporting] = useState(false);
   
   const selected = conversations.find((c) => c.id === selectedId);
+  
+  // Get unique sites for filter
+  const uniqueSites = useMemo(() => {
+    const sites = conversations.map(c => c.site).filter(Boolean);
+    return ['all', ...Array.from(new Set(sites))];
+  }, [conversations]);
   
   // Filter and search conversations
   const filteredConversations = useMemo(() => {
@@ -73,6 +82,44 @@ export default function ConversationsClient({ conversations: initial }: Props) {
     // Apply handler filter
     if (filterBy !== 'all') {
       filtered = filtered.filter(c => c.handledBy === filterBy);
+    }
+    
+    // Apply site filter
+    if (siteFilter !== 'all') {
+      filtered = filtered.filter(c => c.site === siteFilter);
+    }
+    
+    // Apply type filter (widget vs dashboard)
+    if (typeFilter !== 'all') {
+      if (typeFilter === 'widget') {
+        // Widget conversations have conversationId starting with 'konv-'
+        filtered = filtered.filter(c => c.id.startsWith('konv-'));
+      } else if (typeFilter === 'dashboard') {
+        // Dashboard conversations don't start with 'konv-'
+        filtered = filtered.filter(c => !c.id.startsWith('konv-'));
+      }
+    }
+    
+    // Apply date filter
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      filtered = filtered.filter(c => {
+        const conversationDate = new Date(c.updatedAt || c.createdAt || 0);
+        switch (dateFilter) {
+          case 'today':
+            return conversationDate >= today;
+          case 'week':
+            return conversationDate >= weekAgo;
+          case 'month':
+            return conversationDate >= monthAgo;
+          default:
+            return true;
+        }
+      });
     }
     
     // Apply search query
@@ -99,7 +146,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
     });
     
     return filtered;
-  }, [conversations, searchQuery, filterBy, sortBy]);
+  }, [conversations, searchQuery, filterBy, siteFilter, dateFilter, typeFilter, sortBy]);
   
   // Analytics data
   const analytics = useMemo(() => {
@@ -273,48 +320,115 @@ export default function ConversationsClient({ conversations: initial }: Props) {
             {/* Search and Filter Toolbar */}
             <Card>
               <CardContent className="pt-6">
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                  <div className="flex flex-1 gap-2 w-full sm:w-auto">
-                    <div className="relative flex-1 max-w-sm">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        placeholder="Cerca nelle conversazioni..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Filter className="h-4 w-4 mr-2" />
-                          {filterBy === 'all' ? 'Tutti' : filterBy === 'bot' ? 'AI' : 'Operatori'}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuLabel>Filtro per gestore</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setFilterBy('all')}>Tutti</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setFilterBy('bot')}>Gestite da AI</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setFilterBy('agent')}>Gestite da Operatori</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Clock className="h-4 w-4 mr-2" />
-                          {sortBy === 'newest' ? 'Più recenti' : sortBy === 'oldest' ? 'Più vecchie' : 'Per messaggi'}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuLabel>Ordina per</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setSortBy('newest')}>Più recenti</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setSortBy('oldest')}>Più vecchie</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setSortBy('messages')}>Per numero messaggi</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                <div className="space-y-4">
+                  {/* Search Bar */}
+                  <div className="relative max-w-sm">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Cerca nelle conversazioni..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
                   </div>
+                  
+                  {/* Filters Row */}
+                  <div className="flex flex-wrap gap-2 items-center justify-between">
+                    <div className="flex flex-wrap gap-2">
+                      {/* Handler Filter */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Filter className="h-4 w-4 mr-2" />
+                            {filterBy === 'all' ? 'Tutti' : filterBy === 'bot' ? 'AI' : 'Operatori'}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuLabel>Filtro per gestore</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setFilterBy('all')}>Tutti</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setFilterBy('bot')}>Gestite da AI</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setFilterBy('agent')}>Gestite da Operatori</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      
+                      {/* Site Filter */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Globe className="h-4 w-4 mr-2" />
+                            {siteFilter === 'all' ? 'Tutti i siti' : siteFilter}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuLabel>Filtro per sito</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {uniqueSites.map((site) => (
+                            <DropdownMenuItem 
+                              key={site} 
+                              onClick={() => setSiteFilter(site)}
+                            >
+                              {site === 'all' ? 'Tutti i siti' : site}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      
+                      {/* Date Filter */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Clock className="h-4 w-4 mr-2" />
+                            {dateFilter === 'all' ? 'Tutte le date' : 
+                             dateFilter === 'today' ? 'Oggi' :
+                             dateFilter === 'week' ? 'Questa settimana' : 'Questo mese'}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuLabel>Filtro per data</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setDateFilter('all')}>Tutte le date</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDateFilter('today')}>Oggi</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDateFilter('week')}>Questa settimana</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDateFilter('month')}>Questo mese</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      
+                      {/* Type Filter */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            {typeFilter === 'all' ? 'Tutti i tipi' : 
+                             typeFilter === 'widget' ? 'Widget' : 'Dashboard'}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuLabel>Filtro per tipo</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setTypeFilter('all')}>Tutti i tipi</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setTypeFilter('widget')}>Conversazioni Widget</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setTypeFilter('dashboard')}>Conversazioni Dashboard</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      
+                      {/* Sort Dropdown */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Clock className="h-4 w-4 mr-2" />
+                            {sortBy === 'newest' ? 'Più recenti' : sortBy === 'oldest' ? 'Più vecchie' : 'Per messaggi'}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuLabel>Ordina per</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setSortBy('newest')}>Più recenti</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setSortBy('oldest')}>Più vecchie</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setSortBy('messages')}>Per numero messaggi</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   <div className="flex gap-2">
                     <Button 
                       variant="outline" 
