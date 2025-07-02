@@ -107,37 +107,65 @@
     const [endUserId, setEndUserId] = useState('');
     const endUserIdRef = useRef('');
     
-    // Genera ID utente finale univoco per questo browser/dispositivo
+    // Genera ID utente finale univoco per questo browser/dispositivo + pagina specifica
     useEffect(() => {
       const generateEndUserId = () => {
+        // Include informazioni specifiche della pagina/origine
+        const pageSpecificInfo = [
+          window.location.hostname,     // es. "example.com"
+          window.location.pathname,     // es. "/support" o "/homepage"
+          window.location.protocol,     // "https:" o "http:"
+          document.title || 'untitled', // Titolo della pagina
+        ].join('|');
+        
         const browserFingerprint = [
           navigator.userAgent,
           navigator.language,
           screen.width + 'x' + screen.height,
           new Date().getTimezoneOffset(),
-          window.location.hostname
         ].join('|');
         
-        // Crea un hash semplice del fingerprint
+        // Combina info pagina + browser
+        const combinedFingerprint = `${pageSpecificInfo}||${browserFingerprint}`;
+        
+        // Crea un hash semplice del fingerprint completo
         let hash = 0;
-        for (let i = 0; i < browserFingerprint.length; i++) {
-          const char = browserFingerprint.charCodeAt(i);
+        for (let i = 0; i < combinedFingerprint.length; i++) {
+          const char = combinedFingerprint.charCodeAt(i);
           hash = ((hash << 5) - hash) + char;
           hash = hash & hash; // Converti a 32bit integer
         }
         
-        return `eu_${Math.abs(hash)}_${Date.now()}`;
+        // Include hostname e path nel ID per identificazione rapida
+        const locationId = `${window.location.hostname}${window.location.pathname}`.replace(/[^a-zA-Z0-9]/g, '_');
+        
+        return `eu_${locationId}_${Math.abs(hash)}`;
       };
       
-      const endUserStorageKey = `kommander_end_user_${userId}`;
+      // Storage key ora include anche informazioni della pagina
+      const pageKey = `${window.location.hostname}${window.location.pathname}`;
+      const endUserStorageKey = `kommander_end_user_${userId}_${pageKey.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      
       let storedEndUserId = localStorage.getItem(endUserStorageKey);
       
       if (!storedEndUserId) {
         storedEndUserId = generateEndUserId();
         localStorage.setItem(endUserStorageKey, storedEndUserId);
-        console.log('[Chatbot] Generated new end user ID:', storedEndUserId);
+        console.log('[Chatbot] Generated new end user ID for page:', storedEndUserId);
+        console.log('[Chatbot] Page details:', {
+          hostname: window.location.hostname,
+          pathname: window.location.pathname,
+          href: window.location.href,
+          title: document.title
+        });
       } else {
-        console.log('[Chatbot] Retrieved existing end user ID:', storedEndUserId);
+        console.log('[Chatbot] Retrieved existing end user ID for page:', storedEndUserId);
+        console.log('[Chatbot] Page details:', {
+          hostname: window.location.hostname,
+          pathname: window.location.pathname,
+          href: window.location.href,
+          title: document.title
+        });
       }
       
       setEndUserId(storedEndUserId);
@@ -267,16 +295,18 @@
     
     useEffect(() => {
       if (endUserId) {
-        const key = `kommander_conversation_${userId}_${endUserId}`;
+        // Include page-specific info in storage key
+        const pageId = `${window.location.hostname}${window.location.pathname}`.replace(/[^a-zA-Z0-9]/g, '_');
+        const key = `kommander_conversation_${userId}_${pageId}_${endUserId}`;
         setStorageKey(key);
         
         const stored = localStorage.getItem(key);
         if (stored) {
           conversationIdRef.current = stored;
           setConversationId(stored);
-          console.log('[Chatbot] Restored conversation ID for end user:', stored);
+          console.log('[Chatbot] Restored conversation ID for page:', stored, 'Page:', window.location.href);
         } else {
-          console.log('[Chatbot] No existing conversation found for end user');
+          console.log('[Chatbot] No existing conversation found for this page:', window.location.href);
         }
       }
     }, [userId, endUserId]);
