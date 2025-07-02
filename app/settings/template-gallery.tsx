@@ -19,6 +19,7 @@ import {
   convertTemplateToSettings,
   recommendTemplate
 } from '@/backend/lib/personalityTemplates';
+import { saveSettings } from './actions';
 
 interface TemplateGalleryProps {
   onApplyTemplate: (settings: any) => void;

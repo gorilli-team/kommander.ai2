@@ -81,7 +81,7 @@ export default function SettingsClient({ initialSettings }: Props) {
   };
 
   return (
-    <div className="">
+    <div className="space-y-8">
       <div className="mx-auto max-w-4xl">
         {/* Header Section */}
         <div className="mb-8 text-center">
@@ -330,13 +330,7 @@ export default function SettingsClient({ initialSettings }: Props) {
               </div>
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
                 <TemplateGallery 
-    onApplyTemplate={handleApplyTemplate}
-    currentSettings={}
-    
-    
-    
-    
-    
+                  onApplyTemplate={handleApplyTemplate}
                   currentSettings={{ name, color, personality, traits }}
                 />
               </div>
