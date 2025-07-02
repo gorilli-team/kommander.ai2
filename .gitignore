@@ -49,3 +49,7 @@ package-lock.json
 .modified
 .idx/
 .vscode/
+
+# WhatsApp Bot
+whatsapp-auth/
+auth_info.json

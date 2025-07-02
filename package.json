@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "seed": "tsx backend/scripts/seed.ts"
+    "seed": "tsx backend/scripts/seed.ts",
+    "whatsapp-bot": "tsx backend/lib/whatsappClient.ts"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.10.0",

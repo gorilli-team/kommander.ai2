@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/
 import { saveSettings } from './actions';
 import { PersonalityTester } from './personality-tester';
 import { TemplateGallery } from './template-gallery';
+import { WhatsAppIntegration } from './whatsapp-integration';
 
 const traitOptions = [
   { value: 'avventuroso', label: '🦁 Avventuroso' },
@@ -36,6 +37,7 @@ export default function SettingsClient({ initialSettings }: Props) {
   const [traits, setTraits] = useState<Trait[]>(initialSettings?.traits || []);
   const [saving, setSaving] = useState(false);
   const [showTemplateGallery, setShowTemplateGallery] = useState(false);
+  const [activeSection, setActiveSection] = useState('customization');
 
   const toggleTrait = (t: Trait) => {
     setTraits(prev => {
