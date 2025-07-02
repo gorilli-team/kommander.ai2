@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { auth } from '@/frontend/auth';
 import { whatsappManager } from '@/backend/lib/whatsappClient';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await auth();
     
     if (!session?.user?.id) {
       return NextResponse.json(
