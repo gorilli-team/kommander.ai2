@@ -151,10 +151,35 @@
           }
         } else if (fileType.includes('text/csv') || fileName.endsWith('.csv')) {
           return await file.text();
-        } else if (fileType.includes('application/pdf') || fileName.endsWith('.pdf')) {
-          return `[PDF File: ${file.name}]\nPer analizzare file PDF, per favore copia e incolla il contenuto testuale del documento.`;
-        } else if (fileType.includes('application/msword') || fileType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') || fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
-          return `[Word Document: ${file.name}]\nPer analizzare documenti Word, per favore copia e incolla il contenuto testuale del documento.`;
+        } else if (fileType.includes('application/pdf') || fileName.endsWith('.pdf') || fileType.includes('application/msword') || fileType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') || fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+          // Prova elaborazione server per PDF e DOCX
+          try {
+            console.log('Attempting server processing for:', file.name);
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('userId', userId || 'widget-user');
+            
+            const response = await fetch(`${ORIGIN}/api/process-file`, {
+              method: 'POST',
+              body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.content && result.content.trim()) {
+              console.log('Server processing successful for:', file.name);
+              return result.content;
+            } else {
+              throw new Error('Server could not extract text');
+            }
+          } catch (serverError) {
+            console.log('Server processing failed, using fallback for:', file.name);
+            if (fileName.endsWith('.pdf')) {
+              return `[PDF File: ${file.name}]\n\n⚠️ Non è stato possibile estrarre automaticamente il testo da questo PDF.\n\nSe è un documento testuale (non una scansione):\n1. Aprilo\n2. Seleziona tutto il testo (Ctrl+A o Cmd+A)\n3. Copialo e incollalo in un nuovo messaggio\n\nAltrimenti posso aiutarti con le mie conoscenze di base sull'argomento.`;
+            } else {
+              return `[Word Document: ${file.name}]\n\n⚠️ Non è stato possibile estrarre automaticamente il testo da questo documento.\n\nPer analizzarlo:\n1. Aprilo\n2. Seleziona tutto il testo (Ctrl+A o Cmd+A)\n3. Copialo e incollalo in un nuovo messaggio`;
+            }
+          }
         } else if (fileType.includes('text/html') || fileName.endsWith('.html') || fileName.endsWith('.htm')) {
           const text = await file.text();
           const div = document.createElement('div');
