@@ -24,25 +24,7 @@ export function FileUploader({ onFilesProcessed, className, userId }: FileUpload
     supportedFormats 
   } = useFileProcessor();
   
-  const [dragActive, setDragActive] = useState(false);
   const [results, setResults] = useState<FileProcessingResult[]>([]);
-
-  // Gestisce il drop dei file
-  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      const results = await processFiles(files, userId);
-      setResults(results);
-      // Chiamiamo la callback dopo che i file sono stati processati
-      setTimeout(() => {
-        onFilesProcessed?.(uploadedFiles);
-      }, 100); // Piccolo delay per assicurarsi che lo stato sia aggiornato
-    }
-  }, [processFiles, uploadedFiles, onFilesProcessed]);
 
   // Gestisce la selezione tramite input
   const handleFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,17 +41,6 @@ export function FileUploader({ onFilesProcessed, className, userId }: FileUpload
     e.target.value = '';
   }, [processFiles, uploadedFiles, onFilesProcessed]);
 
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-  }, []);
 
   const handleRemoveFile = useCallback((fileId: string) => {
     removeFile(fileId);
@@ -88,14 +59,8 @@ export function FileUploader({ onFilesProcessed, className, userId }: FileUpload
     <div className={cn("space-y-3", className)}>
       {/* Area di Upload */}
       <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
         className={cn(
-          "relative border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer",
-          dragActive 
-            ? "border-primary bg-primary/5" 
-            : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50",
+          "relative border rounded-lg p-3 transition-colors cursor-pointer bg-muted/30 hover:bg-muted/50",
           isProcessing && "pointer-events-none opacity-50"
         )}
       >
@@ -119,7 +84,7 @@ export function FileUploader({ onFilesProcessed, className, userId }: FileUpload
           
           <div>
             <p className="text-sm font-medium">
-              {isProcessing ? 'Elaborazione in corso...' : 'Trascina file qui o clicca per caricare'}
+              {isProcessing ? 'Elaborazione in corso...' : 'Clicca per caricare file'}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               Formati supportati: {supportedFormats.slice(0, 4).join(', ')} e altri
