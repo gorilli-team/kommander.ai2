@@ -330,7 +330,13 @@ export default function SettingsClient({ initialSettings }: Props) {
               </div>
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
                 <TemplateGallery 
-                  onApplyTemplate={handleApplyTemplate}
+    onApplyTemplate={handleApplyTemplate}
+    currentSettings={}
+    
+    
+    
+    
+    
                   currentSettings={{ name, color, personality, traits }}
                 />
               </div>

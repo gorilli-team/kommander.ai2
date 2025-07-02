@@ -102,15 +102,57 @@
     const [showConversationsList, setShowConversationsList] = useState(false);
     const [conversationsList, setConversationsList] = useState([]);
     const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+    
+    // Genera o recupera un ID utente finale univoco per questo browser
+    const [endUserId, setEndUserId] = useState('');
+    const endUserIdRef = useRef('');
+    
+    // Genera ID utente finale univoco per questo browser/dispositivo
+    useEffect(() => {
+      const generateEndUserId = () => {
+        const browserFingerprint = [
+          navigator.userAgent,
+          navigator.language,
+          screen.width + 'x' + screen.height,
+          new Date().getTimezoneOffset(),
+          window.location.hostname
+        ].join('|');
+        
+        // Crea un hash semplice del fingerprint
+        let hash = 0;
+        for (let i = 0; i < browserFingerprint.length; i++) {
+          const char = browserFingerprint.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash = hash & hash; // Converti a 32bit integer
+        }
+        
+        return `eu_${Math.abs(hash)}_${Date.now()}`;
+      };
+      
+      const endUserStorageKey = `kommander_end_user_${userId}`;
+      let storedEndUserId = localStorage.getItem(endUserStorageKey);
+      
+      if (!storedEndUserId) {
+        storedEndUserId = generateEndUserId();
+        localStorage.setItem(endUserStorageKey, storedEndUserId);
+        console.log('[Chatbot] Generated new end user ID:', storedEndUserId);
+      } else {
+        console.log('[Chatbot] Retrieved existing end user ID:', storedEndUserId);
+      }
+      
+      setEndUserId(storedEndUserId);
+      endUserIdRef.current = storedEndUserId;
+    }, [userId]);
 
     const restartConversation = () => {
-
+      if (!storageKey) return; // Wait for storageKey to be set
       const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       conversationIdRef.current = newId;
       setConversationId(newId);
       localStorage.setItem(storageKey, newId);
       setMessages([]);
       lastTimestampRef.current = '';
+      console.log('[Chatbot] Restarted conversation with new ID:', newId);
     };
 
     const confirmRestart = () => {
@@ -220,15 +262,24 @@
       }
     }, [open, botName]);
 
-    const storageKey = `kommander_conversation_${userId}`;
-
+    // Storage key using endUserId to separate conversations per browser
+    const [storageKey, setStorageKey] = useState('');
+    
     useEffect(() => {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        conversationIdRef.current = stored;
-        setConversationId(stored);
+      if (endUserId) {
+        const key = `kommander_conversation_${userId}_${endUserId}`;
+        setStorageKey(key);
+        
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          conversationIdRef.current = stored;
+          setConversationId(stored);
+          console.log('[Chatbot] Restored conversation ID for end user:', stored);
+        } else {
+          console.log('[Chatbot] No existing conversation found for end user');
+        }
       }
-    }, [storageKey]);
+    }, [userId, endUserId]);
 
     const fetchInitial = async () => {
       const id = conversationIdRef.current;

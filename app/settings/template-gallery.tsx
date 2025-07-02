@@ -35,6 +35,7 @@ export function TemplateGallery({ onApplyTemplate, currentSettings }: TemplateGa
   const handleApplyTemplate = (template: PersonalityTemplate) => {
     const settings = convertTemplateToSettings(template);
     onApplyTemplate(settings);
+    saveSettings(settings);
   };
 
   const handleWizardAnswer = (questionId: string, answer: string) => {
