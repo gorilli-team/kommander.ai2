@@ -652,6 +652,12 @@ ${truncatedContent}
       const messageWithContext = filesContext 
         ? `${filesContext}\n\n--- MESSAGGIO UTENTE ---\n${text}`
         : text;
+        
+      // Aggiungi messaggio di sistema per i file caricati
+      if (uploadedFiles.length > 0 && !lastSentTextRef.current.includes('File caricato:')) {
+        const fileNames = uploadedFiles.map(f => f.name).join(', ');
+        addMessage('system', `📎 File caricato: ${fileNames}\n\nOra puoi farmi domande sul contenuto di questo file o chiedere un riassunto.`);
+      }
 
       const requestBody = {
         userId,

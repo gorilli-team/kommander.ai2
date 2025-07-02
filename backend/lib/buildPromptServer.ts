@@ -96,6 +96,19 @@ export function buildPromptServer(
   personalityContext?: string
 ): { messages: ChatMessage[]; sources: SourceReference[] } {
   
+  // Controlla se ci sono file embedded nel messaggio utente
+  const hasEmbeddedFiles = userMessage.includes('DOCUMENTI CARICATI DALL\'UTENTE:');
+  let cleanUserMessage = userMessage;
+  let embeddedFileContent = '';
+  
+  if (hasEmbeddedFiles) {
+    const parts = userMessage.split('--- MESSAGGIO UTENTE ---');
+    if (parts.length === 2) {
+      embeddedFileContent = parts[0].trim();
+      cleanUserMessage = parts[1].trim();
+    }
+  }
+  
   const botName = settings?.name || 'Kommander.ai';
   
   // Costruzione del contesto personalizzato basato su personalità e caratteri
@@ -203,6 +216,19 @@ export function buildPromptServer(
     context += "\n";
   }
   
+  // Aggiungi il contenuto dei file embedded se presente
+  if (hasEmbeddedFiles && embeddedFileContent) {
+    context += "IMPORTANTE: L'UTENTE HA CARICATO DEI FILE DIRETTAMENTE. DEVI ANALIZZARE QUESTO CONTENUTO:\n\n";
+    context += embeddedFileContent + "\n\n";
+    context += "ISTRUZIONI CRITICHE:\n";
+    context += "- ANALIZZA COMPLETAMENTE il contenuto dei file sopra riportati\n";
+    context += "- RISPONDI SEMPRE in base al contenuto effettivo dei file\n";
+    context += "- NON dire che non puoi accedere ai file - HAI ACCESSO AL LORO CONTENUTO\n";
+    context += "- CITA specificamente le informazioni trovate nei file\n";
+    context += "- Se l'utente chiede un riassunto, fornisci un riassunto dettagliato\n";
+    context += "- Se l'utente fa domande sui file, rispondi basandoti sul contenuto fornito\n\n";
+  }
+  
   context += "Usa le seguenti informazioni per rispondere alla query dell'utente:\n\n";
 
   if (faqs.length > 0) {
@@ -285,7 +311,7 @@ export function buildPromptServer(
 
   history.forEach(msg => messages.push(msg));
   
-  messages.push({ role: 'user', content: userMessage });
+  messages.push({ role: 'user', content: cleanUserMessage });
 
   return { messages, sources };
 }

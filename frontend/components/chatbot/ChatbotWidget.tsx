@@ -81,6 +81,9 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
     
     sendMessage(inputValue, filesContext);
     setInputValue('');
+    
+    // Chiudi l'area upload dopo l'invio
+    setShowFileUploader(false);
   };
 
   return (
@@ -193,7 +196,16 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
             {/* File Uploader */}
             {showFileUploader && (
               <div className="border-t border-border p-4 bg-muted/30">
-                <FileUploader className="" />
+                <FileUploader 
+                  className="" 
+                  onFilesProcessed={(files) => {
+                    if (files.length > 0) {
+                      // Aggiungi messaggio di sistema per confermare il caricamento
+                      const fileNames = files.map(f => f.name).join(', ');
+                      addMessage('system', `📎 File caricato: ${fileNames}\n\nOra puoi farmi domande sul contenuto di questo file o chiedere un riassunto.`);
+                    }
+                  }}
+                />
               </div>
             )}
             

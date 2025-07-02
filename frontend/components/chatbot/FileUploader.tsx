@@ -36,7 +36,10 @@ export function FileUploader({ onFilesProcessed, className }: FileUploaderProps)
     if (files.length > 0) {
       const results = await processFiles(files);
       setResults(results);
-      onFilesProcessed?.(uploadedFiles);
+      // Chiamiamo la callback dopo che i file sono stati processati
+      setTimeout(() => {
+        onFilesProcessed?.(uploadedFiles);
+      }, 100); // Piccolo delay per assicurarsi che lo stato sia aggiornato
     }
   }, [processFiles, uploadedFiles, onFilesProcessed]);
 
@@ -46,7 +49,10 @@ export function FileUploader({ onFilesProcessed, className }: FileUploaderProps)
     if (files && files.length > 0) {
       const results = await processFiles(files);
       setResults(results);
-      onFilesProcessed?.(uploadedFiles);
+      // Chiamiamo la callback dopo che i file sono stati processati
+      setTimeout(() => {
+        onFilesProcessed?.(uploadedFiles);
+      }, 100); // Piccolo delay per assicurarsi che lo stato sia aggiornato
     }
     // Reset input
     e.target.value = '';
