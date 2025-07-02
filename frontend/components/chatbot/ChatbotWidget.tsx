@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, X, Headphones } from 'lucide-react';
+import { Send, Bot, User, X, Headphones, Paperclip, FileText } from 'lucide-react';
 import { Badge } from '@/frontend/components/ui/badge';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -13,6 +13,8 @@ import { ScrollArea } from '@/frontend/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/frontend/components/ui/avatar';
 import { cn } from '@/frontend/lib/utils';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { FileUploader } from './FileUploader';
+import { useFileProcessor, ProcessedFile } from '@/frontend/hooks/useFileProcessor';
 
 interface ChatbotWidgetProps {
   userId: string;
@@ -26,6 +28,8 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [botName, setBotName] = useState('Kommander.ai');
   const [botColor, setBotColor] = useState('#1E3A8A');
+  const [showFileUploader, setShowFileUploader] = useState(false);
+  const { getFilesContext, uploadedFiles } = useFileProcessor();
 
   useEffect(() => {
     const fetchSettings = () => {
@@ -71,7 +75,11 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
-    sendMessage(inputValue);
+    
+    // Ottieni il context dei file se presenti
+    const filesContext = getFilesContext();
+    
+    sendMessage(inputValue, filesContext);
     setInputValue('');
   };
 
@@ -181,26 +189,61 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
                 )}
               </div>
             </ScrollArea>
+            
+            {/* File Uploader */}
+            {showFileUploader && (
+              <div className="border-t border-border p-4 bg-muted/30">
+                <FileUploader className="" />
+              </div>
+            )}
+            
             <form
               onSubmit={handleSubmit}
-              className="p-4 border-t border-border bg-white rounded-b-2xl flex items-center space-x-3"
+              className="p-4 border-t border-border bg-white rounded-b-2xl space-y-3"
             >
-              <Input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Scrivi qui…"
-                disabled={isLoading}
-                className="flex-1 !bg-white text-black rounded-xl focus:ring-primary focus:border-primary"
-              />
-              <Button
-                type="submit"
-                size="icon"
-                disabled={isLoading || !inputValue.trim()}
-                aria-label="Invia"
-                className="rounded-full"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
+              {/* Indicatore file caricati */}
+              {uploadedFiles.length > 0 && (
+                <div className="flex items-center space-x-2 text-xs text-muted-foreground bg-blue-50 p-2 rounded border">
+                  <FileText className="w-3 h-3" />
+                  <span>{uploadedFiles.length} file caricato{uploadedFiles.length !== 1 ? 'i' : ''}</span>
+                  <span>•</span>
+                  <span>Inclusi nella conversazione</span>
+                </div>
+              )}
+              
+              <div className="flex items-center space-x-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowFileUploader(!showFileUploader)}
+                  className={cn(
+                    "rounded-full",
+                    showFileUploader && "bg-primary/10 text-primary"
+                  )}
+                  aria-label="Carica file"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </Button>
+                
+                <Input
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Scrivi qui…"
+                  disabled={isLoading}
+                  className="flex-1 !bg-white text-black rounded-xl focus:ring-primary focus:border-primary"
+                />
+                
+                <Button
+                  type="submit"
+                  size="icon"
+                  disabled={isLoading || !inputValue.trim()}
+                  aria-label="Invia"
+                  className="rounded-full"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
             </form>
           </motion.div>
         )}

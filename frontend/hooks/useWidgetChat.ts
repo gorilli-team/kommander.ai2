@@ -127,7 +127,7 @@ export function useWidgetChat(userId: string) {
   };
 
   const sendMessage = useCallback(
-    async (userMessageContent: string) => {
+    async (userMessageContent: string, filesContext?: string) => {
       if (!userMessageContent.trim()) return;
 
       addMessage('user', userMessageContent);
@@ -143,12 +143,17 @@ export function useWidgetChat(userId: string) {
           }
         }
 
+        // Combina il messaggio dell'utente con il context dei file se presente
+        const messageWithContext = filesContext 
+          ? `${filesContext}\n\n--- MESSAGGIO UTENTE ---\n${userMessageContent}`
+          : userMessageContent;
+
         const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/kommander-query`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId,
-            message: userMessageContent,
+            message: messageWithContext,
             conversationId: conversationIdRef.current,
             site,
           }),

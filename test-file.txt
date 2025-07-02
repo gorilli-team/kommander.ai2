@@ -1,0 +1,30 @@
+Test di Funzionalità File Upload
+
+Questo è un file di test per verificare che la funzionalità di upload file funzioni correttamente nel widget chatbot di Kommander.ai.
+
+Caratteristiche del sistema:
+- Upload locale: I file non lasciano mai il dispositivo dell'utente
+- Privacy totale: Conforme a GDPR e normative privacy
+- Formati supportati: TXT, MD, JSON, CSV, PDF, DOC, DOCX, HTML, JS, TS, PY e altri
+- Limite dimensioni: Massimo 10MB per file
+- Processing intelligente: Estrazione automatica del contenuto
+
+Funzionalità implementate:
+1. Drag & Drop dei file
+2. Selezione tramite click
+3. Preview dei file caricati
+4. Rimozione singola o di tutti i file
+5. Indicatori di stato e feedback
+6. Integrazione nel context delle conversazioni
+
+Istruzioni per il test:
+1. Apri il widget chatbot
+2. Clicca sull'icona graffetta (📎)
+3. Trascina questo file nell'area di upload
+4. Verifica che appaia nella lista dei file caricati
+5. Scrivi una domanda come "Riassumi il contenuto di questo file"
+6. Verifica che l'AI risponda tenendo conto del contenuto del file
+
+Data di creazione: 2025-07-02
+Versione: 1.0.0
+Autore: Kommander.ai Development Team
