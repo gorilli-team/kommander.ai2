@@ -831,10 +831,13 @@
               )
             ),
             React.createElement('input', {
+              id: 'kommander-message-input',
+              name: 'message',
               value: input,
               onChange: (e) => setInput(e.target.value),
               placeholder: 'Scrivi qui…',
-              disabled: isTyping || isSendingRef.current // Disable input while typing or sending
+              disabled: isTyping || isSendingRef.current, // Disable input while typing or sending
+              autoComplete: 'off'
             }),
             React.createElement(
               'button',
