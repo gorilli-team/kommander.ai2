@@ -2,7 +2,7 @@
 'use server';
 
 import { connectToDatabase } from '@/backend/lib/mongodb';
-import { getOpenAI } from '@/backend/lib/openai';
+import { createTrackedChatCompletion } from '@/backend/lib/openai';
 import { buildPromptServer, type ChatMessage, type DocumentSnippet, type SourceReference } from '@/backend/lib/buildPromptServer';
 import type { Faq } from '@/backend/schemas/faq';
 import { getFileContent } from '@/app/training/actions';
@@ -241,17 +241,26 @@ export async function generateChatResponse(
 
     const userSettings = await getSettings(userIdToUse);
     
-    // Inizializza il client OpenAI
-    const openai = getOpenAI();
-    
     // PRIMO PASSAGGIO: L'AI si immedesima nella personalità
     const personalityPrompt = await buildPersonalityImmersionPrompt(userMessage, userSettings);
-    const personalityResponse = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'system', content: personalityPrompt }],
-      temperature: 0.8,
-      max_tokens: 300,
-    });
+    const personalityResponse = await createTrackedChatCompletion(
+      {
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'system', content: personalityPrompt }],
+        temperature: 0.8,
+        max_tokens: 300,
+      },
+      {
+        userId: userIdToUse,
+        conversationId,
+        endpoint: 'personality-immersion',
+        userMessage,
+        metadata: {
+          personality: userSettings?.personality,
+          traits: userSettings?.traits
+        }
+      }
+    );
     
     const personalityContext = personalityResponse.choices[0]?.message?.content || '';
     
@@ -303,12 +312,26 @@ export async function generateChatResponse(
     }
 
     const startTime = Date.now();
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: messages,
-      temperature: temperature,
-      max_tokens: maxTokens,
-    });
+    const completion = await createTrackedChatCompletion(
+      {
+        model: 'gpt-3.5-turbo',
+        messages: messages,
+        temperature: temperature,
+        max_tokens: maxTokens,
+      },
+      {
+        userId: userIdToUse,
+        conversationId,
+        endpoint: 'chat-response',
+        userMessage,
+        metadata: {
+          personality: userSettings?.personality,
+          traits: userSettings?.traits,
+          hasUploadedFiles: extractedTextSnippets.length > 0,
+          fileTypes: extractedTextSnippets.map(f => f.fileName.split('.').pop()).filter(Boolean)
+        }
+      }
+    );
     const processingTime = Date.now() - startTime;
 
     const assistantResponse = completion.choices[0]?.message?.content;
