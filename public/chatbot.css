@@ -858,3 +858,127 @@ body {
   opacity: 0.8;
 }
 
+/* Stili per l'upload dei file */
+.kommander-file-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.kommander-file-btn:hover {
+  background-color: #f3f4f6;
+}
+
+.kommander-file-btn.active {
+  background-color: var(--kommander-primary-color) !important;
+  color: #fff !important;
+}
+
+.kommander-file-uploader {
+  padding: 1rem;
+  border-top: 1px solid var(--kommander-border-color);
+  background-color: #f9fafb; 
+}
+
+.kommander-file-drop-zone {
+  border: 2px dashed var(--kommander-border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.kommander-file-drop-zone:hover {
+  border-color: var(--kommander-primary-color);
+  background-color: #f3f4f6;
+}
+
+.kommander-file-drop-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+}
+
+.kommander-file-drop-content svg {
+  color: var(--kommander-primary-color);
+}
+
+.kommander-file-drop-content p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.kommander-file-drop-content small {
+  font-size: 0.75rem;
+}
+
+.kommander-file-list {
+  margin-top: 1rem;
+}
+
+.kommander-file-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.kommander-clear-files {
+  background: none;
+  border: none;
+  color: var(--kommander-primary-color);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.kommander-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background-color: #fff;
+  border: 1px solid var(--kommander-border-color);
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+}
+
+.kommander-file-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  overflow: hidden;
+}
+
+.kommander-file-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kommander-file-size {
+  color: #6b7280;
+}
+
+.kommander-remove-file {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+

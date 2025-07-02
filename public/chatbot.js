@@ -103,6 +103,131 @@
     const [conversationsList, setConversationsList] = useState([]);
     const [isLoadingConversations, setIsLoadingConversations] = useState(false);
     
+    // File upload state
+    const [showFileUploader, setShowFileUploader] = useState(false);
+    const [uploadedFiles, setUploadedFiles] = useState([]);
+    const [isProcessingFile, setIsProcessingFile] = useState(false);
+    
+    // File processing functions
+    const validateFile = (file) => {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const supportedTypes = [
+        'text/', 'application/json', 'text/csv', 'application/pdf',
+        'application/msword', 'application/vnd.openxmlformats-officedocument',
+        'text/html'
+      ];
+      
+      if (file.size > maxSize) {
+        return { valid: false, error: 'Il file è troppo grande (max 10MB)' };
+      }
+      
+      const isSupported = supportedTypes.some(type => 
+        file.type.includes(type) || 
+        ['.txt', '.md', '.json', '.csv', '.pdf', '.doc', '.docx', '.html', '.htm', '.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.c', '.css', '.scss', '.php']
+          .some(ext => file.name.toLowerCase().endsWith(ext))
+      );
+      
+      if (!isSupported) {
+        return { valid: false, error: 'Formato file non supportato' };
+      }
+      
+      return { valid: true };
+    };
+    
+    const extractTextContent = async (file) => {
+      const fileType = file.type.toLowerCase();
+      const fileName = file.name.toLowerCase();
+      
+      try {
+        if (fileType.includes('text/') || fileName.endsWith('.txt') || fileName.endsWith('.md')) {
+          return await file.text();
+        } else if (fileType.includes('application/json') || fileName.endsWith('.json')) {
+          const text = await file.text();
+          try {
+            const json = JSON.parse(text);
+            return JSON.stringify(json, null, 2);
+          } catch {
+            return text;
+          }
+        } else if (fileType.includes('text/csv') || fileName.endsWith('.csv')) {
+          return await file.text();
+        } else if (fileType.includes('application/pdf') || fileName.endsWith('.pdf')) {
+          return `[PDF File: ${file.name}]\nPer analizzare file PDF, per favore copia e incolla il contenuto testuale del documento.`;
+        } else if (fileType.includes('application/msword') || fileType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') || fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+          return `[Word Document: ${file.name}]\nPer analizzare documenti Word, per favore copia e incolla il contenuto testuale del documento.`;
+        } else if (fileType.includes('text/html') || fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+          const text = await file.text();
+          const div = document.createElement('div');
+          div.innerHTML = text;
+          return div.textContent || div.innerText || text;
+        } else if (fileName.endsWith('.js') || fileName.endsWith('.ts') || fileName.endsWith('.jsx') || fileName.endsWith('.tsx') || fileName.endsWith('.py') || fileName.endsWith('.java') || fileName.endsWith('.cpp') || fileName.endsWith('.c') || fileName.endsWith('.css') || fileName.endsWith('.scss') || fileName.endsWith('.php')) {
+          return await file.text();
+        } else {
+          throw new Error(`Formato file non supportato: ${fileType || 'sconosciuto'}`);
+        }
+      } catch (error) {
+        throw new Error(`Errore durante l'elaborazione del file: ${error.message || 'errore sconosciuto'}`);
+      }
+    };
+    
+    const processFile = async (file) => {
+      setIsProcessingFile(true);
+      
+      try {
+        const validation = validateFile(file);
+        if (!validation.valid) {
+          return { success: false, error: validation.error };
+        }
+        
+        const content = await extractTextContent(file);
+        
+        const processedFile = {
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: file.name,
+          type: file.type || 'unknown',
+          size: file.size,
+          content,
+          uploadedAt: new Date()
+        };
+        
+        setUploadedFiles(prev => [...prev, processedFile]);
+        
+        return { success: true, file: processedFile };
+      } catch (error) {
+        return { 
+          success: false, 
+          error: error.message || 'Errore durante l\'elaborazione del file' 
+        };
+      } finally {
+        setIsProcessingFile(false);
+      }
+    };
+    
+    const removeFile = (fileId) => {
+      setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+    };
+    
+    const getFilesContext = () => {
+      if (uploadedFiles.length === 0) return '';
+      
+      const context = uploadedFiles.map(file => {
+        const truncatedContent = file.content.length > 3000 
+          ? file.content.substring(0, 3000) + '\n\n[...contenuto troncato...]'
+          : file.content;
+        
+        return `=== FILE: ${file.name} ===
+Tipo: ${file.type}
+Dimensione: ${(file.size / 1024).toFixed(1)}KB
+Caricato: ${file.uploadedAt.toLocaleString('it-IT')}
+
+${truncatedContent}
+
+=== FINE FILE ===`;
+      }).join('\n\n');
+      
+      return `DOCUMENTI CARICATI DALL'UTENTE:\n\n${context}\n\nRispondi tenendo conto di questi documenti oltre alle tue conoscenze di base.`;
+    };
+    
     // Genera o recupera un ID utente finale univoco per questo browser
     const [endUserId, setEndUserId] = useState('');
     const endUserIdRef = useRef('');
@@ -522,13 +647,19 @@
           localStorage.setItem(storageKey, newId);
         }
 
-        const requestBody = {
-          userId,
-          message: text,
-          conversationId: conversationIdRef.current,
-          site: window.location.hostname,
-          endUserId: endUserIdRef.current,
-        };
+      // Ottieni il context dei file se presenti
+      const filesContext = getFilesContext();
+      const messageWithContext = filesContext 
+        ? `${filesContext}\n\n--- MESSAGGIO UTENTE ---\n${text}`
+        : text;
+
+      const requestBody = {
+        userId,
+        message: messageWithContext,
+        conversationId: conversationIdRef.current,
+        site: window.location.hostname,
+        endUserId: endUserIdRef.current,
+      };
         
         console.log('[Chatbot] Sending message with data:', requestBody);
         
@@ -810,6 +941,82 @@
               )
             ]
           ),
+          // File uploader area
+          !showConversationsList && showFileUploader && React.createElement(
+            'div',
+            { className: 'kommander-file-uploader' },
+            React.createElement(
+              'div',
+              { 
+                className: 'kommander-file-drop-zone',
+                onDrop: (e) => {
+                  e.preventDefault();
+                  const files = e.dataTransfer.files;
+                  if (files.length > 0) {
+                    Array.from(files).forEach(file => processFile(file));
+                  }
+                },
+                onDragOver: (e) => e.preventDefault(),
+                onDragLeave: (e) => e.preventDefault(),
+                onClick: () => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.multiple = true;
+                  input.accept = '.txt,.md,.json,.csv,.pdf,.doc,.docx,.html,.htm,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.css,.scss,.php';
+                  input.onchange = (e) => {
+                    if (e.target.files) {
+                      Array.from(e.target.files).forEach(file => processFile(file));
+                    }
+                  };
+                  input.click();
+                }
+              },
+              React.createElement(
+                'div',
+                { className: 'kommander-file-drop-content' },
+                React.createElement(
+                  'svg',
+                  { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', width: '24', height: '24', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round', strokeLinejoin: 'round' },
+                  React.createElement('path', { d: 'm21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48' })
+                ),
+                React.createElement('p', null, isProcessingFile ? 'Elaborazione in corso...' : 'Trascina file qui o clicca per caricare'),
+                React.createElement('small', null, 'TXT, MD, JSON, CSV, PDF, DOC, DOCX, HTML, JS, TS, PY • Max 10MB')
+              )
+            ),
+            uploadedFiles.length > 0 && React.createElement(
+              'div',
+              { className: 'kommander-file-list' },
+              React.createElement('div', { className: 'kommander-file-list-header' },
+                React.createElement('span', null, `File caricati (${uploadedFiles.length})`),
+                React.createElement('button', { 
+                  type: 'button', 
+                  onClick: () => setUploadedFiles([]),
+                  className: 'kommander-clear-files'
+                }, 'Rimuovi tutti')
+              ),
+              uploadedFiles.map(file => React.createElement(
+                'div',
+                { key: file.id, className: 'kommander-file-item' },
+                React.createElement(
+                  'div',
+                  { className: 'kommander-file-info' },
+                  React.createElement(
+                    'svg',
+                    { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', width: '12', height: '12', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round', strokeLinejoin: 'round' },
+                    React.createElement('path', { d: 'M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z' }),
+                    React.createElement('polyline', { points: '14,2 14,8 20,8' })
+                  ),
+                  React.createElement('span', { className: 'kommander-file-name' }, file.name),
+                  React.createElement('span', { className: 'kommander-file-size' }, `${(file.size / 1024).toFixed(1)}KB`)
+                ),
+                React.createElement('button', {
+                  type: 'button',
+                  onClick: () => removeFile(file.id),
+                  className: 'kommander-remove-file'
+                }, '×')
+              ))
+            )
+          ),
           !showConversationsList && React.createElement(
             'form',
             {
@@ -821,13 +1028,26 @@
             },
             React.createElement(
               'button',
-
               { type: 'button', className: 'kommander-restart', onClick: () => setShowRestartConfirm(true), disabled: isTyping, 'aria-label': 'Ricomincia' },
               React.createElement(
                 'svg',
                 { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 1920 1920', width: '16', height: '16', fill: 'currentColor' },
                 React.createElement('path', { d: 'M960 0v112.941c467.125 0 847.059 379.934 847.059 847.059 0 467.125-379.934 847.059-847.059 847.059-467.125 0-847.059-379.934-847.059-847.059 0-267.106 126.607-515.915 338.824-675.727v393.374h112.94V112.941H0v112.941h342.89C127.058 407.38 0 674.711 0 960c0 529.355 430.645 960 960 960s960-430.645 960-960S1489.355 0 960 0' })
-
+              )
+            ),
+            React.createElement(
+              'button',
+              { 
+                type: 'button', 
+                className: `kommander-file-btn ${showFileUploader ? 'active' : ''}`, 
+                onClick: () => setShowFileUploader(!showFileUploader), 
+                disabled: isTyping, 
+                'aria-label': 'Carica file' 
+              },
+              React.createElement(
+                'svg',
+                { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', width: '16', height: '16', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round', strokeLinejoin: 'round' },
+                React.createElement('path', { d: 'm21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48' })
               )
             ),
             React.createElement('input', {
