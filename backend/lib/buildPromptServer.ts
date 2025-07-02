@@ -101,11 +101,17 @@ export function buildPromptServer(
   let cleanUserMessage = userMessage;
   let embeddedFileContent = '';
   
+  console.log('[buildPromptServer] DEBUG - userMessage preview:', userMessage.substring(0, 200));
+  console.log('[buildPromptServer] DEBUG - hasEmbeddedFiles:', hasEmbeddedFiles);
+  
   if (hasEmbeddedFiles) {
     const parts = userMessage.split('--- MESSAGGIO UTENTE ---');
+    console.log('[buildPromptServer] DEBUG - split parts length:', parts.length);
     if (parts.length === 2) {
       embeddedFileContent = parts[0].trim();
       cleanUserMessage = parts[1].trim();
+      console.log('[buildPromptServer] DEBUG - embeddedFileContent length:', embeddedFileContent.length);
+      console.log('[buildPromptServer] DEBUG - cleanUserMessage:', cleanUserMessage);
     }
   }
   
@@ -216,19 +222,28 @@ export function buildPromptServer(
     context += "\n";
   }
   
-  // Aggiungi il contenuto dei file embedded se presente
+  // PRIORITÀ ASSOLUTA: File caricati dall'utente
   if (hasEmbeddedFiles && embeddedFileContent) {
-    context += "📎 IMPORTANTE: L'UTENTE HA CARICATO DEI FILE DIRETTAMENTE!\n\n";
-    context += "📄 CONTENUTO DEI FILE CARICATI DALL'UTENTE:\n\n";
-    context += embeddedFileContent + "\n\n";
-    context += "🔍 ISTRUZIONI PER L'ANALISI DEI FILE CARICATI:\n";
-    context += "1. ✅ HAI ACCESSO COMPLETO al contenuto dei file caricati sopra riportati\n";
-    context += "2. 📋 ANALIZZA E USA il contenuto effettivo dei file quando rilevante\n";
-    context += "3. 🎯 Se l'utente fa domande sui file caricati, rispondi basandoti sul loro contenuto\n";
-    context += "4. 📝 Se l'utente chiede un riassunto dei file caricati, riassumi il contenuto fornito\n";
-    context += "5. 🔍 CITA specificamente le informazioni trovate nei file caricati quando le usi\n";
-    context += "6. ⚡ Usa SIA i file caricati che le informazioni del database per risposte complete\n";
-    context += "\n💡 Ricorda: Hai accesso al contenuto testuale completo dei file caricati!\n\n";
+    context += `\n\n🚨🚨🚨 ATTENZIONE! L'UTENTE HA CARICATO UN FILE! 🚨🚨🚨\n\n`;
+    context += `QUESTO È IL CONTENUTO DEL FILE CARICATO DALL'UTENTE:\n\n`;
+    context += `${embeddedFileContent}\n\n`;
+    context += `🎯 ISTRUZIONI PRIORITARIE:\n`;
+    context += `- L'utente vuole che analizzi QUESTO file caricato\n`;
+    context += `- Se chiede un riassunto → riassumi SOLO questo contenuto\n`;
+    context += `- Se fa domande → rispondi basandoti SOLO su questo contenuto\n`;
+    context += `- NON usare informazioni da altri file nel database\n`;
+    context += `- IGNORA completamente altri documenti\n`;
+    context += `- CONCENTRATI ESCLUSIVAMENTE sul file appena caricato\n\n`;
+    
+    // Rimuovi le altre informazioni dal database per evitare confusione
+    return {
+      messages: [
+        { role: 'system', content: context.trim() },
+        ...history,
+        { role: 'user', content: cleanUserMessage }
+      ],
+      sources: []
+    };
   }
   
   context += "Usa le seguenti informazioni per rispondere alla query dell'utente:\n\n";
