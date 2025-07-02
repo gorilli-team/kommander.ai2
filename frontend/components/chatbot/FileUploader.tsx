@@ -11,9 +11,10 @@ import { useFileProcessor, ProcessedFile, FileProcessingResult } from '@/fronten
 interface FileUploaderProps {
   onFilesProcessed?: (files: ProcessedFile[]) => void;
   className?: string;
+  userId?: string;
 }
 
-export function FileUploader({ onFilesProcessed, className }: FileUploaderProps) {
+export function FileUploader({ onFilesProcessed, className, userId }: FileUploaderProps) {
   const { 
     uploadedFiles, 
     isProcessing, 
@@ -34,7 +35,7 @@ export function FileUploader({ onFilesProcessed, className }: FileUploaderProps)
 
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      const results = await processFiles(files);
+      const results = await processFiles(files, userId);
       setResults(results);
       // Chiamiamo la callback dopo che i file sono stati processati
       setTimeout(() => {
@@ -47,7 +48,7 @@ export function FileUploader({ onFilesProcessed, className }: FileUploaderProps)
   const handleFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const results = await processFiles(files);
+      const results = await processFiles(files, userId);
       setResults(results);
       // Chiamiamo la callback dopo che i file sono stati processati
       setTimeout(() => {

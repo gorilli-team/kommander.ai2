@@ -22,11 +22,45 @@ export function useFileProcessor() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Funzione per estrarre testo da diversi formati file
-  const extractTextContent = useCallback(async (file: File): Promise<string> => {
+  const extractTextContent = useCallback(async (file: File, userId?: string): Promise<string> => {
     const fileType = file.type.toLowerCase();
     const fileName = file.name.toLowerCase();
 
     try {
+      // Per PDF e DOCX, usa il server se possibile
+      if ((fileType.includes('application/pdf') || fileName.endsWith('.pdf') || 
+           fileType.includes('application/msword') || 
+           fileType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') || 
+           fileName.endsWith('.doc') || fileName.endsWith('.docx')) && userId) {
+        
+        console.log('Processing document on server:', file.name);
+        
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('userId', userId);
+          
+          const response = await fetch('/api/process-file', {
+            method: 'POST',
+            body: formData
+          });
+          
+          const result = await response.json();
+          
+          if (result.success && result.content && result.content.trim()) {
+            return result.content;
+          } else {
+            // Fallback se il server non può estrarre il testo
+            return `[${file.name}]\n\n⚠️ Non è stato possibile estrarre testo da questo documento.\n\nSe è un documento testuale (non una scansione):\n1. Aprilo\n2. Seleziona tutto il testo (Ctrl+A o Cmd+A)\n3. Copialo e incollalo in un nuovo messaggio\n\nAltrimenti posso aiutarti con le mie conoscenze di base sull'argomento.`;
+          }
+        } catch (serverError) {
+          console.error('Server processing failed:', serverError);
+          // Fallback al messaggio di istruzioni
+          return `[${file.name}]\n\n⚠️ Elaborazione server non disponibile.\n\nPer analizzare questo documento:\n1. Aprilo\n2. Seleziona tutto il testo (Ctrl+A o Cmd+A)\n3. Copialo e incollalo in un nuovo messaggio`;
+        }
+      }
+      
+      // Elaborazione locale per altri tipi di file
       if (fileType.includes('text/') || fileName.endsWith('.txt') || fileName.endsWith('.md')) {
         // File di testo semplice
         return await file.text();
@@ -45,21 +79,6 @@ export function useFileProcessor() {
         // File CSV
         const text = await file.text();
         return text;
-      }
-      else if (fileType.includes('application/pdf') || fileName.endsWith('.pdf')) {
-        // Per i PDF proviamo a estrarre il testo, altrimenti fallback
-        try {
-          // Tentativo di estrazione testo da PDF (limitato nel browser)
-          console.log('Processing PDF file:', file.name);
-          return `[PDF File: ${file.name}]\n\n⚠️ IMPORTANTE: Questo è un file PDF che potrebbe contenere testo non estraibile automaticamente nel browser.\n\nSe questo è un documento di testo (non una scansione), per analizzarlo completamente:\n1. Apri il PDF\n2. Seleziona tutto il testo (Ctrl+A o Cmd+A)\n3. Copia il testo\n4. Incollalo in un nuovo messaggio\n\nSe hai bisogno di informazioni generali sulla partita IVA forfettaria, posso aiutarti con le mie conoscenze di base.\n\nNome file: ${file.name}\nDimensione: ${(file.size / 1024).toFixed(1)}KB`;
-        } catch (error) {
-          console.error('Error processing PDF:', error);
-          return `[PDF File: ${file.name}]\nErrore nell'elaborazione del PDF. Per favore copia e incolla il contenuto testuale.`;
-        }
-      }
-      else if (fileType.includes('application/msword') || fileType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') || fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
-        // Per i documenti Word useremo un fallback
-        return `[Word Document: ${file.name}]\nPer analizzare documenti Word, per favore copia e incolla il contenuto testuale del documento.`;
       }
       else if (fileType.includes('text/html') || fileName.endsWith('.html') || fileName.endsWith('.htm')) {
         // File HTML - rimuoviamo i tag
@@ -107,7 +126,7 @@ export function useFileProcessor() {
   }, []);
 
   // Processo un singolo file
-  const processFile = useCallback(async (file: File): Promise<FileProcessingResult> => {
+  const processFile = useCallback(async (file: File, userId?: string): Promise<FileProcessingResult> => {
     setIsProcessing(true);
 
     try {
@@ -116,7 +135,7 @@ export function useFileProcessor() {
         return { success: false, error: validation.error };
       }
 
-      const content = await extractTextContent(file);
+      const content = await extractTextContent(file, userId);
       
       const processedFile: ProcessedFile = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -141,11 +160,11 @@ export function useFileProcessor() {
   }, [extractTextContent, validateFile]);
 
   // Processo multipli file
-  const processFiles = useCallback(async (files: FileList): Promise<FileProcessingResult[]> => {
+  const processFiles = useCallback(async (files: FileList, userId?: string): Promise<FileProcessingResult[]> => {
     const results: FileProcessingResult[] = [];
     
     for (let i = 0; i < files.length; i++) {
-      const result = await processFile(files[i]);
+      const result = await processFile(files[i], userId);
       results.push(result);
     }
 

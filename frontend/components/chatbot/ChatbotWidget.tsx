@@ -198,6 +198,7 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
               <div className="border-t border-border p-4 bg-muted/30">
                 <FileUploader 
                   className="" 
+                  userId={userId}
                   onFilesProcessed={(files) => {
                     if (files.length > 0) {
                       // Aggiungi messaggio di sistema per confermare il caricamento
