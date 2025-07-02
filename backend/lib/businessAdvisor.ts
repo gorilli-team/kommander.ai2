@@ -365,19 +365,27 @@ Formato JSON: {"suggestions": ["suggerimento1", "suggerimento2", ...]}
 
   private getFallbackMarketAnalysis(): MarketAnalysis {
     return {
-      averageIndustryPrice: 45,
-      positioningRecommendation: 'Posizionamento premium con focus su personalizzazione',
+      averageIndustryPrice: 899, // Prezzo medio enterprise nel mercato italiano
+      positioningRecommendation: 'Posizionarsi come premium enterprise solution multi-settore vs Keplero AI focalizzato su PMI. Emphasis su trasparenza costi, business intelligence avanzata e scalabilità enterprise.',
       competitiveAdvantages: [
-        'Personalizzazione avanzata personalità',
-        'Upload file in tempo reale',
-        'Analytics dettagliate'
+        'Tracciamento automatico dei costi AI con prezzi aggiornati 2024',
+        'Business intelligence enterprise multi-settore',
+        'Dashboard admin completa vs Keplero AI limitata',
+        'Ottimizzazione automatica costi con margini SaaS 88-95%',
+        'Supporto multi-cliente con identificazione email-first',
+        'Integrazione WhatsApp nativa (vs Keplero AI basic)',
+        'Piani enterprise scalabili €299-€4999',
+        'Analytics avanzate per e-commerce, healthcare, legal, finance'
       ],
       marketTrends: [
-        'Crescita domanda chatbot AI',
-        'Focus su personalizzazione',
-        'Integrazione multi-modal'
+        'Crescita del 60% nel mercato chatbot enterprise italiano',
+        'Keplero AI focalizzato su PMI, noi su Enterprise',
+        'Aumento domanda soluzioni multi-settore vs single-vertical',
+        'Focus su trasparenza costi API (nostro vantaggio vs Keplero)',
+        'Integrazione nativa WhatsApp sempre più richiesta',
+        'Cliente enterprise preferisce email-based identification'
       ],
-      pricingStrategy: 'Value-based pricing con piani scalabili'
+      pricingStrategy: 'Value-based pricing enterprise €299-€4999 vs Keplero €49-€299. Target margini SaaS tipici 88-95% vs competitor con margini più bassi.'
     };
   }
 

@@ -355,12 +355,13 @@ const AdminDashboard = () => {
                         </div>
                         <div>
                           <div className="font-medium">
-                            {client.clientEmail || client.clientId}
+                            {client.clientEmail || client.clientId || 'Cliente Enterprise'}
                           </div>
                           <div className="text-sm text-gray-500">
                             {client.companyName && <span>{client.companyName} • </span>}
                             {client.totalRequests} richieste
                             {client.sector && <span> • {client.sector}</span>}
+                            {client.planType && <span> • Piano {client.planType}</span>}
                           </div>
                         </div>
                       </div>

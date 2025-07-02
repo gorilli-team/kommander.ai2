@@ -343,25 +343,35 @@ class CostTracker {
     }
   }
 
-  async getTopSpendingClients(limit: number = 10): Promise<Array<{ clientId: string; totalCost: number; totalRequests: number }>> {
+  async getTopSpendingClients(limit: number = 10): Promise<Array<{ clientId: string; clientEmail?: string; companyName?: string; sector?: string; totalCost: number; totalRequests: number }>> {
     try {
       const collection = await this.getCollection();
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
       const pipeline = [
-        { $match: { timestamp: { $gte: thirtyDaysAgo }, clientId: { $exists: true } } },
+        { $match: { timestamp: { $gte: thirtyDaysAgo }, $or: [{ clientId: { $exists: true } }, { clientEmail: { $exists: true } }] } },
         {
           $group: {
-            _id: '$clientId',
+            _id: {
+              clientId: '$clientId',
+              clientEmail: '$clientEmail',
+              companyName: '$companyName'
+            },
             totalCost: { $sum: '$totalCost' },
-            totalRequests: { $sum: 1 }
+            totalRequests: { $sum: 1 },
+            sector: { $first: '$metadata.sector' },
+            planType: { $first: '$metadata.planType' }
           }
         },
         { $sort: { totalCost: -1 } },
         { $limit: limit },
         {
           $project: {
-            clientId: '$_id',
+            clientId: '$_id.clientId',
+            clientEmail: '$_id.clientEmail', 
+            companyName: '$_id.companyName',
+            sector: 1,
+            planType: 1,
             totalCost: 1,
             totalRequests: 1,
             _id: 0
