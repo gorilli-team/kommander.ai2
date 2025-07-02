@@ -8,6 +8,8 @@ export async function GET(
 ) {
   try {
     const { userId } = params;
+    const { searchParams } = new URL(request.url);
+    const endUserId = searchParams.get('endUserId');
     
     if (!userId) {
       return NextResponse.json({ error: 'userId è richiesto' }, { status: 400 });
@@ -15,12 +17,30 @@ export async function GET(
 
     const { db } = await connectToDatabase();
     
+    // Se abbiamo endUserId, filtriamo le conversazioni per quello specifico browser
+    // Altrimenti prendiamo tutte le conversazioni dell'userId (per retrocompatibilità)
+    let query: any = { userId };
+    
+    if (endUserId) {
+      // Filtriamo per conversazioni che contengono l'endUserId nel conversationId
+      // Le conversazioni del widget hanno formato: konv-timestamp-random per il browser specifico
+      query = {
+        userId,
+        // Le conversazioni del widget iniziano con "konv-" 
+        conversationId: { $regex: `^konv-` }
+      };
+    }
+    
+    console.log(`[API] Searching conversations for userId: ${userId}, endUserId: ${endUserId}`);
+    
     // Recupera tutte le conversazioni per questo utente, ordinate per data di ultimo messaggio
     const conversations = await db
       .collection<ConversationDocument>('conversations')
-      .find({ userId })
+      .find(query)
       .sort({ updatedAt: -1 })
       .toArray();
+      
+    console.log(`[API] Found ${conversations.length} conversations`);
 
     // Mappa le conversazioni per includere informazioni utili
     const formattedConversations = conversations.map(conv => {

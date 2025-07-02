@@ -395,14 +395,23 @@
 
     // Funzione per caricare la lista delle conversazioni
     const loadConversationsList = async () => {
+      if (!endUserId) {
+        console.log('[Chatbot] endUserId not ready yet, skipping conversations load');
+        return;
+      }
+      
       setIsLoadingConversations(true);
       try {
-        const res = await fetch(`${ORIGIN}/api/user-conversations/${userId}`);
+        const url = `${ORIGIN}/api/user-conversations/${userId}?endUserId=${encodeURIComponent(endUserId)}`;
+        console.log('[Chatbot] Loading conversations from:', url);
+        
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
+          console.log('[Chatbot] Loaded conversations:', data.conversations?.length || 0);
           setConversationsList(data.conversations || []);
         } else {
-          console.error('Failed to load conversations list');
+          console.error('Failed to load conversations list, status:', res.status);
         }
       } catch (err) {
         console.error('Error loading conversations:', err);
@@ -413,9 +422,13 @@
 
     // Funzione per aprire una conversazione specifica
     const openConversation = (convId) => {
+      console.log('[Chatbot] Opening conversation:', convId);
       conversationIdRef.current = convId;
       setConversationId(convId);
-      localStorage.setItem(storageKey, convId);
+      if (storageKey) {
+        localStorage.setItem(storageKey, convId);
+        console.log('[Chatbot] Saved conversation ID to localStorage:', convId);
+      }
       setMessages([]); // Clear current messages
       lastTimestampRef.current = '';
       setShowConversationsList(false); // Torna alla chat
@@ -425,9 +438,13 @@
     // Funzione per creare una nuova conversazione
     const startNewConversation = () => {
       const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.log('[Chatbot] Starting new conversation:', newId);
       conversationIdRef.current = newId;
       setConversationId(newId);
-      localStorage.setItem(storageKey, newId);
+      if (storageKey) {
+        localStorage.setItem(storageKey, newId);
+        console.log('[Chatbot] Saved new conversation ID to localStorage:', newId);
+      }
       setMessages([]);
       lastTimestampRef.current = '';
       setShowConversationsList(false);
