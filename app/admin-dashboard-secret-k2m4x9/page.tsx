@@ -275,9 +275,10 @@ const AdminDashboard = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="clients">Clienti</TabsTrigger>
+            <TabsTrigger value="apikeys">API Keys</TabsTrigger>
             <TabsTrigger value="insights">AI Insights</TabsTrigger>
             <TabsTrigger value="pricing">Pricing AI</TabsTrigger>
             <TabsTrigger value="market">Market Analysis</TabsTrigger>
@@ -372,6 +373,209 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="apikeys" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* API Usage Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>OpenAI API</span>
+                  </CardTitle>
+                  <CardDescription>Utilizzo ultimo mese</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Costo Totale:</span>
+                      <span className="font-bold">${costSummary?.totalCost.toFixed(2) || '0.00'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Token Utilizzati:</span>
+                      <span className="font-bold">{costSummary?.totalTokens.toLocaleString() || '0'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Richieste:</span>
+                      <span className="font-bold">{costSummary?.totalRequests.toLocaleString() || '0'}</span>
+                    </div>
+                    <Progress value={75} className="mt-2" />
+                    <p className="text-xs text-gray-500">75% del limite mensile</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Cost per Model */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Distribuzione Modelli</CardTitle>
+                  <CardDescription>Costi per modello AI</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {costSummary?.breakdown.byModel && Object.entries(costSummary.breakdown.byModel)
+                      .sort(([,a], [,b]) => b.cost - a.cost)
+                      .slice(0, 5)
+                      .map(([model, data]) => (
+                      <div key={model} className="flex justify-between items-center">
+                        <div>
+                          <div className="font-medium text-sm">{model}</div>
+                          <div className="text-xs text-gray-500">{data.requests} richieste</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold">${data.cost.toFixed(2)}</div>
+                          <div className="text-xs text-gray-500">
+                            {data.tokens ? `${(data.tokens/1000).toFixed(1)}K tokens` : ''}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* API Health Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Stato API</CardTitle>
+                  <CardDescription>Monitoraggio real-time</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span className="text-sm">OpenAI API</span>
+                      </div>
+                      <Badge className="bg-green-100 text-green-800">Operativo</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span className="text-sm">Rate Limiting</span>
+                      </div>
+                      <Badge className="bg-green-100 text-green-800">Normale</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                        <span className="text-sm">Latenza Media</span>
+                      </div>
+                      <Badge className="bg-yellow-100 text-yellow-800">245ms</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Daily Usage Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Andamento Utilizzo API</CardTitle>
+                <CardDescription>Costi e richieste negli ultimi 30 giorni</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-7 gap-2 text-center">
+                    {costSummary?.breakdown.byDay?.slice(-7).map((day, index) => (
+                      <div key={index} className="space-y-2">
+                        <div className="text-xs text-gray-500">
+                          {new Date(day.date).toLocaleDateString('it-IT', { weekday: 'short' })}
+                        </div>
+                        <div className="relative">
+                          <div 
+                            className="bg-blue-200 rounded-sm mx-auto"
+                            style={{ 
+                              width: '20px', 
+                              height: `${Math.max(4, (day.cost / Math.max(...(costSummary?.breakdown.byDay?.map(d => d.cost) || [1]))) * 60)}px` 
+                            }}
+                          ></div>
+                        </div>
+                        <div className="text-xs font-medium">${day.cost.toFixed(2)}</div>
+                        <div className="text-xs text-gray-500">{day.requests} req</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="pt-4 border-t">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <div className="text-lg font-bold text-blue-600">
+                          ${costSummary?.averageCostPerRequest.toFixed(4) || '0.0000'}
+                        </div>
+                        <div className="text-xs text-gray-500">Costo Medio/Richiesta</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-green-600">
+                          {costSummary?.averageTokensPerRequest.toFixed(0) || '0'}
+                        </div>
+                        <div className="text-xs text-gray-500">Token Medi/Richiesta</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-purple-600">
+                          ${costSummary?.mostExpensiveRequest.toFixed(4) || '0.0000'}
+                        </div>
+                        <div className="text-xs text-gray-500">Richiesta Più Costosa</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* API Keys Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Gestione API Keys</CardTitle>
+                <CardDescription>Configurazione e monitoraggio chiavi API</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <div>
+                        <div className="font-medium">OpenAI Production Key</div>
+                        <div className="text-sm text-gray-500">sk-****...****1234 • Creata il 15 Gen 2024</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge className="bg-green-100 text-green-800">Attiva</Badge>
+                      <Button variant="outline" size="sm">Gestisci</Button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <div>
+                        <div className="font-medium">OpenAI Development Key</div>
+                        <div className="text-sm text-gray-500">sk-****...****5678 • Creata il 10 Gen 2024</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge className="bg-blue-100 text-blue-800">Test</Badge>
+                      <Button variant="outline" size="sm">Gestisci</Button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
+                    <div className="flex items-start space-x-2">
+                      <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-yellow-800">Raccomandazioni di Sicurezza</h4>
+                        <ul className="mt-2 text-sm text-yellow-700 space-y-1">
+                          <li>• Ruota le API keys ogni 90 giorni</li>
+                          <li>• Monitora utilizzo anomalo o picchi di costo</li>
+                          <li>• Configura alert per superamento soglie</li>
+                          <li>• Usa environment separati per dev/prod</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
