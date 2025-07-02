@@ -52,14 +52,21 @@ export async function appendMessages(
   conversationId: string,
   messages: ConversationMessageDisplay[],
   site?: string,
+  endUserId?: string,
 ): Promise<void> {
   const { db } = await connectToDatabase();
   const now = new Date();
+  
+  const insertData: any = { createdAt: now, site };
+  if (endUserId) {
+    insertData.endUserId = endUserId;
+    console.log('[appendMessages] Saving with endUserId:', endUserId);
+  }
 
   await db.collection<ConversationDocument>('conversations').updateOne(
     { userId, conversationId },
     {
-      $setOnInsert: { createdAt: now, site },
+      $setOnInsert: insertData,
       $set: { updatedAt: now },
       $push: {
         messages: {

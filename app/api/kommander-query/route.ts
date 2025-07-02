@@ -38,7 +38,9 @@ export async function POST(request: NextRequest) {
     }
     
     const rawBody = await request.json();
-    const { userId, message, history, conversationId, site } = withInputSanitization(rawBody);
+    const { userId, message, history, conversationId, site, endUserId } = withInputSanitization(rawBody);
+    
+    console.log('[kommander-query] Request data:', { userId, conversationId, endUserId, site });
     
     // Input validation
     if (!userId || !message) {
@@ -83,6 +85,7 @@ export async function POST(request: NextRequest) {
         convId,
         [{ role: 'user', text: message, timestamp: new Date().toISOString() }],
         site,
+        endUserId
       );
       return NextResponse.json({ conversationId: convId, handledBy }, { headers: corsHeaders });
     }
@@ -122,7 +125,8 @@ export async function POST(request: NextRequest) {
         { role: 'user', text: message, timestamp: new Date().toISOString() },
         { role: 'assistant', text: result.response as string, timestamp: new Date().toISOString() },
       ],
-      site
+      site,
+      endUserId
     );
 
     // Log successful chat request

@@ -22,10 +22,10 @@ export async function GET(
     let query: any = { userId };
     
     if (endUserId) {
-      // Filtriamo per conversazioni che contengono l'endUserId nel conversationId
-      // Le conversazioni del widget hanno formato: konv-timestamp-random per il browser specifico
+      // Filtriamo per conversazioni che hanno l'endUserId specifico
       query = {
         userId,
+        endUserId: endUserId,
         // Le conversazioni del widget iniziano con "konv-" 
         conversationId: { $regex: `^konv-` }
       };

@@ -500,6 +500,7 @@
             message: text,
             conversationId: conversationIdRef.current,
             site: window.location.hostname,
+            endUserId: endUserIdRef.current,
           }),
         });
 

@@ -59,6 +59,8 @@ export const ConversationSchema = z.object({
   conversationId: z.string().optional(),
   site: z.string().optional(),
   handledBy: z.enum(['bot', 'agent']).default('bot').optional(),
+  // Widget-specific field for end user identification
+  endUserId: z.string().optional(),
 });
 
 export const ConversationSummarySchema = z.object({
