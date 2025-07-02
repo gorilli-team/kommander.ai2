@@ -48,9 +48,12 @@ export async function GET(
       const firstUserMessage = conv.messages?.find((msg: any) => msg.role === 'user');
       const lastMessage = conv.messages?.[conv.messages.length - 1];
       
+      // Support both 'text' and 'content' fields for backward compatibility
+      const messageText = firstUserMessage?.text || firstUserMessage?.content || 'Conversazione senza titolo';
+      
       return {
         id: conv.conversationId,
-        preview: firstUserMessage?.text?.substring(0, 50) || 'Conversazione senza titolo',
+        preview: messageText.substring(0, 50),
         lastMessage: lastMessage?.timestamp || conv.updatedAt,
         messagesCount: conv.messages?.length || 0,
         createdAt: conv.createdAt,

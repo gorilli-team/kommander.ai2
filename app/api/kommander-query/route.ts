@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
           { role: 'system', text: '🔄 L\'utente ha richiesto l\'intervento di un operatore umano', timestamp: new Date().toISOString() }
         ],
         site,
+        endUserId
       );
       return NextResponse.json({ 
         reply: 'Certamente! Ti metto subito in contatto con uno specialista. Nel frattempo, se vuoi, puoi continuare a farmi domande: potrei già aiutarti a trovare una soluzione mentre attendi la risposta di un operatore.',

@@ -38,7 +38,7 @@ export async function getConversations(): Promise<ConversationDisplayItem[]> {
     handledBy: doc.handledBy ?? 'bot',
     messages: doc.messages.map((m) => ({
       role: m.role,
-      text: m.text,
+      text: m.text || m.content, // Support both fields
       timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
     })),
     site: doc.site,
@@ -71,8 +71,12 @@ export async function appendMessages(
       $push: {
         messages: {
           $each: messages.map((m) => ({
-            ...m,
+            id: `${conversationId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            role: m.role,
+            content: m.text, // Map text to content per schema
             timestamp: new Date(m.timestamp),
+            // Keep legacy field for backward compatibility
+            text: m.text,
           })),
         },
       },
@@ -112,7 +116,7 @@ export async function getConversation(
     handledBy: doc.handledBy ?? 'bot',
     messages: doc.messages.map((m) => ({
       role: m.role,
-      text: m.text,
+      text: m.text || m.content, // Support both fields
       timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
     })),
     site: doc.site,
