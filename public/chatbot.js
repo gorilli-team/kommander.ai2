@@ -522,29 +522,37 @@
           localStorage.setItem(storageKey, newId);
         }
 
+        const requestBody = {
+          userId,
+          message: text,
+          conversationId: conversationIdRef.current,
+          site: window.location.hostname,
+          endUserId: endUserIdRef.current,
+        };
+        
+        console.log('[Chatbot] Sending message with data:', requestBody);
+        
         const res = await fetch(`${ORIGIN}/api/kommander-query`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            message: text,
-            conversationId: conversationIdRef.current,
-            site: window.location.hostname,
-            endUserId: endUserIdRef.current,
-          }),
+          body: JSON.stringify(requestBody),
         });
 
         const data = await res.json();
+        console.log('[Chatbot] Response from kommander-query:', data);
 
         if (data.conversationId) {
           conversationIdRef.current = data.conversationId;
           setConversationId(data.conversationId);
           localStorage.setItem(storageKey, data.conversationId);
+          console.log('[Chatbot] Updated conversation ID:', data.conversationId);
         }
         if (data.handledBy) {
           setHandledBy(data.handledBy);
+          console.log('[Chatbot] Updated handledBy:', data.handledBy);
         }
         if (data.error) {
+          console.error('[Chatbot] API Error:', data.error);
           addMessage('system', 'Si è verificato un errore: ' + data.error);
         }
         // NON aggiungere data.reply immediatamente - arriverà tramite polling
