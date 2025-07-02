@@ -24,7 +24,11 @@ class WhatsAppBot {
 
   constructor(userId: string) {
     this.userId = userId;
-    this.authPath = path.join(process.cwd(), `whatsapp-auth-${userId}`);
+    // Use /tmp in production (Vercel/serverless) or cwd in development
+    const baseDir = process.env.VERCEL || process.env.NODE_ENV === 'production' 
+      ? '/tmp' 
+      : process.cwd();
+    this.authPath = path.join(baseDir, `whatsapp-auth-${userId}`);
   }
 
   async start(): Promise<{ success: boolean; qrCode?: string; error?: string }> {
