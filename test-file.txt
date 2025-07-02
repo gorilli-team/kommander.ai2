@@ -1,30 +1,45 @@
-Test di Funzionalità File Upload
+CERTIFICATO PARTITA IVA FORFETTARIA - INFORMAZIONI ESSENZIALI
 
-Questo è un file di test per verificare che la funzionalità di upload file funzioni correttamente nel widget chatbot di Kommander.ai.
+Questo documento contiene informazioni specifiche sulla partita IVA forfettaria.
 
-Caratteristiche del sistema:
-- Upload locale: I file non lasciano mai il dispositivo dell'utente
-- Privacy totale: Conforme a GDPR e normative privacy
-- Formati supportati: TXT, MD, JSON, CSV, PDF, DOC, DOCX, HTML, JS, TS, PY e altri
-- Limite dimensioni: Massimo 10MB per file
-- Processing intelligente: Estrazione automatica del contenuto
+COS'È IL REGIME FORFETTARIO:
+Il regime forfettario è un sistema di tassazione agevolato per le piccole attività.
+Prevede un'imposta sostitutiva del 15% (5% per i primi 5 anni di attività).
+È rivolto a chi ha ricavi annui non superiori a 65.000 euro.
 
-Funzionalità implementate:
-1. Drag & Drop dei file
-2. Selezione tramite click
-3. Preview dei file caricati
-4. Rimozione singola o di tutti i file
-5. Indicatori di stato e feedback
-6. Integrazione nel context delle conversazioni
+VANTAGGI PRINCIPALI:
+- Tassazione agevolata al 15% (o 5% per nuove attività)
+- Niente IVA su fatture emesse
+- Contabilità semplificata
+- Niente IRAP
+- Niente split payment
 
-Istruzioni per il test:
-1. Apri il widget chatbot
-2. Clicca sull'icona graffetta (📎)
-3. Trascina questo file nell'area di upload
-4. Verifica che appaia nella lista dei file caricati
-5. Scrivi una domanda come "Riassumi il contenuto di questo file"
-6. Verifica che l'AI risponda tenendo conto del contenuto del file
+REQUISITI DI ACCESSO:
+- Ricavi/compensi anno precedente non superiori a 65.000€
+- Non aver superato le spese per lavoro dipendente/collaboratori di 20.000€
+- Non possedere beni strumentali superiori a 20.000€
+- Non aver esercitato attività prevalentemente commerciali
 
-Data di creazione: 2025-07-02
-Versione: 1.0.0
-Autore: Kommander.ai Development Team
+OBBLIGHI:
+- Numerazione e conservazione fatture emesse
+- Conservazione documenti di acquisto
+- Comunicazione dati fatture (se applicabile)
+- Dichiarazione annuale dei redditi
+
+LIMITAZIONI:
+- Non possono scaricare l'IVA
+- Non possono cedere crediti IVA
+- Limitazioni nella deducibilità di alcuni costi
+
+COME SI CALCOLA L'IMPOSTA:
+Ricavi - (Ricavi × Coefficiente di redditività) = Reddito imponibile
+Reddito imponibile × 15% (o 5%) = Imposta dovuta
+
+ESEMPIO PRATICO:
+Ricavi annui: 40.000€
+Coefficienti di redditività: 78% (servizi)
+Reddito imponibile: 40.000 × 78% = 31.200€
+Imposta: 31.200 × 15% = 4.680€
+
+Documento aggiornato al 2025
+Fonte: Agenzia delle Entrate
