@@ -99,6 +99,9 @@
 
     const isSendingRef = useRef(false);
     const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+    const [showConversationsList, setShowConversationsList] = useState(false);
+    const [conversationsList, setConversationsList] = useState([]);
+    const [isLoadingConversations, setIsLoadingConversations] = useState(false);
 
     const restartConversation = () => {
 
@@ -339,6 +342,52 @@
       prevHandledBy.current = handledBy;
     }, [handledBy]);
 
+    // Funzione per caricare la lista delle conversazioni
+    const loadConversationsList = async () => {
+      setIsLoadingConversations(true);
+      try {
+        const res = await fetch(`${ORIGIN}/api/user-conversations/${userId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setConversationsList(data.conversations || []);
+        } else {
+          console.error('Failed to load conversations list');
+        }
+      } catch (err) {
+        console.error('Error loading conversations:', err);
+      } finally {
+        setIsLoadingConversations(false);
+      }
+    };
+
+    // Funzione per aprire una conversazione specifica
+    const openConversation = (convId) => {
+      conversationIdRef.current = convId;
+      setConversationId(convId);
+      localStorage.setItem(storageKey, convId);
+      setMessages([]); // Clear current messages
+      lastTimestampRef.current = '';
+      setShowConversationsList(false); // Torna alla chat
+      // fetchInitial sarà chiamato automaticamente dal useEffect
+    };
+
+    // Funzione per creare una nuova conversazione
+    const startNewConversation = () => {
+      const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      conversationIdRef.current = newId;
+      setConversationId(newId);
+      localStorage.setItem(storageKey, newId);
+      setMessages([]);
+      lastTimestampRef.current = '';
+      setShowConversationsList(false);
+    };
+
+    // Funzione per mostrare la lista delle conversazioni
+    const showConversationsListHandler = () => {
+      setShowConversationsList(true);
+      loadConversationsList();
+    };
+
     const sendMessage = async () => {
       const text = input.trim();
       if (!text || isSendingRef.current) return;
@@ -449,7 +498,57 @@
           React.createElement(
             'div',
             { className: 'kommander-header' },
-            React.createElement('span', { className: 'font-semibold' }, botName),
+            // Pulsante indietro (solo se non stiamo già visualizzando la lista conversazioni)
+            !showConversationsList && React.createElement(
+              'button',
+              { 
+                onClick: showConversationsListHandler, 
+                className: 'kommander-back-btn',
+                'aria-label': 'Lista conversazioni' 
+              },
+              React.createElement(
+                'svg',
+                {
+                  xmlns: 'http://www.w3.org/2000/svg',
+                  viewBox: '0 0 24 24',
+                  width: '16',
+                  height: '16',
+                  fill: 'none',
+                  stroke: 'currentColor',
+                  strokeWidth: '2',
+                  strokeLinecap: 'round',
+                  strokeLinejoin: 'round',
+                },
+                React.createElement('path', { d: 'M19 12H5' }),
+                React.createElement('path', { d: 'M12 19l-7-7 7-7' })
+              )
+            ),
+            // Pulsante indietro dalla lista conversazioni alla chat
+            showConversationsList && React.createElement(
+              'button',
+              { 
+                onClick: () => setShowConversationsList(false), 
+                className: 'kommander-back-btn',
+                'aria-label': 'Torna alla chat' 
+              },
+              React.createElement(
+                'svg',
+                {
+                  xmlns: 'http://www.w3.org/2000/svg',
+                  viewBox: '0 0 24 24',
+                  width: '16',
+                  height: '16',
+                  fill: 'none',
+                  stroke: 'currentColor',
+                  strokeWidth: '2',
+                  strokeLinecap: 'round',
+                  strokeLinejoin: 'round',
+                },
+                React.createElement('path', { d: 'M19 12H5' }),
+                React.createElement('path', { d: 'M12 19l-7-7 7-7' })
+              )
+            ),
+            React.createElement('span', { className: 'font-semibold' }, showConversationsList ? 'Conversazioni' : botName),
             React.createElement(
               'div',
               { className: 'kommander-header-right' },
@@ -468,65 +567,143 @@
               ref: viewportRef,
               className: 'kommander-messages',
             },
-            messages.map((m, i) =>
-              React.createElement(
-                'div',
-                {
-                  key: i,
-                  className: `kommander-row kommander-row-${m.role === 'user' ? 'user' : (m.role === 'agent' ? 'agent' : 'assistant')}`,
-                },
-                m.role !== 'user' &&
-                  React.createElement('img', {
-                    className: 'kommander-avatar',
-                    src:
-                      m.role === 'agent'
-                        ? 'https://placehold.co/40x40/22c55e/FFFFFF.png?text=A'
-                        : 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
-                    alt: m.role
-                  }),
+            !showConversationsList ? [
+              // Chat normale
+              ...messages.map((m, i) =>
                 React.createElement(
                   'div',
-                  { className: 'kommander-message-wrap' },
+                  {
+                    key: i,
+                    className: `kommander-row kommander-row-${m.role === 'user' ? 'user' : (m.role === 'agent' ? 'agent' : 'assistant')}`,
+                  },
+                  m.role !== 'user' &&
+                    React.createElement('img', {
+                      className: 'kommander-avatar',
+                      src:
+                        m.role === 'agent'
+                          ? 'https://placehold.co/40x40/22c55e/FFFFFF.png?text=A'
+                          : 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
+                      alt: m.role
+                    }),
                   React.createElement(
                     'div',
-                    {
-                      className: `kommander-msg kommander-${m.role}`,
-                    },
-                    m.role === 'user' 
-                      ? React.createElement('p', null, m.text)
-                      : React.createElement('div', {
-                          className: 'kommander-markdown',
-                          dangerouslySetInnerHTML: { __html: renderMarkdown(m.text) }
-                        }),
+                    { className: 'kommander-message-wrap' },
+                    React.createElement(
+                      'div',
+                      {
+                        className: `kommander-msg kommander-${m.role}`,
+                      },
+                      m.role === 'user' 
+                        ? React.createElement('p', null, m.text)
+                        : React.createElement('div', {
+                            className: 'kommander-markdown',
+                            dangerouslySetInnerHTML: { __html: renderMarkdown(m.text) }
+                          }),
+                    ),
+                    React.createElement('p', { className: 'kommander-time' }, m.time),
                   ),
-                  React.createElement('p', { className: 'kommander-time' }, m.time),
+                  m.role === 'user' &&
+                    React.createElement('img', {
+                      className: 'kommander-avatar',
+                      src: 'https://placehold.co/40x40/8cb0ea/1A202C.png?text=U',
+                      alt: 'User'
+                    }),
                 ),
-                m.role === 'user' &&
-                  React.createElement('img', {
-                    className: 'kommander-avatar',
-                    src: 'https://placehold.co/40x40/8cb0ea/1A202C.png?text=U',
-                    alt: 'User'
-                  }),
               ),
-            ),
-            isTyping && React.createElement(
-              'div',
-              { className: `kommander-row kommander-row-${handledBy === 'agent' ? 'agent' : 'assistant'}` },
-              React.createElement('img', {
-                className: 'kommander-avatar',
-                src: handledBy === 'agent' 
-                  ? 'https://placehold.co/40x40/22c55e/FFFFFF.png?text=A'
-                  : 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
-                alt: handledBy === 'agent' ? 'Operatore' : 'Kommander.ai'
-              }),
+              isTyping && React.createElement(
+                'div',
+                { key: 'typing', className: `kommander-row kommander-row-${handledBy === 'agent' ? 'agent' : 'assistant'}` },
+                React.createElement('img', {
+                  className: 'kommander-avatar',
+                  src: handledBy === 'agent' 
+                    ? 'https://placehold.co/40x40/22c55e/FFFFFF.png?text=A'
+                    : 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
+                  alt: handledBy === 'agent' ? 'Operatore' : 'Kommander.ai'
+                }),
+                React.createElement(
+                  'div',
+                  { className: 'kommander-msg kommander-assistant kommander-typing' },
+                  React.createElement('p', null, React.createElement('span', { className: 'kommander-typing-dots' }))
+                )
+              )
+            ] : [
+              // Lista conversazioni
               React.createElement(
                 'div',
-                { className: 'kommander-msg kommander-assistant kommander-typing' },
-                React.createElement('p', null, React.createElement('span', { className: 'kommander-typing-dots' }))
+                { key: 'conversations-header', className: 'kommander-conversations-header' },
+                React.createElement(
+                  'button',
+                  { 
+                    onClick: startNewConversation, 
+                    className: 'kommander-new-conversation-btn' 
+                  },
+                  React.createElement(
+                    'svg',
+                    {
+                      xmlns: 'http://www.w3.org/2000/svg',
+                      viewBox: '0 0 24 24',
+                      width: '16',
+                      height: '16',
+                      fill: 'none',
+                      stroke: 'currentColor',
+                      strokeWidth: '2',
+                      strokeLinecap: 'round',
+                      strokeLinejoin: 'round',
+                    },
+                    React.createElement('path', { d: 'M12 5v14' }),
+                    React.createElement('path', { d: 'M5 12h14' })
+                  ),
+                  'Nuova conversazione'
+                )
+              ),
+              isLoadingConversations ? React.createElement(
+                'div',
+                { key: 'loading', className: 'kommander-loading' },
+                'Caricamento conversazioni...'
+              ) : conversationsList.length === 0 ? React.createElement(
+                'div',
+                { key: 'empty', className: 'kommander-empty-conversations' },
+                'Nessuna conversazione trovata'
+              ) : conversationsList.map((conv, i) => 
+                React.createElement(
+                  'div',
+                  {
+                    key: conv.id || i,
+                    className: `kommander-conversation-item ${conv.id === conversationId ? 'active' : ''}`,
+                    onClick: () => openConversation(conv.id)
+                  },
+                  React.createElement(
+                    'div',
+                    { className: 'kommander-conversation-preview' },
+                    React.createElement('h4', null, conv.preview || 'Conversazione senza titolo'),
+                    React.createElement('p', { className: 'kommander-conversation-date' }, 
+                      conv.lastMessage ? new Date(conv.lastMessage).toLocaleDateString('it-IT') : 'Data non disponibile'
+                    )
+                  ),
+                  React.createElement(
+                    'div',
+                    { className: 'kommander-conversation-arrow' },
+                    React.createElement(
+                      'svg',
+                      {
+                        xmlns: 'http://www.w3.org/2000/svg',
+                        viewBox: '0 0 24 24',
+                        width: '16',
+                        height: '16',
+                        fill: 'none',
+                        stroke: 'currentColor',
+                        strokeWidth: '2',
+                        strokeLinecap: 'round',
+                        strokeLinejoin: 'round',
+                      },
+                      React.createElement('path', { d: 'M9 18l6-6-6-6' })
+                    )
+                  )
+                )
               )
-            )
+            ]
           ),
-          React.createElement(
+          !showConversationsList && React.createElement(
             'form',
             {
               onSubmit: (e) => {
