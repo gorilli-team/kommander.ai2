@@ -4,7 +4,7 @@ import makeWASocket, {
   WAMessage,
   proto,
   MessageUpsertType
-} from '@whiskeysockets/baileys';
+} from 'baileys';
 import { Boom } from '@hapi/boom';
 import { generateChatResponse } from '@/app/chatbot/actions';
 import { appendMessages } from '@/app/conversations/actions';
@@ -33,28 +33,57 @@ class WhatsAppBot {
 
   async start(): Promise<{ success: boolean; qrCode?: string; error?: string }> {
     try {
+      console.log(`🚀 Avvio bot WhatsApp per utente ${this.userId}`);
+      console.log(`📁 Auth path: ${this.authPath}`);
+      
       // Crea directory auth se non esiste
       if (!fs.existsSync(this.authPath)) {
+        console.log(`📁 Creazione directory: ${this.authPath}`);
         fs.mkdirSync(this.authPath, { recursive: true });
       }
 
+      console.log(`🔐 Inizializzazione auth state...`);
       const { state, saveCreds } = await useMultiFileAuthState(this.authPath);
+      
+      console.log(`🔌 Creazione socket WhatsApp...`);
+      
+      // Logger fittizio per Baileys
+      const logger = {
+        level: 'silent',
+        trace: () => {},
+        debug: () => {},
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+        fatal: () => {},
+        child: () => logger
+      };
       
       this.sock = makeWASocket({
         auth: state,
-        printQRInTerminal: false, // Disabilitiamo console log
-        logger: { level: 'silent', child: () => ({ level: 'silent' }) } as any
+        printQRInTerminal: false,
+        logger,
+        browser: ['Chrome (Linux)', '', ''],
+        markOnlineOnConnect: false,
+        generateHighQualityLinkPreview: false,
+        syncFullHistory: false,
+        shouldSyncHistoryMessage: () => false
       });
 
       return new Promise((resolve) => {
+        let hasResolved = false;
+        
         // Gestione della connessione
         this.sock.ev.on('connection.update', async (update: any) => {
           const { connection, lastDisconnect, qr: qrCode } = update;
           
-          if (qrCode) {
+          console.log(`🔄 Connection update:`, { connection, hasQR: !!qrCode });
+          
+          if (qrCode && !hasResolved) {
             this.qrCode = qrCode;
             console.log(`📱 QR code generato per utente ${this.userId}`);
             await this.updateDatabaseStatus(false, qrCode);
+            hasResolved = true;
             resolve({ success: true, qrCode });
           }
 
@@ -64,6 +93,11 @@ class WhatsAppBot {
             
             this.isConnected = false;
             await this.updateDatabaseStatus(false);
+            
+            if (!hasResolved) {
+              hasResolved = true;
+              resolve({ success: false, error: `Connessione chiusa: ${lastDisconnect?.error?.message}` });
+            }
             
             if (shouldReconnect) {
               console.log(`🔄 Riconnessione per ${this.userId}...`);
@@ -93,15 +127,17 @@ class WhatsAppBot {
 
         // Timeout per QR code
         setTimeout(() => {
-          if (!this.isConnected && !this.qrCode) {
+          if (!hasResolved) {
+            console.log(`⏰ Timeout per utente ${this.userId}`);
+            hasResolved = true;
             resolve({ success: false, error: 'Timeout durante la generazione del QR code' });
           }
         }, 30000);
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ Errore nell'avvio del bot WhatsApp per ${this.userId}:`, error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Errore sconosciuto' };
     }
   }
 
