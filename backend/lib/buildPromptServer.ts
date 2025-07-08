@@ -146,10 +146,6 @@ export function buildPromptServer(
   
   context += "IMPORTANTE: Ogni tua risposta DEVE riflettere chiaramente la personalità e i caratteri sopra descritti. Gli utenti devono percepire immediatamente la differenza nel tuo modo di comunicare.\n\n";
   
-  // Aggiungere il contesto di personalità se presente
-  if (personalityContext) {
-    context += `CONTESTO DI PERSONALITÀ:\n${personalityContext}\n\n`;
-  }
   
   context += "ISTRUZIONI PER LA FORMATTAZIONE DELLA RISPOSTA:\n";
   context += "1. ANALIZZA TUTTI I MATERIALI: Consulta attentamente tutte le FAQ, documenti caricati e contenuti disponibili\n";
