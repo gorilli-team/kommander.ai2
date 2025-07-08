@@ -92,8 +92,7 @@ export function buildPromptServer(
   extractedTextSnippets: DocumentSnippet[] = [],
   history: ChatMessage[] = [],
   fileSummaries: FileSummaryForPrompt[] = [],
-  settings?: { name?: string; personality?: string; traits?: string[] },
-  personalityContext?: string
+  settings?: { name?: string; personality?: string; traits?: string[] }
 ): { messages: ChatMessage[]; sources: SourceReference[] } {
   
   // Controlla se ci sono file embedded nel messaggio utente

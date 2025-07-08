@@ -181,8 +181,17 @@ export async function generateStreamingChatResponse(
   try {
     const { db } = await connectToDatabase();
 
-    // Increase number of FAQs considered
-    const faqsCursor = await db.collection('faqs').find({ userId: userIdToUse }).limit(20).toArray();
+    // **PARALLELIZZAZIONE**: Esegui tutte le query database contemporaneamente
+    const [faqsCursor, allUploadedFilesMeta, userSettings] = await Promise.all([
+      db.collection('faqs').find({ userId: userIdToUse }).limit(10).toArray(),
+      db.collection('raw_files_meta')
+        .find({ userId: userIdToUse })
+        .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
+        .sort({ uploadedAt: -1 })
+        .toArray(),
+      getSettings(userIdToUse)
+    ]);
+
     const faqs: Faq[] = faqsCursor.map(doc => ({
       id: doc._id.toString(),
       userId: doc.userId,
@@ -192,14 +201,9 @@ export async function generateStreamingChatResponse(
       updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : undefined,
     }));
 
-    const allUploadedFilesMeta = await db.collection('raw_files_meta')
-        .find({ userId: userIdToUse })
-        .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
-        .sort({ uploadedAt: -1 })
-        .toArray();
-
-    const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '10', 10);
-    const filesToProcess = allUploadedFilesMeta.slice(0, isNaN(maxFilesEnv) ? 10 : maxFilesEnv);
+    // **OTTIMIZZAZIONE**: Ridurre il numero di file processati per velocizzare
+    const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '5', 10);
+    const filesToProcess = allUploadedFilesMeta.slice(0, isNaN(maxFilesEnv) ? 5 : maxFilesEnv);
 
     const filesForPromptContext: UploadedFileInfoForPrompt[] = filesToProcess.map(doc => ({
       fileName: doc.fileName,
@@ -212,57 +216,42 @@ export async function generateStreamingChatResponse(
     });
 
     const selectedIds = filesToProcess.map(f => f.gridFsFileId);
-    const summariesFromDb = await db.collection('file_summaries')
+    
+    // **PARALLELIZZAZIONE**: Query summaries e caricamento file contenuti contemporaneamente
+    const [summariesFromDb, fileContentPromises] = await Promise.all([
+      db.collection('file_summaries')
         .find({ userId: userIdToUse, gridFsFileId: { $in: selectedIds } })
         .project({ gridFsFileId: 1, summary: 1 })
-        .toArray();
+        .toArray(),
+      Promise.all(filesToProcess.map(async (fileMeta) => {
+        const fileBufferResult = await getFileContent(fileMeta.gridFsFileId.toString(), userIdToUse);
+        return { fileMeta, fileBufferResult };
+      }))
+    ]);
 
     const summariesForPrompt = summariesFromDb.map(doc => ({
       fileName: fileNameMap.get(doc.gridFsFileId.toString()) || 'Documento',
       summary: doc.summary as string,
     }));
 
-    const extractedTextSnippets: DocumentSnippet[] = [];
-
-    for (const fileMeta of filesToProcess) {
-      const fileBufferResult = await getFileContent(fileMeta.gridFsFileId.toString(), userIdToUse);
-
-      if ('error' in fileBufferResult) {
-        extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: `Impossibile recuperare il contenuto: ${fileBufferResult.error}` });
-      } else {
-        let text = await extractTextFromFileBuffer(fileBufferResult, fileMeta.originalFileType, fileMeta.fileName);
-        const MAX_TEXT_LENGTH = 10000;
-        if (text.length > MAX_TEXT_LENGTH) {
-          text = text.substring(0, MAX_TEXT_LENGTH) + "\n[...contenuto troncato a causa della lunghezza...]";
+    // **PARALLELIZZAZIONE**: Processa tutti i file text extraction contemporaneamente
+    const extractedTextSnippets: DocumentSnippet[] = await Promise.all(
+      fileContentPromises.map(async ({ fileMeta, fileBufferResult }) => {
+        if ('error' in fileBufferResult) {
+          return { fileName: fileMeta.fileName, snippet: `Impossibile recuperare il contenuto: ${fileBufferResult.error}` };
+        } else {
+          let text = await extractTextFromFileBuffer(fileBufferResult, fileMeta.originalFileType, fileMeta.fileName);
+          // **OTTIMIZZAZIONE**: Ridurre lunghezza testo per velocizzare processing
+          const MAX_TEXT_LENGTH = 5000;
+          if (text.length > MAX_TEXT_LENGTH) {
+            text = text.substring(0, MAX_TEXT_LENGTH) + "\n[...contenuto troncato a causa della lunghezza...]";
+          }
+          return { fileName: fileMeta.fileName, snippet: text };
         }
-        extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: text });
-      }
-    }
-
-    const userSettings = await getSettings(userIdToUse);
-
-    const personalityPrompt = await buildPersonalityImmersionPrompt(userMessage, userSettings);
-    const personalityResponse = await createTrackedChatCompletion(
-      {
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'system', content: personalityPrompt }],
-        temperature: 0.8,
-        max_tokens: 300,
-      },
-      {
-        userId: userIdToUse,
-        conversationId,
-        endpoint: 'personality-immersion',
-        userMessage,
-        metadata: {
-          personality: userSettings?.personality,
-          traits: userSettings?.traits
-        }
-      }
+      })
     );
 
-    const personalityContext = personalityResponse.choices[0]?.message?.content || '';
-
+    // Costruisce il prompt principale con personalità integrata (una sola chiamata OpenAI)
     const { messages, sources } = buildPromptServer(
       userMessage,
       faqs,
@@ -270,8 +259,7 @@ export async function generateStreamingChatResponse(
       extractedTextSnippets,
       history,
       summariesForPrompt,
-      userSettings || undefined,
-      personalityContext
+      userSettings || undefined
     );
 
     let temperature = 0.7;

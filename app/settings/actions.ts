@@ -6,6 +6,10 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/frontend/auth';
 import { ObjectId } from 'mongodb';
 
+// **CACHE OTTIMIZZAZIONE**: Cache in-memory per settings utente
+const settingsCache = new Map<string, { data: ChatbotSettingsDocument | null; timestamp: number }>();
+const CACHE_DURATION = 30000; // 30 secondi
+
 export async function getSettings(userId?: string): Promise<ChatbotSettingsDocument | null> {
   let userIdToUse = userId;
   
@@ -15,10 +19,20 @@ export async function getSettings(userId?: string): Promise<ChatbotSettingsDocum
     userIdToUse = session.user.id;
   }
   
+  // **CACHE CHECK**: Verifica se abbiamo i dati in cache
+  const cached = settingsCache.get(userIdToUse);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  
   const { db } = await connectToDatabase();
   const doc = await db
     .collection<ChatbotSettingsDocument>('chatbot_settings')
     .findOne({ userId: userIdToUse });
+  
+  // **CACHE SAVE**: Salva in cache per future richieste
+  settingsCache.set(userIdToUse, { data: doc || null, timestamp: Date.now() });
+  
   return doc || null;
 }
 
@@ -40,6 +54,9 @@ export async function saveSettings(data: Partial<ChatbotSettingsDocument>) {
   await db
     .collection<ChatbotSettingsDocument>('chatbot_settings')
     .updateOne({ userId }, update, { upsert: true });
+
+  // **CACHE INVALIDATION**: Rimuovi dalla cache quando vengono aggiornati
+  settingsCache.delete(userId);
 
   revalidatePath('/settings');
   return { success: true };
