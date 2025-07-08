@@ -56,19 +56,27 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
     }
   }, [messages]);
 
-  useEffect(() => {
+useEffect(() => {
     if (handledBy === 'agent' && prevHandledBy.current !== 'agent') {
       addMessage('system', 'Stai parlando con un operatore umano');
+    } else if (handledBy === 'bot' && prevHandledBy.current !== 'bot') {
+      addMessage('system', 'Ora sei tornato a parlare con il bot');
     }
     prevHandledBy.current = handledBy;
   }, [handledBy, addMessage]);
 
-  useEffect(() => {
+useEffect(() => {
     if (open && messages.length === 0) {
       addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi? 👋`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, botName]);
+
+  useEffect(() => {
+    if (viewportRef.current) {
+      viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight });
+    }
+  }, [messages]);
 
   const currentDate = format(new Date(), 'dd MMM yyyy', { locale: it });
 

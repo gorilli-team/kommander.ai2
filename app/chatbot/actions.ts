@@ -2,7 +2,7 @@
 'use server';
 
 import { connectToDatabase } from '@/backend/lib/mongodb';
-import { createTrackedChatCompletion } from '@/backend/lib/openai';
+import { createTrackedChatCompletion, createStreamingChatCompletion } from '@/backend/lib/openai';
 import { buildPromptServer, type ChatMessage, type DocumentSnippet, type SourceReference } from '@/backend/lib/buildPromptServer';
 import type { Faq } from '@/backend/schemas/faq';
 import { getFileContent } from '@/app/training/actions';
@@ -159,6 +159,198 @@ export async function generateChatResponseForUI(
   }
   
   return generateChatResponse(userMessage, history, session.user.id, conversationId);
+}
+
+export async function generateStreamingChatResponse(
+  userMessage: string,
+  history: ChatMessage[],
+  userIdOverride?: string,
+  conversationId?: string,
+  onChunk: (chunk: string) => void
+): Promise<{ error?: string; sources?: MessageSource[] }> {
+  const session = await auth();
+  const userIdToUse = userIdOverride || session?.user?.id;
+  if (!userIdToUse) {
+    return { error: 'User not authenticated.' };
+  }
+
+  if (!userMessage.trim()) {
+    return { error: 'Il messaggio non può essere vuoto.' };
+  }
+
+  try {
+    const { db } = await connectToDatabase();
+
+    // Increase number of FAQs considered
+    const faqsCursor = await db.collection('faqs').find({ userId: userIdToUse }).limit(20).toArray();
+    const faqs: Faq[] = faqsCursor.map(doc => ({
+      id: doc._id.toString(),
+      userId: doc.userId,
+      question: doc.question,
+      answer: doc.answer,
+      createdAt: doc.createdAt ? new Date(doc.createdAt) : undefined,
+      updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : undefined,
+    }));
+
+    const allUploadedFilesMeta = await db.collection('raw_files_meta')
+        .find({ userId: userIdToUse })
+        .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
+        .sort({ uploadedAt: -1 })
+        .toArray();
+
+    const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '10', 10);
+    const filesToProcess = allUploadedFilesMeta.slice(0, isNaN(maxFilesEnv) ? 10 : maxFilesEnv);
+
+    const filesForPromptContext: UploadedFileInfoForPrompt[] = filesToProcess.map(doc => ({
+      fileName: doc.fileName,
+      originalFileType: doc.originalFileType,
+    }));
+
+    const fileNameMap = new Map<string, string>();
+    filesToProcess.forEach(doc => {
+      fileNameMap.set(doc.gridFsFileId.toString(), doc.fileName);
+    });
+
+    const selectedIds = filesToProcess.map(f => f.gridFsFileId);
+    const summariesFromDb = await db.collection('file_summaries')
+        .find({ userId: userIdToUse, gridFsFileId: { $in: selectedIds } })
+        .project({ gridFsFileId: 1, summary: 1 })
+        .toArray();
+
+    const summariesForPrompt = summariesFromDb.map(doc => ({
+      fileName: fileNameMap.get(doc.gridFsFileId.toString()) || 'Documento',
+      summary: doc.summary as string,
+    }));
+
+    const extractedTextSnippets: DocumentSnippet[] = [];
+
+    for (const fileMeta of filesToProcess) {
+      const fileBufferResult = await getFileContent(fileMeta.gridFsFileId.toString(), userIdToUse);
+
+      if ('error' in fileBufferResult) {
+        extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: `Impossibile recuperare il contenuto: ${fileBufferResult.error}` });
+      } else {
+        let text = await extractTextFromFileBuffer(fileBufferResult, fileMeta.originalFileType, fileMeta.fileName);
+        const MAX_TEXT_LENGTH = 10000;
+        if (text.length > MAX_TEXT_LENGTH) {
+          text = text.substring(0, MAX_TEXT_LENGTH) + "\n[...contenuto troncato a causa della lunghezza...]";
+        }
+        extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: text });
+      }
+    }
+
+    const userSettings = await getSettings(userIdToUse);
+
+    const personalityPrompt = await buildPersonalityImmersionPrompt(userMessage, userSettings);
+    const personalityResponse = await createTrackedChatCompletion(
+      {
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'system', content: personalityPrompt }],
+        temperature: 0.8,
+        max_tokens: 300,
+      },
+      {
+        userId: userIdToUse,
+        conversationId,
+        endpoint: 'personality-immersion',
+        userMessage,
+        metadata: {
+          personality: userSettings?.personality,
+          traits: userSettings?.traits
+        }
+      }
+    );
+
+    const personalityContext = personalityResponse.choices[0]?.message?.content || '';
+
+    const { messages, sources } = buildPromptServer(
+      userMessage,
+      faqs,
+      filesForPromptContext,
+      extractedTextSnippets,
+      history,
+      summariesForPrompt,
+      userSettings || undefined,
+      personalityContext
+    );
+
+    let temperature = 0.7;
+    let maxTokens = 1500;
+
+    if (userSettings?.personality) {
+      switch (userSettings.personality) {
+        case 'casual':
+          temperature = 0.9;
+          maxTokens = 1800;
+          break;
+        case 'formal':
+          temperature = 0.5;
+          maxTokens = 1600;
+          break;
+        case 'neutral':
+        default:
+          temperature = 0.7;
+          maxTokens = 1500;
+          break;
+      }
+    }
+
+    if (userSettings?.traits) {
+      if (userSettings.traits.includes('energetico') || userSettings.traits.includes('divertente')) {
+        temperature = Math.min(temperature + 0.1, 1.0);
+      }
+      if (userSettings.traits.includes('professionista') || userSettings.traits.includes('convincente')) {
+        temperature = Math.max(temperature - 0.1, 0.3);
+      }
+      if (userSettings.traits.includes('avventuroso')) {
+        maxTokens = Math.min(maxTokens + 300, 2000);
+      }
+    }
+
+    const completion = await createStreamingChatCompletion(
+      {
+        model: 'gpt-3.5-turbo',
+        messages: messages,
+        temperature: temperature,
+        max_tokens: maxTokens,
+      },
+      {
+        userId: userIdToUse,
+        conversationId,
+        endpoint: 'chat-response-stream',
+        userMessage,
+        metadata: {
+          personality: userSettings?.personality,
+          traits: userSettings?.traits,
+          hasUploadedFiles: extractedTextSnippets.length > 0,
+          fileTypes: extractedTextSnippets.map(f => f.fileName.split('.').pop()).filter(Boolean)
+        }
+      },
+      onChunk
+    );
+
+    if (!completion) {
+      if (conversationId) {
+        await analyticsService.trackError(userIdToUse, conversationId, 'no_ai_response');
+      }
+      return { error: 'AI non ha restituito una risposta.' };
+    }
+
+    const messageSources: MessageSource[] = sources
+      .filter(source => source.relevance > 0.3)
+      .slice(0, 5)
+      .map(source => ({
+        type: source.type,
+        title: source.title,
+        relevance: source.relevance,
+        content: source.content,
+        metadata: source.metadata
+      }));
+
+    return { sources: messageSources };
+  } catch (error: any) {
+    return { error: `Impossibile generare la risposta della chat a causa di un errore del server. ${error.message}` };
+  }
 }
 
 export async function generateChatResponse(

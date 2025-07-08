@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { generateChatResponse, generateStreamingChatResponse } from '@/app/chatbot/actions';
+import { generateStreamingChatResponse } from '@/app/chatbot/actions';
 import type { ChatMessage } from '@/backend/lib/buildPromptServer';
 import { appendMessages, getConversation } from '@/app/conversations/actions';
 import { ObjectId } from 'mongodb';
@@ -40,11 +40,11 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.json();
     const { userId, message, history, conversationId, site, endUserId } = withInputSanitization(rawBody);
     
-    console.log('[kommander-query] Request data:', { userId, conversationId, endUserId, site });
+    console.log('[kommander-query-stream] Request data:', { userId, conversationId, endUserId, site });
     
     // Input validation
     if (!userId || !message) {
-      await withAuditLog(request, 'chat_request', 'kommander-query', userId, false, 'Missing required fields');
+      await withAuditLog(request, 'chat_request', 'kommander-query-stream', userId, false, 'Missing required fields');
       return NextResponse.json(
         { error: 'Missing userId or message.' },
         { status: 400, headers: { ...corsHeaders, ...rateLimitResult.headers } }
@@ -53,13 +53,12 @@ export async function POST(request: NextRequest) {
     
     // Check for sensitive information
     if (securityService.containsSensitiveInfo(message)) {
-      await withAuditLog(request, 'chat_request', 'kommander-query', userId, false, 'Sensitive information detected');
+      await withAuditLog(request, 'chat_request', 'kommander-query-stream', userId, false, 'Sensitive information detected');
       return NextResponse.json(
         { error: 'Message contains sensitive information. Please remove any personal data.' },
         { status: 400, headers: { ...corsHeaders, ...rateLimitResult.headers } }
       );
     }
-
 
     const chatHistory: ChatMessage[] = Array.isArray(history) ? history : [];
     const convId = conversationId || new ObjectId().toString();
@@ -109,38 +108,90 @@ export async function POST(request: NextRequest) {
       }, { headers: corsHeaders });
     }
 
-    const result = await generateChatResponse(message, chatHistory, userId, convId);
+    // Create a ReadableStream for streaming response
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          let fullResponse = '';
+          
+          // Generate streaming response
+          const streamResult = await generateStreamingChatResponse(
+            message,
+            chatHistory,
+            userId,
+            convId,
+            (chunk: string) => {
+              // Send each chunk as Server-Sent Event
+              const data = JSON.stringify({ 
+                type: 'chunk', 
+                content: chunk,
+                conversationId: convId 
+              });
+              controller.enqueue(`data: ${data}\n\n`);
+              fullResponse += chunk;
+            }
+          );
 
-    if (result.error) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400, headers: corsHeaders }
-      );
-    }
+          if (streamResult.error) {
+            const errorData = JSON.stringify({ 
+              type: 'error', 
+              error: streamResult.error 
+            });
+            controller.enqueue(`data: ${errorData}\n\n`);
+            controller.close();
+            return;
+          }
 
-    // Salva i messaggi nella conversazione
-    await appendMessages(
-      userId,
-      convId,
-      [
-        { role: 'user', text: message, timestamp: new Date().toISOString() },
-        { role: 'assistant', text: result.response as string, timestamp: new Date().toISOString() },
-      ],
-      site,
-      endUserId
-    );
+          // Send completion signal
+          const completeData = JSON.stringify({ 
+            type: 'complete', 
+            conversationId: convId,
+            handledBy: handledBy,
+            sources: streamResult.sources
+          });
+          controller.enqueue(`data: ${completeData}\n\n`);
+          
+          // Save messages to conversation
+          await appendMessages(
+            userId,
+            convId,
+            [
+              { role: 'user', text: message, timestamp: new Date().toISOString() },
+              { role: 'assistant', text: fullResponse, timestamp: new Date().toISOString() },
+            ],
+            site,
+            endUserId
+          );
 
-    // Log successful chat request
-    await withAuditLog(request, 'chat_request', 'kommander-query', userId, true, undefined, {
-      conversationId: convId,
-      messageLength: message.length,
-      responseLength: result.response?.length || 0
+          // Log successful chat request
+          await withAuditLog(request, 'chat_request', 'kommander-query-stream', userId, true, undefined, {
+            conversationId: convId,
+            messageLength: message.length,
+            responseLength: fullResponse.length
+          });
+
+          controller.close();
+        } catch (error: any) {
+          const errorData = JSON.stringify({ 
+            type: 'error', 
+            error: error.message || 'Server error.' 
+          });
+          controller.enqueue(`data: ${errorData}\n\n`);
+          controller.close();
+        }
+      },
     });
 
-    return NextResponse.json(
-      { reply: result.response, conversationId: convId, handledBy },
-      { headers: { ...corsHeaders, ...rateLimitResult.headers } }
-    );
+    // Return streaming response
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        ...corsHeaders,
+        ...rateLimitResult.headers,
+      },
+    });
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || 'Server error.' },

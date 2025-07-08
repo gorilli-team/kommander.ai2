@@ -21,7 +21,7 @@ export function useWidgetChat(userId: string) {
 
   const storageKey = `kommander_conversation_${userId}`;
   const site = typeof window !== 'undefined' ? window.location.hostname : '';
-  const POLL_INTERVAL_MS = 500;
+// const POLL_INTERVAL_MS = 500;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -39,78 +39,66 @@ export function useWidgetChat(userId: string) {
 
     let interval: NodeJS.Timeout | null = null;
 
-    const fetchInitial = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
-
-
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setHandledBy(data.handledBy || 'bot');
-
-          const msgs = (data.messages || []).map((m: any) => ({
-
-            id: m.timestamp + m.role,
-            role: m.role,
-            content: m.text,
-            timestamp: new Date(m.timestamp),
-          }));
-          setMessages(msgs);
-          if (msgs.length) {
-            lastTimestampRef.current = msgs[msgs.length - 1].timestamp.toISOString();
-          }
+const fetchInitial = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setHandledBy(data.handledBy || 'bot');
+        const msgs = (data.messages || []).map((m: any) => ({
+          id: m.timestamp + m.role,
+          role: m.role,
+          content: m.text,
+          timestamp: new Date(m.timestamp),
+        }));
+        setMessages(msgs);
+        if (msgs.length) {
+          lastTimestampRef.current = msgs[msgs.length - 1].timestamp.toISOString();
         }
-      } catch {
-        // ignore
       }
-    };
+    } catch {
+      // ignore
+    }
+  };
 
 
-    const poll = async () => {
-      try {
-        const params = new URLSearchParams({ userId });
-        if (lastTimestampRef.current) {
-          params.set('since', lastTimestampRef.current);
-        }
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
+// const poll = async () =	> {
+//     try {
+//       const params = new URLSearchParams({ userId });
+//       if (lastTimestampRef.current) {
+//         params.set('since', lastTimestampRef.current);
+//       }
+//       const res = await fetch(
+//         `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
+// 
+//       );
+// 
+//       if (res.ok) {
+//         const data = await res.json();
+//         setHandledBy(data.handledBy || 'bot');
+//         const newMsgs = (data.messages || []).map((m: any) =	> ({
+//           id: m.timestamp + m.role,
+//           role: m.role,
+//           content: m.text,
+//           timestamp: new Date(m.timestamp),
+//         }));
+//         if (newMsgs.length) {
+//           lastTimestampRef.current = newMsgs[newMsgs.length - 1].timestamp.toISOString();
+//           setMessages((prev) =	> {
+//             const existing = new Set(prev.map((msg: Message) =	> msg.id));
+//             const unique = newMsgs.filter((msg: Message) =	> !existing.has(msg.id));
+//             return unique.length ? [...prev, ...unique] : prev;
+//           });
+//         }
+//       }
+//     } catch {
+//       // ignore
+//     }
+//   };
 
-        );
-
-        if (res.ok) {
-          const data = await res.json();
-          setHandledBy(data.handledBy || 'bot');
-          const newMsgs = (data.messages || []).map((m: any) => ({
-            id: m.timestamp + m.role,
-            role: m.role,
-            content: m.text,
-            timestamp: new Date(m.timestamp),
-          }));
-          if (newMsgs.length) {
-            lastTimestampRef.current = newMsgs[newMsgs.length - 1].timestamp.toISOString();
-            setMessages((prev) => {
-              const existing = new Set(prev.map((msg: Message) => msg.id));
-              const unique = newMsgs.filter((msg: Message) => !existing.has(msg.id));
-              return unique.length ? [...prev, ...unique] : prev;
-            });
-          }
-        }
-      } catch {
-        // ignore
-      }
-    };
-
-    pollFnRef.current = poll;
-
-    fetchInitial().then(() => poll());
-    interval = setInterval(poll, POLL_INTERVAL_MS);
-
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
+fetchInitial();
   }, [conversationId, userId]);
 
   const addMessage = (role: Message['role'], content: string) => {
@@ -148,7 +136,7 @@ export function useWidgetChat(userId: string) {
           ? `${filesContext}\n\n--- MESSAGGIO UTENTE ---\n${userMessageContent}`
           : userMessageContent;
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/kommander-query`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/kommander-query-stream`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -159,26 +147,72 @@ export function useWidgetChat(userId: string) {
           }),
         });
 
-        const data = await res.json();
+        if (!res.ok) {
+          throw new Error('Network response was not ok');
+        }
 
-        if (data.conversationId) {
-          conversationIdRef.current = data.conversationId;
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = '';
+        let currentMessageId = Date.now().toString();
+        
+        // Add initial empty message that will be updated
+        setMessages((prev) => [...prev, {
+          id: currentMessageId,
+          role: 'assistant',
+          content: '',
+          timestamp: new Date(),
+        }]);
 
-          setConversationId(data.conversationId);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(storageKey, data.conversationId);
+        while (true) {
+          const { done, value } = await reader?.read();
+          if (done) break;
 
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.trim() && line.startsWith('data: ')) {
+              try {
+                const event = JSON.parse(line.replace(/^data: /, ''));
+
+                if (event.type === 'chunk') {
+                  fullResponse += event.content;
+                  
+                  // Update the message content in real-time
+                  setMessages((prev) => prev.map(msg => 
+                    msg.id === currentMessageId 
+                      ? { ...msg, content: fullResponse }
+                      : msg
+                  ));
+                  
+                  if (event.conversationId) {
+                    conversationIdRef.current = event.conversationId;
+                    setConversationId(event.conversationId);
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem(storageKey, event.conversationId);
+                    }
+                  }
+                } else if (event.type === 'complete') {
+                  if (event.conversationId) {
+                    conversationIdRef.current = event.conversationId;
+                    setConversationId(event.conversationId);
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem(storageKey, event.conversationId);
+                    }
+                  }
+                  
+                  if (event.handledBy) {
+                    setHandledBy(event.handledBy);
+                  }
+                } else if (event.type === 'error') {
+                  addMessage('system', `Error: ${event.error}`);
+                }
+              } catch (parseError) {
+                console.error('Error parsing SSE data:', parseError);
+              }
+            }
           }
-        }
-
-        if (data.handledBy) {
-          setHandledBy(data.handledBy);
-        }
-
-        if (data.reply) {
-          addMessage('assistant', data.reply);
-        } else if (data.error) {
-          addMessage('system', `Error: ${data.error}`);
         }
       } catch (err: any) {
         addMessage('system', `Error: ${err.message || 'Network error.'}`);
