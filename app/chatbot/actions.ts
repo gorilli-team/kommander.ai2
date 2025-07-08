@@ -360,8 +360,17 @@ export async function generateChatResponse(
   try {
     const { db } = await connectToDatabase();
     
-    // Aumentiamo il numero di FAQ analizzate per risposte più complete
-    const faqsCursor = await db.collection('faqs').find({ userId: userIdToUse }).limit(20).toArray();
+    // **PARALLELIZZAZIONE**: Esegui tutte le query database contemporaneamente
+    const [faqsCursor, allUploadedFilesMeta, userSettings] = await Promise.all([
+      db.collection('faqs').find({ userId: userIdToUse }).limit(20).toArray(),
+      db.collection('raw_files_meta')
+        .find({ userId: userIdToUse })
+        .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
+        .sort({ uploadedAt: -1 })
+        .toArray(),
+      getSettings(userIdToUse)
+    ]);
+    
     const faqs: Faq[] = faqsCursor.map(doc => ({
         id: doc._id.toString(),
         userId: doc.userId,
@@ -370,12 +379,6 @@ export async function generateChatResponse(
         createdAt: doc.createdAt ? new Date(doc.createdAt) : undefined,
         updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : undefined,
     }));
-
-  const allUploadedFilesMeta = await db.collection('raw_files_meta')
-      .find({ userId: userIdToUse })
-      .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
-      .sort({ uploadedAt: -1 })
-      .toArray();
 
     // Aumentiamo significativamente il numero di file analizzati per risposte più approfondite
     const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '10', 10);
@@ -392,59 +395,41 @@ export async function generateChatResponse(
     });
 
     const selectedIds = filesToProcess.map(f => f.gridFsFileId);
-    const summariesFromDb = await db.collection('file_summaries')
+    
+    // **PARALLELIZZAZIONE**: Query summaries e caricamento file contenuti contemporaneamente
+    const [summariesFromDb, fileContentPromises] = await Promise.all([
+      db.collection('file_summaries')
         .find({ userId: userIdToUse, gridFsFileId: { $in: selectedIds } })
         .project({ gridFsFileId: 1, summary: 1 })
-        .toArray();
+        .toArray(),
+      Promise.all(filesToProcess.map(async (fileMeta) => {
+        const fileBufferResult = await getFileContent(fileMeta.gridFsFileId.toString(), userIdToUse);
+        return { fileMeta, fileBufferResult };
+      }))
+    ]);
 
     const summariesForPrompt = summariesFromDb.map(doc => ({
         fileName: fileNameMap.get(doc.gridFsFileId.toString()) || 'Documento',
         summary: doc.summary as string,
     }));
 
-    const extractedTextSnippets: DocumentSnippet[] = [];
-
-    for (const fileMeta of filesToProcess) {
-      const fileBufferResult = await getFileContent(fileMeta.gridFsFileId.toString(), userIdToUse);
-
-      if ('error' in fileBufferResult) {
-        extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: `Impossibile recuperare il contenuto: ${fileBufferResult.error}` });
-      } else {
-        let text = await extractTextFromFileBuffer(fileBufferResult, fileMeta.originalFileType, fileMeta.fileName);
-        const MAX_TEXT_LENGTH = 10000;
-        if (text.length > MAX_TEXT_LENGTH) {
-          text = text.substring(0, MAX_TEXT_LENGTH) + "\\n[...contenuto troncato a causa della lunghezza...]";
+    // **PARALLELIZZAZIONE**: Processa tutti i file text extraction contemporaneamente
+    const extractedTextSnippets: DocumentSnippet[] = await Promise.all(
+      fileContentPromises.map(async ({ fileMeta, fileBufferResult }) => {
+        if ('error' in fileBufferResult) {
+          return { fileName: fileMeta.fileName, snippet: `Impossibile recuperare il contenuto: ${fileBufferResult.error}` };
+        } else {
+          let text = await extractTextFromFileBuffer(fileBufferResult, fileMeta.originalFileType, fileMeta.fileName);
+          const MAX_TEXT_LENGTH = 10000;
+          if (text.length > MAX_TEXT_LENGTH) {
+            text = text.substring(0, MAX_TEXT_LENGTH) + "\\n[...contenuto troncato a causa della lunghezza...]";
+          }
+          return { fileName: fileMeta.fileName, snippet: text };
         }
-        extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: text });
-      }
-    }
-
-    const userSettings = await getSettings(userIdToUse);
-    
-    // PRIMO PASSAGGIO: L'AI si immedesima nella personalità
-    const personalityPrompt = await buildPersonalityImmersionPrompt(userMessage, userSettings);
-    const personalityResponse = await createTrackedChatCompletion(
-      {
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'system', content: personalityPrompt }],
-        temperature: 0.8,
-        max_tokens: 300,
-      },
-      {
-        userId: userIdToUse,
-        conversationId,
-        endpoint: 'personality-immersion',
-        userMessage,
-        metadata: {
-          personality: userSettings?.personality,
-          traits: userSettings?.traits
-        }
-      }
+      })
     );
     
-    const personalityContext = personalityResponse.choices[0]?.message?.content || '';
-    
-    // SECONDO PASSAGGIO: Genera la risposta finale con contesto di personalità
+    // OTTIMIZZAZIONE: Integriamo la personalità direttamente nel prompt principale (una sola chiamata OpenAI)
     const { messages, sources } = buildPromptServer(
       userMessage,
       faqs,
@@ -452,8 +437,7 @@ export async function generateChatResponse(
       extractedTextSnippets,
       history,
       summariesForPrompt,
-      userSettings || undefined,
-      personalityContext // Passiamo il contesto di personalità
+      userSettings || undefined
     );
 
     // Configura i parametri del modello in base alla personalità
