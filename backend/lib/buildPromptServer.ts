@@ -43,33 +43,19 @@ const personalityDefinitions = {
     style: "Mantieni un tono equilibrato, professionale ma accessibile. Usa un linguaggio chiaro e diretto senza essere troppo formale o troppo casual.",
     greeting: "Ciao! Come posso aiutarti oggi?",
     responseStyle: "Fornisci risposte precise e ben strutturate, utilizzando un linguaggio neutro e professionale.",
-    examples: [
-      "Posso aiutarti con questa richiesta.",
-      "Ecco le informazioni che hai richiesto:",
-      "La soluzione migliore in questo caso è:"
-    ]
+    examples: ["Posso aiutarti con questa richiesta.", "Ecco le informazioni:"]
   },
   casual: {
     style: "Usa un tono amichevole, rilassato e colloquiale. Includi espressioni informali, emoticon quando appropriato, e crea un'atmosfera di conversazione tra amici.",
     greeting: "Ehi! 👋 Dimmi tutto, come posso darti una mano?",
     responseStyle: "Rispondi in modo spontaneo e diretto, come se stessi chiacchierando con un amico. Usa espressioni come 'perfetto!', 'fantastico!', 'no problem', e aggiungi emoji quando appropriato.",
-    examples: [
-      "Perfetto! 😊 Posso sicuramente aiutarti con questo!",
-      "Fantastico! Allora, ecco quello che devi sapere...",
-      "No problem! 👍 Ti spiego tutto passo passo:",
-      "Ehilà! Questa è facile, guarda un po'..."
-    ]
+    examples: ["Perfetto! 😊 Posso aiutarti!", "Fantastico! Ecco cosa devi sapere..."]
   },
   formal: {
     style: "Adotta un registro formale e professionale. Utilizza un linguaggio preciso, cortese e rispettoso, evitando contrazioni e mantenendo sempre la massima professionalità.",
     greeting: "Buongiorno, sarò lieto di assisterla. In che modo posso esserle di aiuto?",
     responseStyle: "Struttura le risposte in modo metodico e professionale, utilizzando formule di cortesia e un linguaggio tecnico appropriato quando necessario.",
-    examples: [
-      "Sono lieto di fornirle le informazioni richieste.",
-      "La prego di considerare la seguente soluzione:",
-      "In base alla sua richiesta, posso confermarle che:",
-      "Permettemi di illustrarle la procedura corretta:"
-    ]
+    examples: ["Sono lieto di fornirle le informazioni richieste.", "La prego di considerare la seguente soluzione:"]
   }
 };
 
@@ -147,32 +133,11 @@ export function buildPromptServer(
   context += "IMPORTANTE: Ogni tua risposta DEVE riflettere chiaramente la personalità e i caratteri sopra descritti. Gli utenti devono percepire immediatamente la differenza nel tuo modo di comunicare.\n\n";
   
   
-  context += "ISTRUZIONI PER LA FORMATTAZIONE DELLA RISPOSTA:\n";
-  context += "1. ANALIZZA TUTTI I MATERIALI: Consulta attentamente tutte le FAQ, documenti caricati e contenuti disponibili\n";
-  context += "2. RISPOSTA APPROFONDITA: Fornisci risposte complete e dettagliate, non limitarti a informazioni superficiali\n";
-  context += "3. FORMATTAZIONE MARKDOWN: Usa la formattazione Markdown per rendere la risposta più leggibile:\n";
-  context += "   - **testo in grassetto** per concetti importanti\n";
-  context += "   - *testo in corsivo* per enfasi\n";
-  context += "   - # Titoli e ## Sottotitoli per organizzare i contenuti\n";
-  context += "   - Lista puntata (-) o numerata (1.) per informazioni strutturate\n";
-  context += "   - `codice` per termini tecnici\n";
-  context += "   - [Link Description](URL) per creare link cliccabili\n";
-  context += "   - > Citazioni per evidenziare contenuti importanti\n";
-  context += "4. STRUTTURA CHIARA: Organizza la risposta con sezioni logiche e sottosezioni\n";
-  context += "5. FONTI E RIFERIMENTI: Menziona esplicitamente da quali documenti o FAQ provengono le informazioni\n";
-  context += "6. LINK REALI: Se menzioni siti web, servizi, o risorse online, includi sempre i link effettivi e cliccabili\n";
-  context += "7. COMPLETEZZA: Non limitarti a una risposta breve, approfondisci tutti gli aspetti rilevanti\n";
-  context += "8. RICERCA ESAUSTIVA: Prima di rispondere, analizza TUTTO il materiale disponibile:\n";
-  context += "   - Leggi attentamente TUTTE le FAQ fornite\n";
-  context += "   - Consulta TUTTI i documenti caricati dall'utente\n";
-  context += "   - Non ignorare nessuna fonte di informazione\n";
-  context += "   - Se trovi informazioni contraddittorie, menzionalo\n";
-  context += "9. QUALITÀ DELLA RISPOSTA: Ogni risposta deve essere:\n";
-  context += "   - Dettagliata e informativa\n";
-  context += "   - Ben strutturata con sezioni logiche\n";
-  context += "   - Ricca di esempi concreti quando possibile\n";
-  context += "   - Completa di tutti i dettagli rilevanti\n";
-  context += "   - Con riferimenti specifici alle fonti utilizzate\n\n";
+  context += "ISTRUZIONI:\n";
+  context += "- Analizza TUTTI i materiali (FAQ, documenti) per risposte complete\n";
+  context += "- Usa Markdown: **grassetto**, *corsivo*, # titoli, liste, `codice`, [links](URL)\n";
+  context += "- Menziona fonti specifiche e includi link reali\n";
+  context += "- Struttura logica con sezioni e dettagli rilevanti\n\n";
   
   // Aggiungi istruzioni specifiche basate sulla personalità
   if (personality === 'casual') {

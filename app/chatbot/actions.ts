@@ -11,6 +11,7 @@ import { getSettings } from '@/app/settings/actions';
 import { ConversationService } from '@/backend/lib/conversationService';
 import { ConversationMessage, MessageSource } from '@/backend/schemas/conversation';
 import { analyticsService } from '@/backend/lib/analytics';
+import { cache, cacheKeys, cacheTTL } from '@/backend/lib/cache';
 
 import mammoth from 'mammoth';
 
@@ -181,16 +182,27 @@ export async function generateStreamingChatResponse(
   try {
     const { db } = await connectToDatabase();
 
-    // **PARALLELIZZAZIONE**: Esegui tutte le query database contemporaneamente
+    // **CACHING**: Prova a ottenere dati dalla cache prima
+    const cachedFaqs = cache.get(cacheKeys.userFaqs(userIdToUse));
+    const cachedSettings = cache.get(cacheKeys.userSettings(userIdToUse));
+    const cachedFiles = cache.get(cacheKeys.userFiles(userIdToUse));
+
+    // **PARALLELIZZAZIONE**: Esegui solo le query necessarie
     const [faqsCursor, allUploadedFilesMeta, userSettings] = await Promise.all([
-      db.collection('faqs').find({ userId: userIdToUse }).limit(10).toArray(),
-      db.collection('raw_files_meta')
+      cachedFaqs || db.collection('faqs').find({ userId: userIdToUse }).limit(5).toArray(),
+      cachedFiles || db.collection('raw_files_meta')
         .find({ userId: userIdToUse })
         .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
         .sort({ uploadedAt: -1 })
+        .limit(20) // Limita la query iniziale
         .toArray(),
-      getSettings(userIdToUse)
+      cachedSettings || getSettings(userIdToUse)
     ]);
+
+    // **CACHING**: Salva in cache i risultati
+    if (!cachedFaqs) cache.set(cacheKeys.userFaqs(userIdToUse), faqsCursor, cacheTTL.faqs);
+    if (!cachedSettings) cache.set(cacheKeys.userSettings(userIdToUse), userSettings, cacheTTL.settings);
+    if (!cachedFiles) cache.set(cacheKeys.userFiles(userIdToUse), allUploadedFilesMeta, cacheTTL.files);
 
     const faqs: Faq[] = faqsCursor.map(doc => ({
       id: doc._id.toString(),
@@ -202,8 +214,8 @@ export async function generateStreamingChatResponse(
     }));
 
     // **OTTIMIZZAZIONE**: Ridurre il numero di file processati per velocizzare
-    const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '5', 10);
-    const filesToProcess = allUploadedFilesMeta.slice(0, isNaN(maxFilesEnv) ? 5 : maxFilesEnv);
+    const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '3', 10);
+    const filesToProcess = allUploadedFilesMeta.slice(0, isNaN(maxFilesEnv) ? 3 : maxFilesEnv);
 
     const filesForPromptContext: UploadedFileInfoForPrompt[] = filesToProcess.map(doc => ({
       fileName: doc.fileName,
@@ -234,17 +246,17 @@ export async function generateStreamingChatResponse(
       summary: doc.summary as string,
     }));
 
-    // **PARALLELIZZAZIONE**: Processa tutti i file text extraction contemporaneamente
+    // **LAZY LOADING**: Carica solo i primi 1000 caratteri per velocità
     const extractedTextSnippets: DocumentSnippet[] = await Promise.all(
       fileContentPromises.map(async ({ fileMeta, fileBufferResult }) => {
         if ('error' in fileBufferResult) {
           return { fileName: fileMeta.fileName, snippet: `Impossibile recuperare il contenuto: ${fileBufferResult.error}` };
         } else {
           let text = await extractTextFromFileBuffer(fileBufferResult, fileMeta.originalFileType, fileMeta.fileName);
-          // **OTTIMIZZAZIONE**: Ridurre lunghezza testo per velocizzare processing
-          const MAX_TEXT_LENGTH = 5000;
-          if (text.length > MAX_TEXT_LENGTH) {
-            text = text.substring(0, MAX_TEXT_LENGTH) + "\n[...contenuto troncato a causa della lunghezza...]";
+          // **LAZY LOADING**: Prendi solo i primi 1000 caratteri per velocità
+          const INITIAL_LOAD_LENGTH = 1000;
+          if (text.length > INITIAL_LOAD_LENGTH) {
+            text = text.substring(0, INITIAL_LOAD_LENGTH) + "\n[...anteprima limitata per velocità...]";
           }
           return { fileName: fileMeta.fileName, snippet: text };
         }
@@ -262,23 +274,23 @@ export async function generateStreamingChatResponse(
       userSettings || undefined
     );
 
-    let temperature = 0.7;
-    let maxTokens = 1500;
+    let temperature = 0.5; // Ridotto per velocità
+    let maxTokens = 1000; // Ridotto per velocità
 
     if (userSettings?.personality) {
       switch (userSettings.personality) {
         case 'casual':
-          temperature = 0.9;
-          maxTokens = 1800;
+          temperature = 0.7; // Ridotto ma mantiene creatività
+          maxTokens = 1200; // Ridotto per velocità
           break;
         case 'formal':
-          temperature = 0.5;
-          maxTokens = 1600;
+          temperature = 0.3; // Più preciso e veloce
+          maxTokens = 1000; // Ottimizzato per velocità
           break;
         case 'neutral':
         default:
-          temperature = 0.7;
-          maxTokens = 1500;
+          temperature = 0.5; // Equilibrato ma veloce
+          maxTokens = 1000;
           break;
       }
     }

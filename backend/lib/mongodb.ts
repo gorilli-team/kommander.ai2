@@ -34,7 +34,13 @@ export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db
           version: ServerApiVersion.v1,
           strict: true,
           deprecationErrors: true,
-        }
+        },
+        maxPoolSize: 15, // Aumentato per gestire più connessioni
+        minPoolSize: 10, // Aumentato per mantenere connessioni pronte
+        maxIdleTimeMS: 30000, // Ridotta l'idle
+        waitQueueTimeoutMS: 5000, // Ridotto per timeout veloce
+        heartbeatFrequencyMS: 10000, // Ridotto per monitoraggio più frequente
+        compressors: ['snappy'], // Compressione rapida
       });
       await cachedClient.connect();
       console.log("[backend/lib/mongodb.ts] Successfully connected to MongoDB client instance.");
