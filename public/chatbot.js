@@ -694,31 +694,78 @@ ${truncatedContent}
         
         console.log('[Chatbot] Sending message with data:', requestBody);
         
-        const res = await fetch(`${ORIGIN}/api/kommander-query`, {
+        const res = await fetch(`${ORIGIN}/api/kommander-query-stream`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
         });
 
-        const data = await res.json();
-        console.log('[Chatbot] Response from kommander-query:', data);
+        if (!res.ok) {
+          throw new Error('Network response was not ok');
+        }
 
-        if (data.conversationId) {
-          conversationIdRef.current = data.conversationId;
-          setConversationId(data.conversationId);
-          localStorage.setItem(storageKey, data.conversationId);
-          console.log('[Chatbot] Updated conversation ID:', data.conversationId);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = '';
+        let currentMessageId = Date.now().toString();
+        
+        // Add initial empty message that will be updated
+        addMessage('assistant', '', false);
+        
+        // Get the last message to update it
+        const updateLastMessage = (content) => {
+          setMessages(prev => {
+            const newMessages = [...prev];
+            if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'assistant') {
+              newMessages[newMessages.length - 1] = {
+                ...newMessages[newMessages.length - 1],
+                text: content
+              };
+            }
+            return newMessages;
+          });
+        };
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.trim() && line.startsWith('data: ')) {
+              try {
+                const event = JSON.parse(line.replace(/^data: /, ''));
+
+                if (event.type === 'chunk') {
+                  fullResponse += event.content;
+                  updateLastMessage(fullResponse);
+                  
+                  if (event.conversationId) {
+                    conversationIdRef.current = event.conversationId;
+                    setConversationId(event.conversationId);
+                    localStorage.setItem(storageKey, event.conversationId);
+                  }
+                } else if (event.type === 'complete') {
+                  if (event.conversationId) {
+                    conversationIdRef.current = event.conversationId;
+                    setConversationId(event.conversationId);
+                    localStorage.setItem(storageKey, event.conversationId);
+                  }
+                  
+                  if (event.handledBy) {
+                    setHandledBy(event.handledBy);
+                  }
+                } else if (event.type === 'error') {
+                  addMessage('system', 'Si è verificato un errore: ' + event.error);
+                }
+              } catch (parseError) {
+                console.error('Error parsing SSE data:', parseError);
+              }
+            }
+          }
         }
-        if (data.handledBy) {
-          setHandledBy(data.handledBy);
-          console.log('[Chatbot] Updated handledBy:', data.handledBy);
-        }
-        if (data.error) {
-          console.error('[Chatbot] API Error:', data.error);
-          addMessage('system', 'Si è verificato un errore: ' + data.error);
-        }
-        // NON aggiungere data.reply immediatamente - arriverà tramite polling
-        // Questo evita duplicazioni
       } catch (err) {
         addMessage('system', 'Ops! Non riusciamo a connetterci. Riprova più tardi.');
         console.error("Failed to send message:", err);
