@@ -749,6 +749,9 @@ ${truncatedContent}
             return newMessages;
           });
         };
+        
+        // Nascondi typing loader appena inizia lo streaming
+        let hasStartedStreaming = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -763,6 +766,12 @@ ${truncatedContent}
                 const event = JSON.parse(line.replace(/^data: /, ''));
 
                 if (event.type === 'chunk') {
+                  // Nascondi typing loader al primo chunk
+                  if (!hasStartedStreaming) {
+                    setIsTyping(false);
+                    hasStartedStreaming = true;
+                  }
+                  
                   fullResponse += event.content;
                   updateLastMessage(fullResponse);
                   

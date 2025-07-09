@@ -155,6 +155,7 @@ fetchInitial();
         const decoder = new TextDecoder();
         let fullResponse = '';
         let currentMessageId = Date.now().toString();
+        let hasStartedStreaming = false;
         
         // Add initial empty message that will be updated
         setMessages((prev) => [...prev, {
@@ -177,6 +178,12 @@ fetchInitial();
                 const event = JSON.parse(line.replace(/^data: /, ''));
 
                 if (event.type === 'chunk') {
+                  // Nascondi typing loader al primo chunk
+                  if (!hasStartedStreaming) {
+                    setIsLoading(false);
+                    hasStartedStreaming = true;
+                  }
+                  
                   fullResponse += event.content;
                   
                   // Update the message content in real-time
