@@ -19,7 +19,7 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const baseUrl = window.location.origin;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai';
     
     // Load the chatbot CSS
     const link = document.createElement('link');

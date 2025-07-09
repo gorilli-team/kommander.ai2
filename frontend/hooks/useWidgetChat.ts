@@ -42,7 +42,7 @@ export function useWidgetChat(userId: string) {
 const fetchInitial = async () => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai'}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -71,7 +71,7 @@ const fetchInitial = async () => {
 //         params.set('since', lastTimestampRef.current);
 //       }
 //       const res = await fetch(
-//         `${process.env.NEXT_PUBLIC_BASE_URL}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
+//         `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai'}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
 // 
 //       );
 // 
@@ -136,7 +136,7 @@ fetchInitial();
           ? `${filesContext}\n\n--- MESSAGGIO UTENTE ---\n${userMessageContent}`
           : userMessageContent;
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/kommander-query-stream`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai'}/api/kommander-query-stream`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

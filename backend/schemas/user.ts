@@ -7,9 +7,9 @@ export const UserSchema = z.object({
   email: z.string().email(),
   name: z.string().optional(),
   hashedPassword: z.string(),
-  emailVerified: z.boolean().default(false).optional(), // Manteniamo questo campo, anche se lo impostiamo a true di default
-  otp: z.string().optional().nullable(), // Manteniamo per futura flessibilità
-  otpExpiresAt: z.date().optional().nullable(), // Manteniamo per futura flessibilità
+  emailVerified: z.boolean().default(false),
+  otp: z.string().optional().nullable(),
+  otpExpiresAt: z.date().optional().nullable(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });

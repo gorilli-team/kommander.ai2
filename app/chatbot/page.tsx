@@ -8,8 +8,8 @@ export default async function ChatbotPage() {
   const session = await auth();
   const userId = session?.user?.id || '';
   const settings = await getSettings();
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://kommanderai.vercel.app';
-
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai';
+  
   const snippet = `<div id="kommander-chatbot"></div>
 <script src="${baseUrl}/chatbot.js"></script>
 <script>window.initKommanderChatbot({ userId: '${userId}' });</script>`;

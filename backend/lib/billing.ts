@@ -63,8 +63,8 @@ export async function createCheckoutSession(customerId: string, planId: string) 
         quantity: 1,
       }],
       mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/billing/success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/billing/cancel`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai'}/billing/success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai'}/billing/cancel`,
       customer: customerId,
     });
 
