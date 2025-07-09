@@ -17,6 +17,7 @@ import { formatDate } from '@/frontend/lib/formatDate';
 import { format } from 'date-fns';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import VoiceRecorder from './VoiceRecorder';
+import { capitalizeFirstLetter, applyRealtimeCapitalization } from '@/frontend/lib/textUtils';
 
 function ChatMessage({ message }: { message: Message }) {
   const [showSources, setShowSources] = useState(false);
@@ -117,6 +118,7 @@ export default function ChatUI({
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const prevInputValue = useRef('');
 
   // Auto-scroll disabilitato durante streaming - lascia che controlli l'utente
   // useEffect(() => {
@@ -193,7 +195,13 @@ export default function ChatUI({
           <Input
             type="text"
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              // Applica capitalizzazione automatica
+              const capitalizedValue = applyRealtimeCapitalization(newValue, prevInputValue.current);
+              setInputValue(capitalizedValue);
+              prevInputValue.current = capitalizedValue;
+            }}
             placeholder="Type your message..."
             disabled={isLoading}
             className="flex-1 !bg-white text-black focus:ring-primary focus:border-primary text-sm sm:text-base"

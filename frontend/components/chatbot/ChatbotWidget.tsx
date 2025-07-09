@@ -15,6 +15,7 @@ import { cn } from '@/frontend/lib/utils';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { FileUploader } from './FileUploader';
 import { useFileProcessor, ProcessedFile } from '@/frontend/hooks/useFileProcessor';
+import { capitalizeFirstLetter, applyRealtimeCapitalization } from '@/frontend/lib/textUtils';
 
 interface ChatbotWidgetProps {
   userId: string;
@@ -240,7 +241,12 @@ useEffect(() => {
                 
                 <Input
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    // Applica capitalizzazione automatica
+                    const capitalizedValue = applyRealtimeCapitalization(newValue, inputValue);
+                    setInputValue(capitalizedValue);
+                  }}
                   placeholder="Scrivi qui…"
                   disabled={isLoading}
                   className="flex-1 !bg-white text-black rounded-xl focus:ring-primary focus:border-primary"

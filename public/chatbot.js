@@ -79,6 +79,29 @@
       return text; // Fallback to plain text on error
     }
   }
+  
+  // Capitalizzazione automatica
+  function capitalizeFirstLetter(text) {
+    if (!text) return text;
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+  
+  function applyRealtimeCapitalization(text, previousText) {
+    if (!text) return text;
+    
+    // Se è il primo carattere o dopo punteggiatura seguita da spazio
+    if (text.length === 1 || 
+        (text.length > (previousText || '').length && 
+         /^[a-z]$/.test(text.slice(-1)) && 
+         /[.!?]\s*$/.test(text.slice(0, -1)))) {
+      return capitalizeFirstLetter(text);
+    }
+    
+    // Capitalizza dopo punteggiatura seguita da spazio
+    return text.replace(/([.!?]\s+)([a-z])/g, function(match, prefix, letter) {
+      return prefix + letter.toUpperCase();
+    });
+  }
 
   function ChatbotWidget({ userId }) {
     const { useState, useRef, useEffect } = React;
