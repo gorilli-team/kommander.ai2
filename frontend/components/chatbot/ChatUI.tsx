@@ -37,7 +37,7 @@ function ChatMessage({ message }: { message: Message }) {
       {/* Avatar rimosso per layout più pulito */}
       <div
         className={cn(
-          'max-w-[85%] sm:max-w-xs md:max-w-md lg:max-w-lg rounded-xl px-3 sm:px-4 py-2 sm:py-3 shadow-md',
+          'max-w-[90%] sm:max-w-md md:max-w-lg lg:max-w-xl rounded-xl px-4 sm:px-5 py-3 sm:py-4 shadow-md', /* Aumentato spazio orizzontale */
           isUser ? 'bg-primary text-primary-foreground rounded-br-none' : '',
           isAssistant
             ? 'bg-card text-card-foreground rounded-bl-none border border-border'
@@ -48,7 +48,7 @@ function ChatMessage({ message }: { message: Message }) {
         )}
       >
         {isUser ? (
-          <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{message.content}</p>
+          <p className="text-sm sm:text-base whitespace-pre-wrap break-words font-medium">{message.content}</p>
         ) : (
           <MarkdownRenderer 
             content={message.content} 

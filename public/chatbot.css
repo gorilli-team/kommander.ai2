@@ -281,9 +281,9 @@ body {
 }
 
 .kommander-msg {
-  max-width: 90%; /* Aumentato per utilizzare più spazio orizzontale */
+  max-width: 95%; /* Aumentato per molto più spazio orizzontale */
   min-width: 150px; /* Aumentato per bolle più larghe */
-  padding: 12px 16px; /* Padding leggermente aumentato */
+  padding: 14px 18px; /* Padding aumentato per più spazio interno */
   border-radius: 14px;
   box-shadow: 0 4px 10px var(--kommander-message-shadow); /* More pronounced shadow */
   border: 1px solid transparent; /* Base border */
@@ -335,7 +335,8 @@ body {
 
 .kommander-user p {
   color: var(--kommander-text-color-light) !important;
-  font-size: 12px;
+  font-size: 14px; /* Aumentato del 15%: 12px → 14px */
+  font-weight: 500; /* Leggermente più grassetto */
 }
 
 .kommander-assistant p {

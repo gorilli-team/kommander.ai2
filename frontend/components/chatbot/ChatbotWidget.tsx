@@ -144,7 +144,7 @@ useEffect(() => {
                     {/* Avatar rimosso per layout più pulito */}
                     <div
                       className={cn(
-                        'max-w-[85%] rounded-lg px-4 py-3 shadow-md text-sm', /* Aumentata larghezza bolle */
+                        'max-w-[92%] rounded-lg px-5 py-4 shadow-md text-sm', /* Aumentata larghezza bolle per più spazio orizzontale */
                         msg.role === 'user'
                           ? 'text-white rounded-br-none'
                           : msg.role === 'agent'
@@ -154,7 +154,7 @@ useEffect(() => {
                       style={msg.role === 'user' ? { backgroundColor: botColor } : undefined}
                     >
                       {msg.role === 'user' ? (
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        <p className="text-base whitespace-pre-wrap font-medium">{msg.content}</p>
                       ) : (
                         <MarkdownRenderer 
                           content={msg.content} 
