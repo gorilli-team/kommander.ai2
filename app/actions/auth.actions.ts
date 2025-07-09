@@ -62,7 +62,16 @@ export async function initiateRegistration(
       // Se l'email fallisce, rimuovi l'utente creato
       await db.collection('users').deleteOne({ _id: insertResult.insertedId });
       console.error('[app/actions/auth.actions.ts] Failed to send verification email:', emailResult.error);
-      return { error: 'Failed to send verification email. Please try again.' };
+      
+      // Messaggio di errore più specifico
+      let errorMessage = 'Failed to send verification email. Please try again.';
+      if (emailResult.error?.includes('testing email')) {
+        errorMessage = 'This email service is currently in testing mode. Please contact support.';
+      } else if (emailResult.error?.includes('verify a domain')) {
+        errorMessage = 'Email service configuration required. Please contact support.';
+      }
+      
+      return { error: errorMessage };
     }
 
     console.log('[app/actions/auth.actions.ts] User account created and OTP sent successfully for:', email);

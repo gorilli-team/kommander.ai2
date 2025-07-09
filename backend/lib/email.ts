@@ -26,6 +26,10 @@ export function generateOtp(): string {
 // La funzione sendVerificationEmail non è più usata per la registrazione diretta,
 // ma la lasciamo qui nel caso volessimo reintrodurla in futuro per altri scopi (es. reset password).
 export async function sendVerificationEmail(email: string, otp: string): Promise<EmailResponse> {
+  console.log(`[backend/lib/email.ts] Starting sendVerificationEmail for: ${email}`);
+  console.log(`[backend/lib/email.ts] API Key status: ${resendApiKey ? 'Present' : 'Missing'}`);
+  console.log(`[backend/lib/email.ts] FROM_EMAIL_ADDRESS: ${FROM_EMAIL_ADDRESS}`);
+  
   if (!resendApiKey) {
     const errorMessage = 'Resend API key is not configured. Cannot send email.';
     console.error(`[backend/lib/email.ts] sendVerificationEmail: ${errorMessage}`);
@@ -55,15 +59,16 @@ export async function sendVerificationEmail(email: string, otp: string): Promise
     });
 
     if (error) {
-      console.error('[backend/lib/email.ts] Error sending verification email via Resend:', error);
+      console.error('[backend/lib/email.ts] Resend API returned error:', JSON.stringify(error, null, 2));
       return { success: false, error: error.message || 'Failed to send OTP email due to Resend error.' };
     }
 
-    console.log('[backend/lib/email.ts] Verification email sent successfully. Resend ID:', data?.id);
+    console.log('[backend/lib/email.ts] Verification email sent successfully. Resend response:', JSON.stringify(data, null, 2));
     return { success: true };
 
   } catch (exception: any) {
     console.error('[backend/lib/email.ts] Exception during email sending:', exception);
+    console.error('[backend/lib/email.ts] Exception stack:', exception.stack);
     let errorMessage = 'An unexpected error occurred while trying to send the verification email.';
     if (exception instanceof Error) {
       errorMessage = exception.message;
