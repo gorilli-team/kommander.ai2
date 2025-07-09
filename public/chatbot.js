@@ -766,11 +766,8 @@ ${truncatedContent}
                 const event = JSON.parse(line.replace(/^data: /, ''));
 
                 if (event.type === 'chunk') {
-                  // Nascondi typing loader al primo chunk
-                  if (!hasStartedStreaming) {
-                    setIsTyping(false);
-                    hasStartedStreaming = true;
-                  }
+                  // Nascondi typing loader non appena inizia il primo chunk.
+                  setIsTyping(false);
                   
                   fullResponse += event.content;
                   updateLastMessage(fullResponse);
