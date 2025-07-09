@@ -50,11 +50,12 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
     return () => clearInterval(interval);
   }, [userId]);
 
-  useEffect(() => {
-    if (viewportRef.current) {
-      viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight });
-    }
-  }, [messages]);
+  // Auto-scroll disabilitato - lascia che controlli l'utente durante streaming
+  // useEffect(() => {
+  //   if (viewportRef.current) {
+  //     viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight });
+  //   }
+  // }, [messages]);
 
 useEffect(() => {
     if (handledBy === 'agent' && prevHandledBy.current !== 'agent') {
@@ -72,11 +73,12 @@ useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, botName]);
 
-  useEffect(() => {
-    if (viewportRef.current) {
-      viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight });
-    }
-  }, [messages]);
+  // Auto-scroll disabilitato durante streaming - controllo utente
+  // useEffect(() => {
+  //   if (viewportRef.current) {
+  //     viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight });
+  //   }
+  // }, [messages]);
 
   const currentDate = format(new Date(), 'dd MMM yyyy', { locale: it });
 
@@ -173,9 +175,18 @@ useEffect(() => {
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="text-muted-foreground text-sm flex items-center space-x-2">
-                    <Bot className="w-4 h-4 animate-pulse" />
-                    <span>{botName} sta scrivendo...</span>
+                  <div className="flex items-center justify-start p-2">
+                    <div className="bg-card border border-border rounded-xl px-4 py-3 max-w-[85%] sm:max-w-xs">
+                      <div className="flex items-center justify-center">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '-0.3s'}}></div>
+                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '-0.1s'}}></div>
+                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
+                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.5s'}}></div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

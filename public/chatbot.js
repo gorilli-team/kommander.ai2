@@ -562,7 +562,7 @@ ${truncatedContent}
           poll();
         }
       });
-      interval = setInterval(poll, 3000); // Poll every 3 seconds for good balance between real-time and performance
+      interval = setInterval(poll, 3600); // rallenta del 20% per tempo reale e performance
       return () => interval && clearInterval(interval);
     }, [conversationId, userId, open]); // Added 'open' to dependency array
 
@@ -916,17 +916,20 @@ ${truncatedContent}
               isTyping && React.createElement(
                 'div',
                 { key: 'typing', className: `kommander-row kommander-row-${handledBy === 'agent' ? 'agent' : 'assistant'}` },
-                React.createElement('img', {
-                  className: 'kommander-avatar',
-                  src: handledBy === 'agent' 
-                    ? 'https://placehold.co/40x40/22c55e/FFFFFF.png?text=A'
-                    : 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
-                  alt: handledBy === 'agent' ? 'Operatore' : 'Kommander.ai'
-                }),
                 React.createElement(
                   'div',
-                  { className: 'kommander-msg kommander-assistant kommander-typing' },
-                  React.createElement('p', null, React.createElement('span', { className: 'kommander-typing-dots' }))
+                  { className: 'kommander-msg kommander-assistant kommander-typing-new' },
+                  React.createElement(
+                    'div',
+                    { className: 'kommander-typing-loader' },
+                    React.createElement('div', { className: 'kommander-dots-container' },
+                      React.createElement('div', { className: 'kommander-dot' }),
+                      React.createElement('div', { className: 'kommander-dot' }),
+                      React.createElement('div', { className: 'kommander-dot' }),
+                      React.createElement('div', { className: 'kommander-dot' }),
+                      React.createElement('div', { className: 'kommander-dot' })
+                    )
+                  )
                 )
               )
             ] : [

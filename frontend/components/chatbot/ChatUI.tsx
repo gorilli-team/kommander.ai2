@@ -118,11 +118,12 @@ export default function ChatUI({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (viewportRef.current) {
-      viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
-    }
-  }, [messages]);
+  // Auto-scroll disabilitato durante streaming - lascia che controlli l'utente
+  // useEffect(() => {
+  //   if (viewportRef.current) {
+  //     viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
+  //   }
+  // }, [messages]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -161,19 +162,16 @@ export default function ChatUI({
             <ChatMessage key={msg.id} message={msg} />
           ))}
           {isLoading && (
-            <div className="flex items-center space-x-2 p-2 text-muted-foreground">
-              <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
-                <AvatarImage src="https://placehold.co/40x40/1a56db/FFFFFF.png?text=K" />
-                <AvatarFallback><Bot size={16}/></AvatarFallback>
-              </Avatar>
-              <div className="bg-card border border-border rounded-xl px-3 py-2 max-w-[85%] sm:max-w-xs">
-                <div className="flex items-center space-x-1">
+            <div className="flex items-center justify-start p-2">
+              <div className="bg-card border border-border rounded-xl px-4 py-3 max-w-[85%] sm:max-w-xs">
+                <div className="flex items-center justify-center">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
-                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
-                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '-0.3s'}}></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '-0.1s'}}></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.5s'}}></div>
                   </div>
-                  <span className="text-xs sm:text-sm text-muted-foreground ml-2">Thinking...</span>
                 </div>
               </div>
             </div>
