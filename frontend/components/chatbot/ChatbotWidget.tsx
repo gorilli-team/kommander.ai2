@@ -113,7 +113,7 @@ useEffect(() => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 sm:bottom-20 sm:right-4 sm:inset-auto z-50 flex w-full h-full sm:w-[400px] sm:h-[600px] flex-col bg-card border border-border rounded-none sm:rounded-lg shadow-xl"
+            className="fixed inset-0 sm:bottom-20 sm:right-4 sm:inset-auto z-50 flex w-full h-full sm:w-[500px] sm:h-[750px] flex-col bg-card border border-border rounded-none sm:rounded-lg shadow-xl"
           >
             <div className="px-4 py-3 flex items-center justify-between rounded-t-lg text-white" style={{ backgroundColor: botColor }}>
               <div className="flex items-center space-x-2">
@@ -138,23 +138,10 @@ useEffect(() => {
                       msg.role === 'user' ? 'justify-end' : 'justify-start',
                     )}
                   >
-                    {msg.role !== 'user' && (
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarImage
-                          src={
-                            msg.role === 'assistant'
-                              ? 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K'
-                              : 'https://placehold.co/40x40/444/FFFFFF.png?text=A'
-                          }
-                        />
-                        <AvatarFallback>
-                          {msg.role === 'assistant' ? <Bot size={18} /> : <Headphones size={18} />}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
+                    {/* Avatar rimosso per layout più pulito */}
                     <div
                       className={cn(
-                        'max-w-[65%] rounded-lg px-3 py-2 shadow-md text-sm',
+                        'max-w-[85%] rounded-lg px-4 py-3 shadow-md text-sm', /* Aumentata larghezza bolle */
                         msg.role === 'user'
                           ? 'text-white rounded-br-none'
                           : msg.role === 'agent'
@@ -182,14 +169,7 @@ useEffect(() => {
                         {format(msg.timestamp, 'p')}
                       </p>
                     </div>
-                    {msg.role === 'user' && (
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarImage src="https://placehold.co/40x40/8cb0ea/1A202C.png?text=U" />
-                        <AvatarFallback>
-                          <User size={18} />
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
+                    {/* Avatar utente rimosso per layout più pulito */}
                   </div>
                 ))}
                 {isLoading && (

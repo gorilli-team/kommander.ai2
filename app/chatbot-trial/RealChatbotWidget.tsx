@@ -38,7 +38,7 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
         bottom: auto !important;
         right: auto !important;
         width: 100% !important;
-        height: 500px !important;
+        height: 625px !important; /* Aumentato del 25%: 500px -> 625px */
         border-radius: 12px !important;
         transform: none !important;
         opacity: 1 !important;

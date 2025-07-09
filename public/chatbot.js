@@ -892,15 +892,7 @@ ${truncatedContent}
                     key: i,
                     className: `kommander-row kommander-row-${m.role === 'user' ? 'user' : (m.role === 'agent' ? 'agent' : 'assistant')}`,
                   },
-                  m.role !== 'user' &&
-                    React.createElement('img', {
-                      className: 'kommander-avatar',
-                      src:
-                        m.role === 'agent'
-                          ? 'https://placehold.co/40x40/22c55e/FFFFFF.png?text=A'
-                          : 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K',
-                      alt: m.role
-                    }),
+                  // Avatar rimosso per layout più pulito
                   React.createElement(
                     'div',
                     { className: 'kommander-message-wrap' },
@@ -918,12 +910,7 @@ ${truncatedContent}
                     ),
                     React.createElement('p', { className: 'kommander-time' }, m.time),
                   ),
-                  m.role === 'user' &&
-                    React.createElement('img', {
-                      className: 'kommander-avatar',
-                      src: 'https://placehold.co/40x40/8cb0ea/1A202C.png?text=U',
-                      alt: 'User'
-                    }),
+                  // Avatar utente rimosso per layout più pulito
                 ),
               ),
               isTyping && React.createElement(

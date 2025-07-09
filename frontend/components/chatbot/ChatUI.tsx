@@ -33,17 +33,7 @@ function ChatMessage({ message }: { message: Message }) {
         isUser ? 'justify-end' : 'justify-start'
       )}
     >
-      {!isUser && (
-        <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
-          <AvatarImage
-            src={isAssistant ? 'https://placehold.co/40x40/1a56db/FFFFFF.png?text=K' : 'https://placehold.co/40x40/444/FFFFFF.png?text=A'}
-            data-ai-hint="bot avatar"
-          />
-          <AvatarFallback>
-            {isAssistant ? <Bot size={16}/> : isAgent ? <Headphones size={16}/> : <AlertTriangle size={16}/>} 
-          </AvatarFallback>
-        </Avatar>
-      )}
+      {/* Avatar rimosso per layout più pulito */}
       <div
         className={cn(
           'max-w-[85%] sm:max-w-xs md:max-w-md lg:max-w-lg rounded-xl px-3 sm:px-4 py-2 sm:py-3 shadow-md',
@@ -102,12 +92,7 @@ function ChatMessage({ message }: { message: Message }) {
           {format(message.timestamp, 'p')}
         </p>
       </div>
-      {isUser && (
-        <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
-          <AvatarImage src="https://placehold.co/40x40/8cb0eA/1A202C.png?text=U" data-ai-hint="user avatar" />
-          <AvatarFallback><User size={16}/></AvatarFallback>
-        </Avatar>
-      )}
+      {/* Avatar utente rimosso per layout più pulito */}
     </div>
   );
 }
