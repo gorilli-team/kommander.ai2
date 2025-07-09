@@ -18,6 +18,11 @@ interface EmailResponse {
   error?: string;
 }
 
+// Funzione per generare OTP di 6 cifre
+export function generateOtp(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 // La funzione sendVerificationEmail non è più usata per la registrazione diretta,
 // ma la lasciamo qui nel caso volessimo reintrodurla in futuro per altri scopi (es. reset password).
 export async function sendVerificationEmail(email: string, otp: string): Promise<EmailResponse> {

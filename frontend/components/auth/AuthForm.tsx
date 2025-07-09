@@ -6,25 +6,31 @@ import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { 
   LoginSchema, 
-  RegisterSchema, // Usiamo RegisterSchema
+  InitialRegisterSchema,
+  OtpSchema,
   type LoginFormData, 
-  type RegisterFormData // Usiamo RegisterFormData
+  type InitialRegisterFormData,
+  type OtpFormData
 } from '@/frontend/lib/schemas/auth.schemas';
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
-// Label non è più usato direttamente, RHFLabel si
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/frontend/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel as RHFLabel } from '@/frontend/components/ui/form';
 import { useRouter, useSearchParams } from 'next/navigation';
 import KommanderIcon from '@/frontend/components/layout/KommanderIcon';
 import { signIn } from 'next-auth/react';
-import { registerUser } from '@/app/actions/auth.actions'; // Chiamiamo registerUser
+import { initiateRegistration, verifyOtpAndCompleteRegistration, resendOtp } from '@/app/actions/auth.actions';
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
 import { Separator } from '@/frontend/components/ui/separator';
-import { AlertTriangle, CheckCircle2, UserPlus, Chrome, Github } from 'lucide-react'; // UserPlus per l'icona di registrazione
+import { AlertTriangle, CheckCircle2, UserPlus, Mail, RefreshCw, ArrowLeft } from 'lucide-react';
 import { Icons } from '@/frontend/components/ui/icons';
 
-type AuthView = 'login' | 'register'; // Viste semplificate
+type AuthView = 'login' | 'register' | 'otp-verification';
+
+interface PendingRegistration {
+  email: string;
+  name?: string;
+}
 
 export default function AuthForm() {
   const [view, setView] = useState<AuthView>('login');
@@ -33,18 +39,26 @@ export default function AuthForm() {
   const callbackUrl = searchParams.get('callbackUrl') || '/training';
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [pendingRegistration, setPendingRegistration] = useState<PendingRegistration | null>(null);
 
   const [isLoginPending, startLoginTransition] = useTransition();
   const [isRegisterPending, startRegisterTransition] = useTransition();
+  const [isOtpPending, startOtpTransition] = useTransition();
+  const [isResendPending, startResendTransition] = useTransition();
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
     defaultValues: { email: '', password: '' },
   });
 
-  const registerForm = useForm<RegisterFormData>({ // Usiamo RegisterFormData
-    resolver: zodResolver(RegisterSchema), // Usiamo RegisterSchema
+  const registerForm = useForm<InitialRegisterFormData>({
+    resolver: zodResolver(InitialRegisterSchema),
     defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
+  });
+
+  const otpForm = useForm<OtpFormData>({
+    resolver: zodResolver(OtpSchema),
+    defaultValues: { email: '', otp: '' },
   });
   
   useEffect(() => {
@@ -89,11 +103,11 @@ export default function AuthForm() {
     });
   };
 
-  const handleRegisterSubmit: SubmitHandler<RegisterFormData> = (data) => { // Usiamo RegisterFormData
+  const handleRegisterSubmit: SubmitHandler<InitialRegisterFormData> = (data) => {
     setError(null);
     setSuccess(null);
     startRegisterTransition(async () => {
-      const result = await registerUser(data); // Chiamiamo registerUser
+      const result = await initiateRegistration(data);
       if (result.error) {
         let displayError = result.error;
         if (result.fieldErrors && typeof result.fieldErrors === 'object') {
@@ -105,9 +119,48 @@ export default function AuthForm() {
         setError(displayError);
       } else if (result.success) {
         setSuccess(result.success);
-        setView('login'); // Reindirizza al login dopo la registrazione
-        loginForm.setValue('email', data.email); // Precompila l'email nel form di login
+        setPendingRegistration({ email: data.email, name: data.name });
+        otpForm.setValue('email', data.email);
+        setView('otp-verification');
+      }
+    });
+  };
+
+  const handleOtpSubmit: SubmitHandler<OtpFormData> = (data) => {
+    setError(null);
+    setSuccess(null);
+    startOtpTransition(async () => {
+      const result = await verifyOtpAndCompleteRegistration(data);
+      if (result.error) {
+        let displayError = result.error;
+        if (result.fieldErrors && typeof result.fieldErrors === 'object') {
+            const fieldErrors = Object.entries(result.fieldErrors)
+            .map(([key, value]) => `${key}: ${(value as string[]).join(', ')}`)
+            .join('; ');
+          displayError += ` Details: ${fieldErrors}`;
+        }
+        setError(displayError);
+      } else if (result.success) {
+        setSuccess(result.success);
+        setPendingRegistration(null);
+        setView('login');
+        loginForm.setValue('email', data.email);
         loginForm.setValue('password', '');
+      }
+    });
+  };
+
+  const handleResendOtp = () => {
+    if (!pendingRegistration?.email) return;
+    
+    setError(null);
+    setSuccess(null);
+    startResendTransition(async () => {
+      const result = await resendOtp(pendingRegistration.email);
+      if (result.error) {
+        setError(result.error);
+      } else if (result.success) {
+        setSuccess(result.success);
       }
     });
   };
@@ -148,7 +201,7 @@ export default function AuthForm() {
       );
     }
 
-    if (view === 'register') { // Vista per la registrazione diretta
+    if (view === 'register') {
       return (
         <Form {...registerForm} key="register-form">
           <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4">
@@ -206,6 +259,78 @@ export default function AuthForm() {
         </Form>
       );
     }
+
+    if (view === 'otp-verification') {
+      return (
+        <Form {...otpForm} key="otp-form">
+          <form onSubmit={otpForm.handleSubmit(handleOtpSubmit)} className="space-y-4">
+            <div className="text-center mb-4">
+              <Mail className="h-12 w-12 text-primary mx-auto mb-2" />
+              <h3 className="text-lg font-semibold">Check your email</h3>
+              <p className="text-sm text-muted-foreground">
+                We've sent a verification code to
+                <br />
+                <span className="font-medium">{pendingRegistration?.email}</span>
+              </p>
+            </div>
+            <FormField
+              control={otpForm.control}
+              name="otp"
+              render={({ field }) => (
+                <FormItem>
+                  <RHFLabel>Verification Code</RHFLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="000000" 
+                      {...field} 
+                      disabled={isOtpPending}
+                      className="text-center text-lg font-mono tracking-wider"
+                      maxLength={6}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isOtpPending}>
+              {isOtpPending ? 'Verifying...' : 'Verify Email'}
+            </Button>
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Didn't receive the code?
+              </p>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleResendOtp}
+                disabled={isResendPending}
+                className="w-full"
+              >
+                {isResendPending ? (
+                  <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Resending...</>
+                ) : (
+                  <>Resend Code</>
+                )}
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={() => {
+                  setView('register');
+                  setPendingRegistration(null);
+                }}
+                className="w-full"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Registration
+              </Button>
+            </div>
+          </form>
+        </Form>
+      );
+    }
+
     return null;
   };
 
