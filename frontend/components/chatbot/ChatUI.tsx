@@ -198,9 +198,8 @@ export default function ChatUI({
             onChange={(e) => {
               const newValue = e.target.value;
               // Applica capitalizzazione automatica
-              const capitalizedValue = applyRealtimeCapitalization(newValue, prevInputValue.current);
+              const capitalizedValue = applyRealtimeCapitalization(newValue, inputValue);
               setInputValue(capitalizedValue);
-              prevInputValue.current = capitalizedValue;
             }}
             placeholder="Type your message..."
             disabled={isLoading}

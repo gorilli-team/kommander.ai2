@@ -33,16 +33,13 @@ export function capitalizeSentences(text: string): string {
 export function applyRealtimeCapitalization(text: string, previousText: string = ''): string {
   if (!text) return text;
   
-  // Se è il primo carattere o dopo uno spazio seguito da punteggiatura
-  if (text.length === 1 || 
-      (text.length > previousText.length && 
-       /^[a-z]$/.test(text.slice(-1)) && 
-       /[.!?]\s*$/.test(text.slice(0, -1)))) {
-    return capitalizeFirstLetter(text);
+  // Se è il primo carattere, capitalizzalo
+  if (text.length === 1 && /^[a-z]$/.test(text)) {
+    return text.toUpperCase();
   }
   
   // Capitalizza dopo punteggiatura seguita da spazio
-  return text.replace(/([.!?]\s+)([a-z])/g, (match, prefix, letter) => {
+  return text.replace(/(^|[.!?]\s+)([a-z])/g, (match, prefix, letter) => {
     return prefix + letter.toUpperCase();
   });
 }

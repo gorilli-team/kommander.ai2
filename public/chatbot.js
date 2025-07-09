@@ -447,11 +447,12 @@ ${truncatedContent}
       year: 'numeric',
     });
 
-    useEffect(() => {
-      if (viewportRef.current) {
-        viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
-      }
-    }, [messages, isTyping]);
+    // Auto-scroll disabilitato per controllo utente durante streaming
+    // useEffect(() => {
+    //   if (viewportRef.current) {
+    //     viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+    //   }
+    // }, [messages, isTyping]);
 
     useEffect(() => {
       // Only add welcome message if:
@@ -1145,7 +1146,12 @@ ${truncatedContent}
               id: 'kommander-message-input',
               name: 'message',
               value: input,
-              onChange: (e) => setInput(e.target.value),
+              onChange: (e) => {
+                const newValue = e.target.value;
+                // Applica capitalizzazione automatica
+                const capitalizedValue = applyRealtimeCapitalization(newValue, input);
+                setInput(capitalizedValue);
+              },
               placeholder: 'Scrivi qui…',
               disabled: isTyping || isSendingRef.current, // Disable input while typing or sending
               autoComplete: 'off'
