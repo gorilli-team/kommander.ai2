@@ -46,7 +46,10 @@ export async function sendResetPasswordEmail(email: string, token: string): Prom
   console.log(`[backend/lib/email.ts] Attempting to send password reset email to: ${email}`);
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:9002';
+    // Determina l'URL base: usa produzione se disponibile, altrimenti localhost per sviluppo
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? (process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || 'https://app.kommander.ai')
+      : 'http://localhost:9002';
     const resetLink = `${baseUrl}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
 
     const { data, error } = await resend.emails.send({
