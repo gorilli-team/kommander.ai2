@@ -10,7 +10,7 @@ import { cn } from '@/frontend/lib/utils';
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const showAuthElements = !['/login', '/signup'].includes(pathname);
+  const showAuthElements = !['/login', '/signup', '/reset-password'].includes(pathname);
 
   return (
     <div className="relative flex flex-col min-h-screen bg-background">
