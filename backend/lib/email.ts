@@ -23,8 +23,68 @@ export function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// La funzione sendVerificationEmail non è più usata per la registrazione diretta,
-// ma la lasciamo qui nel caso volessimo reintrodurla in futuro per altri scopi (es. reset password).
+// Funzione per generare token di reset password sicuro
+export function generateResetToken(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 64; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+// Funzione per inviare email di reset password
+export async function sendResetPasswordEmail(email: string, token: string): Promise<EmailResponse> {
+  console.log(`[backend/lib/email.ts] Starting sendResetPasswordEmail for: ${email}`);
+
+  if (!resendApiKey) {
+    const errorMessage = 'Resend API key is not configured. Cannot send email.';
+    console.error(`[backend/lib/email.ts] sendResetPasswordEmail: ${errorMessage}`);
+    return { success: false, error: errorMessage };
+  }
+
+  console.log(`[backend/lib/email.ts] Attempting to send password reset email to: ${email}`);
+
+  try {
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL_ADDRESS,
+      to: [email],
+      subject: 'Kommander.ai Password Reset Request',
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>Password Reset Request</h2>
+          <p>Hi,</p>
+          <p>We received a request to reset your password. You can do so by clicking the link below:</p>
+          <p><a href="${resetLink}">Reset Password</a></p>
+          <p>This link is valid for 1 hour. If you didn't request a password reset, please ignore this email.</p>
+          <p>Thanks,<br/>The Kommander.ai Team</p>
+        </div>
+      `,
+      text: `You requested a password reset. Use the link to reset it: ${resetLink}. This link is valid for 1 hour.`
+    });
+
+    if (error) {
+      console.error('[backend/lib/email.ts] Resend API returned error:', JSON.stringify(error, null, 2));
+      return { success: false, error: error.message || 'Failed to send password reset email due to Resend error.' };
+    }
+
+    console.log('[backend/lib/email.ts] Password reset email sent successfully. Resend response:', JSON.stringify(data, null, 2));
+    return { success: true };
+
+  } catch (exception: any) {
+    console.error('[backend/lib/email.ts] Exception during email sending:', exception);
+    console.error('[backend/lib/email.ts] Exception stack:', exception.stack);
+    let errorMessage = 'An unexpected error occurred while trying to send the password reset email.';
+    if (exception instanceof Error) {
+      errorMessage = exception.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
+
+// La funzione sendVerificationEmail
 export async function sendVerificationEmail(email: string, otp: string): Promise<EmailResponse> {
   console.log(`[backend/lib/email.ts] Starting sendVerificationEmail for: ${email}`);
   console.log(`[backend/lib/email.ts] API Key status: ${resendApiKey ? 'Present' : 'Missing'}`);

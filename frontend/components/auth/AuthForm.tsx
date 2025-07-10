@@ -8,9 +8,11 @@ import {
   LoginSchema, 
   InitialRegisterSchema,
   OtpSchema,
+  ForgotPasswordSchema,
   type LoginFormData, 
   type InitialRegisterFormData,
-  type OtpFormData
+  type OtpFormData,
+  type ForgotPasswordFormData
 } from '@/frontend/lib/schemas/auth.schemas';
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
@@ -19,13 +21,13 @@ import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel as RHFLa
 import { useRouter, useSearchParams } from 'next/navigation';
 import KommanderIcon from '@/frontend/components/layout/KommanderIcon';
 import { signIn } from 'next-auth/react';
-import { initiateRegistration, verifyOtpAndCompleteRegistration, resendOtp } from '@/app/actions/auth.actions';
+import { initiateRegistration, verifyOtpAndCompleteRegistration, resendOtp, requestPasswordReset } from '@/app/actions/auth.actions';
 import { Alert, AlertDescription, AlertTitle } from '@/frontend/components/ui/alert';
 import { Separator } from '@/frontend/components/ui/separator';
 import { AlertTriangle, CheckCircle2, UserPlus, Mail, RefreshCw, ArrowLeft } from 'lucide-react';
 import { Icons } from '@/frontend/components/ui/icons';
 
-type AuthView = 'login' | 'register' | 'otp-verification';
+type AuthView = 'login' | 'register' | 'otp-verification' | 'forgot-password';
 
 interface PendingRegistration {
   email: string;
@@ -45,6 +47,7 @@ export default function AuthForm() {
   const [isRegisterPending, startRegisterTransition] = useTransition();
   const [isOtpPending, startOtpTransition] = useTransition();
   const [isResendPending, startResendTransition] = useTransition();
+  const [isForgotPasswordPending, startForgotPasswordTransition] = useTransition();
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
@@ -59,6 +62,11 @@ export default function AuthForm() {
   const otpForm = useForm<OtpFormData>({
     resolver: zodResolver(OtpSchema),
     defaultValues: { email: '', otp: '' },
+  });
+
+  const forgotPasswordForm = useForm<ForgotPasswordFormData>({
+    resolver: zodResolver(ForgotPasswordSchema),
+    defaultValues: { email: '' },
   });
   
   useEffect(() => {
@@ -164,6 +172,31 @@ export default function AuthForm() {
       }
     });
   };
+
+  const handleForgotPasswordSubmit: SubmitHandler<ForgotPasswordFormData> = (data) => {
+    setError(null);
+    setSuccess(null);
+    startForgotPasswordTransition(async () => {
+      const result = await requestPasswordReset(data);
+      if (result.error) {
+        let displayError = result.error;
+        if (result.fieldErrors && typeof result.fieldErrors === 'object') {
+          const fieldErrors = Object.entries(result.fieldErrors)
+            .map(([key, value]) => `${key}: ${(value as string[]).join(', ')}`)
+            .join('; ');
+          displayError += ` Details: ${fieldErrors}`;
+        }
+        setError(displayError);
+      } else if (result.success) {
+        setSuccess(result.success);
+        // Dopo il successo, torna al login
+        setTimeout(() => {
+          setView('login');
+          forgotPasswordForm.reset();
+        }, 3000);
+      }
+    });
+  };
   
 
   const renderForm = () => {
@@ -193,6 +226,17 @@ export default function AuthForm() {
                 </FormItem>
               )}
             />
+            <div className="flex items-center justify-between">
+              <Button 
+                type="button" 
+                variant="link" 
+                onClick={() => setView('forgot-password')}
+                className="p-0 h-auto text-sm text-primary hover:underline"
+                disabled={isLoginPending}
+              >
+                Forgot password?
+              </Button>
+            </div>
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoginPending}>
               {isLoginPending ? 'Processing...' : 'Log In'}
             </Button>
@@ -331,18 +375,53 @@ export default function AuthForm() {
       );
     }
 
+    if (view === 'forgot-password') {
+      return (
+        <Form {...forgotPasswordForm} key="forgot-password-form">
+          <form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPasswordSubmit)} className="space-y-4">
+            <FormField
+              control={forgotPasswordForm.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <RHFLabel>Email</RHFLabel>
+                  <FormControl><Input type="email" placeholder="you@example.com" {...field} disabled={isForgotPasswordPending} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isForgotPasswordPending}>
+              {isForgotPasswordPending ? 'Sending...' : 'Send Reset Link'}
+            </Button>
+            <Button 
+              type="button" 
+              variant="ghost" 
+              onClick={() => setView('login')}
+              className="w-full"
+              disabled={isForgotPasswordPending}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Login
+            </Button>
+          </form>
+        </Form>
+      );
+    }
+
     return null;
   };
 
   const getTitle = () => {
     if (view === 'login') return 'Welcome back to ';
     if (view === 'register') return 'Create an account for ';
+    if (view === 'forgot-password') return 'Reset your password for ';
     return '';
   };
 
   const getDescription = () => {
     if (view === 'login') return 'Log in to your account';
     if (view === 'register') return 'Enter your details to get started';
+    if (view === 'forgot-password') return 'Enter your email to receive a reset link';
     return '';
   };
 
