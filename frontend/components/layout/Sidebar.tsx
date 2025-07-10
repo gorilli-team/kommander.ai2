@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, MessageCircle, MessageSquare, BarChart3, Settings as SettingsIcon, type LucideIcon } from 'lucide-react';
+import { BookOpen, MessageCircle, MessageSquare, BarChart3, Settings as SettingsIcon, Users, type LucideIcon } from 'lucide-react';
 import { cn } from '@/frontend/lib/utils';
 import React from 'react';
 
@@ -20,6 +20,7 @@ const navItems: NavItem[] = [
   { href: '/conversations', label: 'Conversazioni', icon: MessageSquare, id: 'sidebar-conversations' },
   { href: '/analytics', label: 'Analytics', icon: BarChart3, id: 'sidebar-analytics' },
   { href: '/settings', label: 'Settings', icon: SettingsIcon, id: 'sidebar-settings' },
+  { href: '/team', label: 'Team Management', icon: Users, id: 'sidebar-team' },
 ];
 
 export default function Sidebar() {
