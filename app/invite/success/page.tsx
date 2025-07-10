@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
 import { Button } from '@/frontend/components/ui/button';
-import { CheckCircle2, Building2, Users, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Building2, Users, ArrowRight, Clock } from 'lucide-react';
 import Link from 'next/link';
 
-export default function InviteSuccessPage() {
+function InviteSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -92,5 +92,24 @@ export default function InviteSuccessPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function InviteSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-gray-800 p-4">
+        <Card className="w-full max-w-lg shadow-xl">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <Clock className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+              <p>Loading success page...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <InviteSuccessContent />
+    </Suspense>
   );
 }

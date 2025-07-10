@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { gdprService } from '@/backend/lib/gdpr';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { auth } from '@/frontend/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+  const session = await auth();
     const body = await request.json();
     
     const { userId, preferences, timestamp } = body;
@@ -57,7 +56,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+  const session = await auth();
     
     if (!session?.user?.id) {
       return NextResponse.json(

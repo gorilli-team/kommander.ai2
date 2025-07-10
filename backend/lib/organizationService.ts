@@ -34,8 +34,16 @@ export class OrganizationService {
     try {
       console.log('[OrganizationService] Creating database indexes for performance...');
       
-      // Organizations indexes
-      await this.db.collection('organizations').createIndex({ slug: 1 }, { unique: true });
+      // Organizations indexes - handle existing null values
+      try {
+        await this.db.collection('organizations').createIndex({ slug: 1 }, { unique: true, sparse: true });
+      } catch (error: any) {
+        if (error.code === 11000) {
+          console.log('[OrganizationService] Slug index already exists or has duplicates, skipping...');
+        } else {
+          throw error;
+        }
+      }
       await this.db.collection('organizations').createIndex({ ownerId: 1 });
       await this.db.collection('organizations').createIndex({ isActive: 1 });
       await this.db.collection('organizations').createIndex({ createdAt: -1 });
