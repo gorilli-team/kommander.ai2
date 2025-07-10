@@ -70,6 +70,11 @@ export class OrganizationService {
   }): Promise<string> {
     if (!this.db) throw new Error('Database not initialized');
 
+    // Validate ownerId is a valid ObjectId
+    if (!ObjectId.isValid(data.ownerId)) {
+      throw new Error(`Invalid ownerId: ${data.ownerId}. Must be a valid ObjectId.`);
+    }
+
     const organizationId = new ObjectId();
     const now = new Date();
 
@@ -170,6 +175,12 @@ export class OrganizationService {
   async getUserOrganizations(userId: string): Promise<ClientOrganization[]> {
     if (!this.db) throw new Error('Database not initialized');
 
+    // Validate userId is a valid ObjectId
+    if (!ObjectId.isValid(userId)) {
+      console.warn(`Invalid userId for getUserOrganizations: ${userId}`);
+      return [];
+    }
+
     const memberships = await this.db.collection('organization_members').find({
       userId: new ObjectId(userId),
       status: 'active'
@@ -222,6 +233,17 @@ export class OrganizationService {
     joinedAt?: Date;
   }): Promise<string> {
     if (!this.db) throw new Error('Database not initialized');
+
+    // Validate ObjectIds
+    if (!ObjectId.isValid(data.organizationId)) {
+      throw new Error(`Invalid organizationId: ${data.organizationId}`);
+    }
+    if (!ObjectId.isValid(data.userId)) {
+      throw new Error(`Invalid userId: ${data.userId}`);
+    }
+    if (data.invitedBy && !ObjectId.isValid(data.invitedBy)) {
+      throw new Error(`Invalid invitedBy: ${data.invitedBy}`);
+    }
 
     const memberId = new ObjectId();
     const now = new Date();
