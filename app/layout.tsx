@@ -6,6 +6,7 @@ import AppLayout from '@/frontend/components/layout/AppLayout';
 import ThemeProvider from '@/frontend/components/layout/ThemeProvider';
 import { Toaster } from "@/frontend/components/ui/toaster"; 
 import { SessionProvider } from 'next-auth/react';
+import CookieConsent from '@/frontend/components/privacy/CookieConsent';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -32,6 +33,7 @@ export default function RootLayout({
           <ThemeProvider>
             <AppLayout>{children}</AppLayout>
             <Toaster />
+            <CookieConsent />
           </ThemeProvider>
         </SessionProvider>
       </body>

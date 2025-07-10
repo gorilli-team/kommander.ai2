@@ -294,7 +294,10 @@ export default function AuthForm() {
               )}
             />
             <div className="text-xs text-muted-foreground">
-               By signing up, you agree to our Terms of Service and Privacy Policy.
+               By signing up, you agree to our{' '}
+               <a href="/terms" target="_blank" className="text-primary hover:underline">Terms of Service</a>
+               {' '}and{' '}
+               <a href="/privacy" target="_blank" className="text-primary hover:underline">Privacy Policy</a>.
             </div>
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isRegisterPending}>
               {isRegisterPending ? 'Creating Account...' : 'Create Account'}
