@@ -41,8 +41,26 @@ function InviteContent() {
       return;
     }
 
+    // Store token in sessionStorage for persistence during auth flow
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('pendingInviteToken', token);
+    }
+    
     fetchInvitation();
   }, [token]);
+
+  // Check for stored token after authentication
+  useEffect(() => {
+    if (status === 'authenticated' && typeof window !== 'undefined') {
+      const storedToken = sessionStorage.getItem('pendingInviteToken');
+      if (storedToken && storedToken === token) {
+        // User just authenticated with pending invitation - auto-accept
+        setTimeout(() => {
+          handleAcceptInvitation();
+        }, 1000);
+      }
+    }
+  }, [status, token]);
 
   const fetchInvitation = async () => {
     try {
@@ -84,9 +102,16 @@ function InviteContent() {
 
         setSuccess('Invitation accepted successfully! Welcome to the team.');
         
-        // Redirect to the organization or dashboard after 2 seconds
+        // Clear stored token
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('pendingInviteToken');
+        }
+        
+        // Redirect to success page with organization info
         setTimeout(() => {
-          router.push('/training'); // or to the specific organization page
+          const orgName = invitation?.organization?.name || 'Unknown Organization';
+          const roleDisplay = roleDisplayNames[invitation?.role as keyof typeof roleDisplayNames] || invitation?.role;
+          router.push(`/invite/success?orgName=${encodeURIComponent(orgName)}&role=${encodeURIComponent(roleDisplay)}`);
         }, 2000);
         
       } catch (err) {
@@ -177,14 +202,24 @@ function InviteContent() {
                 Please log in to accept this invitation.
               </AlertDescription>
             </Alert>
-            <Link href={`/login?callbackUrl=${encodeURIComponent(`/invite?token=${token}`)}`}>
+            <Link href={`/login?callbackUrl=${encodeURIComponent(`/invite?token=${token}`)}&inviteToken=${token}`}>
               <Button className="w-full">
+                <Mail className="h-4 w-4 mr-2" />
                 Login to Accept Invitation
               </Button>
             </Link>
-            <Link href="/login">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">or</span>
+              </div>
+            </div>
+            <Link href={`/login?signup=true&callbackUrl=${encodeURIComponent(`/invite?token=${token}`)}&inviteToken=${token}`}>
               <Button variant="outline" className="w-full">
-                Create New Account
+                <UserPlus className="h-4 w-4 mr-2" />
+                Create Account & Accept
               </Button>
             </Link>
           </div>

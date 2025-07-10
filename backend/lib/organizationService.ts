@@ -32,19 +32,25 @@ export class OrganizationService {
     if (!this.db) return;
     
     try {
+      console.log('[OrganizationService] Creating database indexes for performance...');
+      
       // Organizations indexes
       await this.db.collection('organizations').createIndex({ slug: 1 }, { unique: true });
       await this.db.collection('organizations').createIndex({ ownerId: 1 });
+      await this.db.collection('organizations').createIndex({ isActive: 1 });
+      await this.db.collection('organizations').createIndex({ createdAt: -1 });
       
-      // Organization members indexes
+      // Organization members indexes - optimized for getUserOrganizations
       await this.db.collection('organization_members').createIndex({ organizationId: 1, userId: 1 }, { unique: true });
-      await this.db.collection('organization_members').createIndex({ userId: 1 });
-      await this.db.collection('organization_members').createIndex({ organizationId: 1 });
+      await this.db.collection('organization_members').createIndex({ userId: 1, status: 1 });
+      await this.db.collection('organization_members').createIndex({ organizationId: 1, status: 1 });
+      await this.db.collection('organization_members').createIndex({ createdAt: -1 });
       
-      // Invitations indexes
+      // Invitations indexes - optimized for faster lookups
       await this.db.collection('invitations').createIndex({ token: 1 }, { unique: true });
       await this.db.collection('invitations').createIndex({ email: 1, organizationId: 1 });
-      await this.db.collection('invitations').createIndex({ organizationId: 1 });
+      await this.db.collection('invitations').createIndex({ organizationId: 1, status: 1 });
+      await this.db.collection('invitations').createIndex({ status: 1, expiresAt: 1 });
       await this.db.collection('invitations').createIndex({ 
         expiresAt: 1 
       }, { 
@@ -53,6 +59,11 @@ export class OrganizationService {
 
       // User profiles indexes
       await this.db.collection('user_profiles').createIndex({ userId: 1 }, { unique: true });
+      
+      // Users collection indexes for invitation lookups
+      await this.db.collection('users').createIndex({ email: 1 });
+      
+      console.log('[OrganizationService] Database indexes created successfully');
     } catch (error) {
       console.error('Failed to create organization indexes:', error);
     }
@@ -170,7 +181,7 @@ export class OrganizationService {
   }
 
   /**
-   * Get user's organizations
+   * Get user's organizations with optimized aggregation
    */
   async getUserOrganizations(userId: string): Promise<ClientOrganization[]> {
     if (!this.db) throw new Error('Database not initialized');
@@ -181,42 +192,98 @@ export class OrganizationService {
       return [];
     }
 
-    const memberships = await this.db.collection('organization_members').find({
-      userId: new ObjectId(userId),
-      status: 'active'
-    }).toArray();
+    console.log(`[getUserOrganizations] Fetching organizations for user: ${userId}`);
+    const startTime = Date.now();
 
-    const organizationIds = memberships.map(m => m.organizationId);
-    
-    const organizations = await this.db.collection('organizations').find({
-      _id: { $in: organizationIds },
-      isActive: true
-    }).toArray();
+    // Use aggregation pipeline for better performance
+    const result = await this.db.collection('organization_members').aggregate([
+      {
+        $match: {
+          userId: new ObjectId(userId),
+          status: 'active'
+        }
+      },
+      {
+        $lookup: {
+          from: 'organizations',
+          localField: 'organizationId',
+          foreignField: '_id',
+          as: 'organization'
+        }
+      },
+      {
+        $unwind: '$organization'
+      },
+      {
+        $match: {
+          'organization.isActive': true
+        }
+      },
+      {
+        $lookup: {
+          from: 'organization_members',
+          let: { orgId: '$organizationId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$organizationId', '$$orgId'] },
+                    { $eq: ['$status', 'active'] }
+                  ]
+                }
+              }
+            },
+            {
+              $count: 'count'
+            }
+          ],
+          as: 'memberCount'
+        }
+      },
+      {
+        $project: {
+          id: '$organization._id',
+          name: '$organization.name',
+          slug: '$organization.slug',
+          description: '$organization.description',
+          logo: '$organization.logo',
+          website: '$organization.website',
+          settings: '$organization.settings',
+          ownerId: '$organization.ownerId',
+          plan: '$organization.plan',
+          isActive: '$organization.isActive',
+          memberCount: { $ifNull: [{ $arrayElemAt: ['$memberCount.count', 0] }, 0] },
+          userRole: '$role',
+          userPermissions: '$permissions',
+          createdAt: '$organization.createdAt',
+          updatedAt: '$organization.updatedAt'
+        }
+      },
+      {
+        $sort: { 'createdAt': -1 }
+      }
+    ]).toArray();
 
-    return Promise.all(organizations.map(async (org) => {
-      const membership = memberships.find(m => m.organizationId.equals(org._id));
-      const memberCount = await this.db.collection('organization_members').countDocuments({
-        organizationId: org._id,
-        status: 'active'
-      });
+    const endTime = Date.now();
+    console.log(`[getUserOrganizations] Query completed in ${endTime - startTime}ms, found ${result.length} organizations`);
 
-      return {
-        id: org._id.toString(),
-        name: org.name,
-        slug: org.slug,
-        description: org.description,
-        logo: org.logo,
-        website: org.website,
-        settings: org.settings,
-        ownerId: org.ownerId.toString(),
-        plan: org.plan,
-        isActive: org.isActive,
-        memberCount,
-        userRole: membership?.role,
-        userPermissions: membership?.permissions || DEFAULT_ROLE_PERMISSIONS[membership?.role],
-        createdAt: org.createdAt?.toISOString(),
-        updatedAt: org.updatedAt?.toISOString()
-      };
+    return result.map(org => ({
+      id: org.id.toString(),
+      name: org.name,
+      slug: org.slug,
+      description: org.description,
+      logo: org.logo,
+      website: org.website,
+      settings: org.settings,
+      ownerId: org.ownerId.toString(),
+      plan: org.plan,
+      isActive: org.isActive,
+      memberCount: org.memberCount,
+      userRole: org.userRole,
+      userPermissions: org.userPermissions || DEFAULT_ROLE_PERMISSIONS[org.userRole],
+      createdAt: org.createdAt?.toISOString(),
+      updatedAt: org.updatedAt?.toISOString()
     }));
   }
 
