@@ -65,7 +65,7 @@ function ResetPasswordContent() {
         setSuccess(result.success);
         // Reindirizza al login dopo 3 secondi
         setTimeout(() => {
-          router.push('/auth');
+          router.push('/login');
         }, 3000);
       }
     });
@@ -91,7 +91,7 @@ function ResetPasswordContent() {
               The password reset link is invalid or has expired. Please request a new password reset.
             </AlertDescription>
           </Alert>
-          <Link href="/auth">
+          <Link href="/login">
             <Button className="w-full">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Login
@@ -187,7 +187,7 @@ function ResetPasswordContent() {
         </Form>
 
         <div className="text-center mt-6">
-          <Link href="/auth">
+          <Link href="/login">
             <Button variant="ghost" className="text-sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Login
