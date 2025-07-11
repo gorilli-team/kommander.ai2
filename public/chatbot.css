@@ -355,13 +355,6 @@ body {
   line-height: 1.5;
 }
 
-.kommander-markdown h1,
-.kommander-markdown h2,
-.kommander-markdown h3 {
-  margin: 8px 0 4px 0;
-  font-weight: 600;
-  color: inherit;
-}
 
 .kommander-markdown h1 {
   font-size: 14px;
@@ -382,11 +375,6 @@ body {
   line-height: 1.4;
 }
 
-.kommander-markdown ul,
-.kommander-markdown ol {
-  margin: 0;
-  padding-left: 16px;
-}
 
 .kommander-markdown li {
   margin: 0;
