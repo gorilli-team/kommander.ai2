@@ -11,95 +11,97 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
   return (
-    <div className={cn("prose prose-sm max-w-none text-inherit dark:prose-invert", className)}>
+    <div className={cn("prose prose-sm max-w-none text-inherit", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // Headings with better spacing and hierarchy
+          // Headings
           h1: ({ children }) => (
-            <h1 className="text-lg font-bold mb-4 mt-6 tracking-wide text-inherit first:mt-0">
+            <h1 className="text-lg font-bold text-inherit mb-2 mt-4 first:mt-0">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-base font-semibold mb-3 mt-5 text-inherit first:mt-0 tracking-tight">
+            <h2 className="text-base font-semibold text-inherit mb-2 mt-3 first:mt-0">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-sm font-medium mb-2 mt-4 text-inherit first:mt-0">
+            <h3 className="text-sm font-semibold text-inherit mb-1 mt-2 first:mt-0">
               {children}
             </h3>
           ),
-
-          // Paragraphs with consistent line height
+          
+          // Paragraphs
           p: ({ children }) => (
-            <p className="mb-4 last:mb-0 leading-relaxed text-inherit">
+            <p className="mb-2 last:mb-0 text-inherit leading-relaxed">
               {children}
             </p>
           ),
-
-          // Lists with more elegant spacing
+          
+          // Lists
           ul: ({ children }) => (
-            <ul className="list-disc list-inside mb-4 space-y-2 text-inherit">
+            <ul className="list-disc list-inside mb-2 space-y-1 text-inherit">
               {children}
             </ul>
           ),
           ol: ({ children }) => (
-            <ol className="list-decimal list-inside mb-4 space-y-2 text-inherit">
+            <ol className="list-decimal list-inside mb-2 space-y-1 text-inherit">
               {children}
             </ol>
           ),
           li: ({ children }) => (
-            <li className="leading-relaxed text-inherit">
+            <li className="text-inherit leading-relaxed">
               {children}
             </li>
           ),
-
-          // Links with better focus styles
+          
+          // Links - con stili migliorati e apertura in nuova tab
           a: ({ href, children }) => (
             <a
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline decoration-1 underline-offset-2 hover:decoration-2 transition-all duration-200 font-medium focus-visible:outline outline-2 outline-offset-2 outline-blue-500"
+              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline decoration-1 underline-offset-2 hover:decoration-2 transition-all duration-200 font-medium"
             >
               {children}
               <span className="inline-block ml-1 text-xs opacity-70">↗</span>
             </a>
           ),
-
-          // Code blocks and inline code with better styling
+          
+          // Code blocks and inline code
           code: ({ className, children, ...props }) => {
             const match = /language-(\w+)/.exec(className || '');
             const isInline = !match;
+            
             if (isInline) {
               return (
-                <code
-                  className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-2 py-1 rounded text-xs font-mono"
+                <code 
+                  className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-1.5 py-0.5 rounded text-xs font-mono"
                   {...props}
                 >
                   {children}
                 </code>
               );
             }
+            
             return (
-              <pre className="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto mb-4">
+              <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg overflow-x-auto mb-2">
                 <code className="text-gray-800 dark:text-gray-200 text-xs font-mono">
                   {children}
                 </code>
               </pre>
             );
           },
-
-          // Blockquotes with clear visual hierarchy
+          
+          // Blockquotes
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-gray-400 dark:border-gray-600 pl-4 italic bg-gray-50 dark:bg-gray-800/50 rounded-md text-gray-700 dark:text-gray-300 mb-4">
+            <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-3 py-1 mb-2 italic text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 rounded-r">
               {children}
             </blockquote>
           ),
-
-          // Strong and emphasis with better contrast
+          
+          // Strong and emphasis
           strong: ({ children }) => (
             <strong className="font-semibold text-inherit">
               {children}
@@ -110,10 +112,10 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
               {children}
             </em>
           ),
-
-          // Tables with enhanced usability
+          
+          // Tables
           table: ({ children }) => (
-            <div className="overflow-x-auto mb-4">
+            <div className="overflow-x-auto mb-2">
               <table className="min-w-full border border-gray-300 dark:border-gray-600 rounded">
                 {children}
               </table>
@@ -135,19 +137,19 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             </tr>
           ),
           th: ({ children }) => (
-            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-300 dark:border-gray-600 last:border-r-0">
+            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-300 dark:border-gray-600 last:border-r-0">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="px-4 py-2 text-xs text-gray-800 dark:text-gray-200 border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+            <td className="px-3 py-2 text-xs text-gray-800 dark:text-gray-200 border-r border-gray-200 dark:border-gray-600 last:border-r-0">
               {children}
             </td>
           ),
-
-          // Horizontal rule with enhanced styling
+          
+          // Horizontal rule
           hr: () => (
-            <hr className="border-gray-300 dark:border-gray-600 my-4" />
+            <hr className="border-gray-300 dark:border-gray-600 my-3" />
           ),
         }}
       >
