@@ -451,12 +451,6 @@ body {
   color: rgba(255, 255, 255, 1);
 }
 
-.kommander-markdown hr {
-  border: none;
-  border-top: 1px solid currentColor;
-  opacity: 0.3;
-  margin: 8px 0;
-}
 
 .kommander-markdown table {
   width: 100%;
