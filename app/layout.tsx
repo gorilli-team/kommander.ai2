@@ -7,6 +7,7 @@ import ThemeProvider from '@/frontend/components/layout/ThemeProvider';
 import { Toaster } from "@/frontend/components/ui/toaster"; 
 import { SessionProvider } from 'next-auth/react';
 import CookieConsent from '@/frontend/components/privacy/CookieConsent';
+import { OrganizationProvider } from '@/frontend/contexts/OrganizationContext';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -32,9 +33,11 @@ export default function RootLayout({
       <body className={`${inter.variable} font-body antialiased`}>
         <SessionProvider> {/* SessionProvider MUST wrap the core content for NextAuth client features */}
           <ThemeProvider>
-            <AppLayout>{children}</AppLayout>
-            <Toaster />
-            <CookieConsent />
+            <OrganizationProvider>
+              <AppLayout>{children}</AppLayout>
+              <Toaster />
+              <CookieConsent />
+            </OrganizationProvider>
           </ThemeProvider>
         </SessionProvider>
       </body>

@@ -38,7 +38,17 @@ export default function AuthForm() {
   const [view, setView] = useState<AuthView>('login');
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/training';
+  
+  // Check for invitation token and construct appropriate callback URL
+  const inviteToken = searchParams.get('token');
+  const providedCallbackUrl = searchParams.get('callbackUrl');
+  
+  // If there's an invitation token, make sure it's preserved in the callback URL
+  let callbackUrl = providedCallbackUrl || '/training';
+  if (inviteToken && !callbackUrl.includes('/invite')) {
+    callbackUrl = `/invite?token=${inviteToken}`;
+  }
+  
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pendingRegistration, setPendingRegistration] = useState<PendingRegistration | null>(null);

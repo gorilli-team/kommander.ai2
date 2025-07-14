@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import KommanderIcon from '@/frontend/components/layout/KommanderIcon';
 import UserProfileButton from '@/frontend/components/layout/UserProfileButton';
 import ThemeToggle from '@/frontend/components/layout/ThemeToggle';
+import ContextSwitcher from '@/frontend/components/layout/ContextSwitcher';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -17,6 +18,7 @@ export default function Navbar() {
       </Link>
       <div className="flex items-center gap-4">
         <ThemeToggle />
+        <ContextSwitcher />
         {showProfile && <UserProfileButton />}
       </div>
     </header>

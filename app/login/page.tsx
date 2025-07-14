@@ -2,16 +2,21 @@
 "use client";
 import AuthForm from '@/frontend/components/auth/AuthForm';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { Skeleton } from '@/frontend/components/ui/skeleton';
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Check for NEXT_PUBLIC_BYPASS_AUTH first for client-side, then BYPASS_AUTH as fallback
   const isBypassAuthActive = process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true' || process.env.BYPASS_AUTH === 'true';
+
+  // Check if there's an invitation token in the URL
+  const inviteToken = searchParams.get('token');
+  const callbackUrl = searchParams.get('callbackUrl');
 
   useEffect(() => {
     if (isBypassAuthActive) {
@@ -22,9 +27,16 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (status === 'authenticated' && !isBypassAuthActive) {
-      router.replace('/training');
+      // If there's an invitation token, redirect to the invite page
+      if (inviteToken) {
+        router.replace(`/invite?token=${inviteToken}`);
+      } else if (callbackUrl) {
+        router.replace(callbackUrl);
+      } else {
+        router.replace('/training');
+      }
     }
-  }, [status, router, isBypassAuthActive]);
+  }, [status, router, isBypassAuthActive, inviteToken, callbackUrl]);
   if (isBypassAuthActive) {
     return (
       // Show skeleton while redirecting
