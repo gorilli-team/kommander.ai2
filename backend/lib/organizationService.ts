@@ -145,7 +145,7 @@ export class OrganizationService {
    * Get organization by ID with user role and permissions
    */
   async getOrganization(organizationId: string, userId?: string): Promise<ClientOrganization | null> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     const org = await this.db.collection('organizations').findOne({ 
       _id: new ObjectId(organizationId) 
@@ -200,7 +200,7 @@ export class OrganizationService {
    * Get user's organizations with optimized aggregation
    */
   async getUserOrganizations(userId: string): Promise<ClientOrganization[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     // Validate userId is a valid ObjectId
     if (!ObjectId.isValid(userId)) {
@@ -315,7 +315,7 @@ export class OrganizationService {
     invitedBy?: string;
     joinedAt?: Date;
   }): Promise<string> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     // Validate ObjectIds
     if (!ObjectId.isValid(data.organizationId)) {
@@ -356,7 +356,7 @@ export class OrganizationService {
    * Get organization members
    */
   async getOrganizationMembers(organizationId: string): Promise<ClientOrganizationMember[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     const members = await this.db.collection('organization_members').aggregate([
       {
@@ -424,7 +424,7 @@ export class OrganizationService {
       status?: 'active' | 'inactive' | 'suspended';
     }
   ): Promise<boolean> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     const updateData: any = {
       updatedAt: new Date()
@@ -452,7 +452,7 @@ export class OrganizationService {
    * Remove member from organization
    */
   async removeMember(organizationId: string, userId: string): Promise<boolean> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     const result = await this.db.collection('organization_members').deleteOne({
       organizationId: new ObjectId(organizationId),
@@ -473,7 +473,7 @@ export class OrganizationService {
     message?: string;
     expiresInDays?: number;
   }): Promise<string> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     const token = crypto.randomBytes(32).toString('hex');
     const invitationId = new ObjectId();
@@ -505,7 +505,7 @@ export class OrganizationService {
    * Get invitation by token
    */
   async getInvitationByToken(token: string): Promise<ClientInvitation | null> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     const invitation = await this.db.collection('invitations').aggregate([
       {
@@ -686,7 +686,7 @@ export class OrganizationService {
     organizationId: string, 
     permission: PermissionType
   ): Promise<boolean> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     const member = await this.db.collection('organization_members').findOne({
       userId: new ObjectId(userId),
@@ -704,7 +704,7 @@ export class OrganizationService {
    * Get organization invitations
    */
   async getOrganizationInvitations(organizationId: string): Promise<ClientInvitation[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     const invitations = await this.db.collection('invitations').aggregate([
       {
@@ -754,7 +754,7 @@ export class OrganizationService {
    * Cancel invitation
    */
   async cancelInvitation(invitationId: string): Promise<boolean> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     const result = await this.db.collection('invitations').updateOne(
       { _id: new ObjectId(invitationId) },
