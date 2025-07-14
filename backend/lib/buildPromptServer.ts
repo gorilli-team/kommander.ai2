@@ -297,17 +297,46 @@ if (hasEmbeddedFiles && embeddedFileContent) {
   return { messages, sources };
 }
 
-// Simple relevance calculation based on keyword matching
+// Improved relevance calculation with better keyword matching and FAQ/file prioritization
 function calculateRelevance(query: string, content: string): number {
   const queryWords = query.toLowerCase().split(/\s+/).filter(word => word.length > 2);
-  const contentWords = content.toLowerCase().split(/\s+/);
+  const contentLower = content.toLowerCase();
   
-  let matches = 0;
+  let exactMatches = 0;
+  let partialMatches = 0;
+  let totalScore = 0;
+  
   queryWords.forEach(queryWord => {
-    if (contentWords.some(contentWord => contentWord.includes(queryWord) || queryWord.includes(contentWord))) {
-      matches++;
+    // Exact word match (higher score)
+    if (contentLower.includes(` ${queryWord} `) || contentLower.startsWith(`${queryWord} `) || contentLower.endsWith(` ${queryWord}`)) {
+      exactMatches++;
+      totalScore += 1.0;
+    }
+    // Partial match (lower score)
+    else if (contentLower.includes(queryWord)) {
+      partialMatches++;
+      totalScore += 0.5;
+    }
+    // Similar word match (even lower score)
+    else {
+      const contentWords = contentLower.split(/\s+/);
+      for (const contentWord of contentWords) {
+        if (contentWord.includes(queryWord) || queryWord.includes(contentWord)) {
+          totalScore += 0.3;
+          break;
+        }
+      }
     }
   });
   
-  return Math.min(matches / queryWords.length, 1.0);
+  // Calculate final relevance score
+  const baseScore = Math.min(totalScore / queryWords.length, 1.0);
+  
+  // Boost score if content contains links (FAQ with resources)
+  if (content.includes('http')) {
+    return Math.min(baseScore * 1.2, 1.0);
+  }
+  
+  // Ensure minimum relevance for any content that has any matches
+  return Math.max(baseScore, exactMatches > 0 || partialMatches > 0 ? 0.1 : 0.0);
 }

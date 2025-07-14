@@ -389,8 +389,8 @@ export async function generateStreamingChatResponse(
     }
 
     const messageSources: MessageSource[] = sources
-      .filter(source => source.relevance > 0.3)
-      .slice(0, 5)
+      .filter(source => source.relevance > 0.1) // Rilassiamo il filtro per includere più fonti
+      .slice(0, 8) // Aumentiamo il numero di fonti per risposte più complete
       .map(source => ({
         type: source.type,
         title: source.title,
@@ -426,7 +426,7 @@ export async function generateChatResponse(
     
     // **PARALLELIZZAZIONE**: Esegui tutte le query database contemporaneamente
     const [faqsCursor, allUploadedFilesMeta, userSettings] = await Promise.all([
-      db.collection('faqs').find({ userId: userIdToUse }).limit(20).toArray(),
+      db.collection('faqs').find({ userId: userIdToUse }).limit(50).toArray(),
       db.collection('raw_files_meta')
         .find({ userId: userIdToUse })
         .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
@@ -574,8 +574,8 @@ export async function generateChatResponse(
 
     // Convert sources to MessageSource format
     const messageSources: MessageSource[] = sources
-      .filter(source => source.relevance > 0.3) // Only include relevant sources
-      .slice(0, 5) // Limit to top 5 sources
+      .filter(source => source.relevance > 0.1) // Rilassiamo il filtro per includere più fonti
+      .slice(0, 8) // Aumentiamo il numero di fonti per risposte più complete
       .map(source => ({
         type: source.type,
         title: source.title,
