@@ -130,14 +130,20 @@ export function buildPromptServer(
     context += "\n";
   }
   
-  context += "IMPORTANTE: Ogni tua risposta DEVE riflettere chiaramente la personalità e i caratteri sopra descritti. Gli utenti devono percepire immediatamente la differenza nel tuo modo di comunicare.\n\n";
+  context += "🎭 IMPORTANTE: Ogni tua risposta DEVE riflettere chiaramente la personalità e i caratteri sopra descritti. Gli utenti devono percepire immediatamente la differenza nel tuo modo di comunicare.\n\n";
+  context += "🔍 VERIFICA PERSONALITÀ: Prima di rispondere, chiediti: 'Questa risposta riflette davvero la mia personalità ${personality} e i miei caratteri ${settings?.traits?.join(', ') || 'nessuno'}?'\n\n";
   
   
-  context += "ISTRUZIONI:\n";
-  context += "- Analizza TUTTI i materiali (FAQ, documenti) per risposte complete\n";
-  context += "- Usa Markdown: **grassetto**, *corsivo*, # titoli, liste, `codice`, [links](URL)\n";
-  context += "- Menziona fonti specifiche e includi link reali\n";
-  context += "- Struttura logica con sezioni e dettagli rilevanti\n\n";
+  context += "ISTRUZIONI PER RISPOSTE APPROFONDITE:\n";
+  context += "- Analizza TUTTI i materiali (FAQ, documenti) per risposte complete e dettagliate\n";
+  context += "- SEMPRE includere i link REALI ed ESATTI presenti nelle FAQ quando li menzioni (NO placeholder!)\n";
+  context += "- Fornire tutorial step-by-step quando appropriato\n";
+  context += "- Usa Markdown avanzato: **grassetto**, *corsivo*, # titoli, liste numerate, `codice`, [testo](URL_REALE)\n";
+  context += "- Menziona fonti specifiche e includi SEMPRE i link reali quando disponibili\n";
+  context += "- Struttura logica con sezioni, sottosezioni e dettagli rilevanti\n";
+  context += "- Se una FAQ contiene un link (http/https), DEVI includerlo ESATTAMENTE come appare\n";
+  context += "- NON usare placeholder come [link_FAQ] o [qui] - usa i link reali\n";
+  context += "- Aggiungi esempi pratici quando possibile\n\n";
   
   // Aggiungi istruzioni specifiche basate sulla personalità
   if (personality === 'casual') {
@@ -182,20 +188,16 @@ export function buildPromptServer(
     context += "\n";
   }
   
-  // PRIORITÀ ASSOLUTA: File caricati dall'utente
-  if (hasEmbeddedFiles && embeddedFileContent) {
-    context += `\n\n🚨🚨🚨 ATTENZIONE! L'UTENTE HA CARICATO UN FILE! 🚨🚨🚨\n\n`;
-    context += `QUESTO È IL CONTENUTO DEL FILE CARICATO DALL'UTENTE:\n\n`;
-    context += `${embeddedFileContent}\n\n`;
-    context += `🎯 ISTRUZIONI PRIORITARIE:\n`;
-    context += `- L'utente vuole che analizzi QUESTO file caricato\n`;
-    context += `- Se chiede un riassunto → riassumi SOLO questo contenuto\n`;
-    context += `- Se fa domande → rispondi basandoti SOLO su questo contenuto\n`;
-    context += `- NON usare informazioni da altri file nel database\n`;
-    context += `- IGNORA completamente altri documenti\n`;
-    context += `- CONCENTRATI ESCLUSIVAMENTE sul file appena caricato\n\n`;
-    
-    // Rimuovi le altre informazioni dal database per evitare confusione
+if (hasEmbeddedFiles && embeddedFileContent) {
+    context += `\n\n🚨 IMPORTANTE: Un file è stato caricato dall'utente.\n`;
+    context += `Analizza il seguente contenuto tenendo conto delle richieste specifiche dell'utente. Rispondi basandoti su queste informazioni e ignora altri contenuti a meno che l'utente non chieda diversamente.`;
+    context += `\n\nContenuto del file:\n\n"""\n${embeddedFileContent}\n"""\n\n`;
+
+    context += `ISTRUZIONI PER GESTIONE SPECIFICA:\n`;
+    context += `- *Priorità*: Questo file deve essere considerato prioritario.\n`;
+    context += `- *Risposte basate solo su*: Questo file, a meno che non venga esplicitato diversamente.\n`;
+    context += `- *Riassunto e risposte*: Fornisci riassunti chiari e risposte dettagliate inerenti il file su richiesta.\n\n`;
+
     return {
       messages: [
         { role: 'system', content: context.trim() },
@@ -209,7 +211,7 @@ export function buildPromptServer(
   context += "Usa le seguenti informazioni per rispondere alla query dell'utente:\n\n";
 
   if (faqs.length > 0) {
-    context += "FAQ Rilevanti:\n";
+    context += "FAQ Rilevanti (includi sempre i link quando presenti nelle risposte):\n";
     faqs.forEach(faq => {
       context += `- D: ${faq.question}\n  R: ${faq.answer}\n`;
     });
@@ -262,7 +264,8 @@ export function buildPromptServer(
       relevance: calculateRelevance(userMessage, faq.question + ' ' + faq.answer),
       content: faq.answer,
       metadata: {
-        faqId: faq.id?.toString()
+        faqId: faq.id?.toString(),
+        hasLinks: faq.answer.includes('http')
       }
     });
   });

@@ -108,6 +108,55 @@ interface UploadedFileInfoForPrompt {
   originalFileType: string;
 }
 
+// Funzione per estrarre la sezione più rilevante di un testo
+function extractMostRelevantSection(text: string, userQuery: string): string {
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  const queryWords = userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  
+  // Calcola il punteggio di rilevanza per ogni frase
+  const sentenceScores = sentences.map(sentence => {
+    const lowerSentence = sentence.toLowerCase();
+    let score = 0;
+    
+    queryWords.forEach(word => {
+      if (lowerSentence.includes(word)) {
+        score += 1;
+      }
+    });
+    
+    return { sentence: sentence.trim(), score };
+  });
+  
+  // Ordina le frasi per punteggio
+  sentenceScores.sort((a, b) => b.score - a.score);
+  
+  // Prendi le prime 10 frasi più rilevanti
+  const topSentences = sentenceScores.slice(0, 10);
+  
+  // Se non ci sono frasi rilevanti, prendi le prime 5 frasi del documento
+  if (topSentences.every(s => s.score === 0)) {
+    return sentences.slice(0, 5).join('. ') + '.';
+  }
+  
+  // Costruisci la sezione rilevante
+  return topSentences.map(s => s.sentence).join('. ') + '.';
+}
+
+// Funzione per calcolare la rilevanza di un testo rispetto alla query
+function calculateTextRelevance(userQuery: string, text: string): number {
+  const queryWords = userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const textWords = text.toLowerCase().split(/\s+/);
+  
+  let matches = 0;
+  queryWords.forEach(queryWord => {
+    if (textWords.some(textWord => textWord.includes(queryWord) || queryWord.includes(textWord))) {
+      matches++;
+    }
+  });
+  
+  return Math.min(matches / queryWords.length, 1.0);
+}
+
 async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileName: string): Promise<string> {
   console.log(`[app/chatbot/actions.ts] extractTextFromFileBuffer: Inizio estrazione testo per ${fileName}, tipo: ${fileType}, dimensione buffer: ${buffer.length}`);
   let rawText = '';
@@ -246,19 +295,22 @@ export async function generateStreamingChatResponse(
       summary: doc.summary as string,
     }));
 
-    // **LAZY LOADING**: Carica solo i primi 1000 caratteri per velocità
+    // **INTELLIGENT CHUNKING**: Estrai sezioni rilevanti basate sulla query dell'utente
     const extractedTextSnippets: DocumentSnippet[] = await Promise.all(
       fileContentPromises.map(async ({ fileMeta, fileBufferResult }) => {
         if ('error' in fileBufferResult) {
           return { fileName: fileMeta.fileName, snippet: `Impossibile recuperare il contenuto: ${fileBufferResult.error}` };
         } else {
           let text = await extractTextFromFileBuffer(fileBufferResult, fileMeta.originalFileType, fileMeta.fileName);
-          // **LAZY LOADING**: Prendi solo i primi 1000 caratteri per velocità
-          const INITIAL_LOAD_LENGTH = 1000;
-          if (text.length > INITIAL_LOAD_LENGTH) {
-            text = text.substring(0, INITIAL_LOAD_LENGTH) + "\n[...anteprima limitata per velocità...]";
-          }
-          return { fileName: fileMeta.fileName, snippet: text };
+          
+          // **SMART EXTRACTION**: Estrai sezioni più rilevanti
+          const relevantSection = extractMostRelevantSection(text, userMessage);
+          
+          return { 
+            fileName: fileMeta.fileName, 
+            snippet: relevantSection,
+            relevance: calculateTextRelevance(userMessage, relevantSection)
+          };
         }
       })
     );
