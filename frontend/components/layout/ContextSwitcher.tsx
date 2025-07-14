@@ -87,7 +87,7 @@ export default function ContextSwitcher() {
                 <div className="flex flex-col">
                   <span className="font-medium">{org.name}</span>
                   <span className="text-xs text-muted-foreground capitalize">
-                    {org.role}
+                    {org.userRole}
                   </span>
                 </div>
               </DropdownMenuItem>

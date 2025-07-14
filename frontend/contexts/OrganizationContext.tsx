@@ -6,7 +6,15 @@ import { useSession } from 'next-auth/react';
 export interface Organization {
   id: string;
   name: string;
-  role: 'owner' | 'admin' | 'member';
+  slug: string;
+  description?: string;
+  logo?: string;
+  userRole: 'owner' | 'admin' | 'manager' | 'user' | 'viewer' | 'guest';
+  userPermissions?: string[];
+  memberCount?: number;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface OrganizationContextType {
@@ -54,15 +62,39 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   const loadUserOrganizations = async () => {
     if (!session?.user?.id) return;
     
+    console.log('[OrganizationContext] Loading organizations for user:', session.user.id);
     setIsLoading(true);
     try {
       const response = await fetch('/api/organizations');
+      console.log('[OrganizationContext] API response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        setOrganizations(data.organizations || []);
+        console.log('[OrganizationContext] API response data:', data);
+        
+        // The API returns an array directly, not wrapped in an object
+        const orgs = Array.isArray(data) ? data : (data.organizations || []);
+        console.log('[OrganizationContext] Setting organizations:', orgs);
+        // Map the API response to our Organization interface
+        const mappedOrgs = orgs.map((org: any) => ({
+          id: org.id,
+          name: org.name,
+          slug: org.slug,
+          description: org.description,
+          logo: org.logo,
+          userRole: org.userRole,
+          userPermissions: org.userPermissions,
+          memberCount: org.memberCount,
+          isActive: org.isActive,
+          createdAt: org.createdAt,
+          updatedAt: org.updatedAt
+        }));
+        setOrganizations(mappedOrgs);
+      } else {
+        console.error('[OrganizationContext] API error:', response.status, await response.text());
       }
     } catch (error) {
-      console.error('Error loading organizations:', error);
+      console.error('[OrganizationContext] Error loading organizations:', error);
     } finally {
       setIsLoading(false);
     }
