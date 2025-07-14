@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
     }
     
     const rawBody = await request.json();
-    const { userId, message, history, conversationId, site, endUserId } = withInputSanitization(rawBody);
+    const { userId, message, history, conversationId, site, endUserId, organizationId } = withInputSanitization(rawBody);
     
-    console.log('[kommander-query] Request data:', { userId, conversationId, endUserId, site });
+    console.log('[kommander-query] Request data:', { userId, conversationId, endUserId, site, organizationId });
     
     // Input validation
     if (!userId || !message) {
@@ -129,7 +129,15 @@ export async function POST(request: NextRequest) {
       }, { headers: corsHeaders });
     }
 
-    const result = await generateChatResponse(message, chatHistory, userId, convId);
+    // Determine context based on organizationId
+    const context = organizationId ? {
+      type: 'organization' as const,
+      organizationId: organizationId
+    } : {
+      type: 'personal' as const
+    };
+    
+    const result = await generateChatResponse(message, chatHistory, userId, convId, context);
 
     if (result.error) {
       return NextResponse.json(

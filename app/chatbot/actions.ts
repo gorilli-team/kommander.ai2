@@ -409,7 +409,8 @@ export async function generateChatResponse(
   userMessage: string,
   history: ChatMessage[],
   userIdOverride?: string,
-  conversationId?: string
+  conversationId?: string,
+  context?: { type: 'personal' | 'organization', organizationId?: string }
 ): Promise<{ response?: string; error?: string; sources?: MessageSource[]; conversationId?: string }> {
   const session = await auth();
   const userIdToUse = userIdOverride || session?.user?.id;
@@ -424,11 +425,20 @@ export async function generateChatResponse(
   try {
     const { db } = await connectToDatabase();
     
+    // Determine context for queries
+    const organizationContext = context?.type || 'personal';
+    const faqQuery = organizationContext === 'personal' 
+      ? { userId: userIdToUse } 
+      : { organizationId: context?.organizationId };
+    const fileQuery = organizationContext === 'personal' 
+      ? { userId: userIdToUse } 
+      : { organizationId: context?.organizationId };
+    
     // **PARALLELIZZAZIONE**: Esegui tutte le query database contemporaneamente
     const [faqsCursor, allUploadedFilesMeta, userSettings] = await Promise.all([
-      db.collection('faqs').find({ userId: userIdToUse }).limit(50).toArray(),
+      db.collection('faqs').find(faqQuery).limit(50).toArray(),
       db.collection('raw_files_meta')
-        .find({ userId: userIdToUse })
+        .find(fileQuery)
         .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
         .sort({ uploadedAt: -1 })
         .toArray(),
@@ -461,9 +471,13 @@ export async function generateChatResponse(
     const selectedIds = filesToProcess.map(f => f.gridFsFileId);
     
     // **PARALLELIZZAZIONE**: Query summaries e caricamento file contenuti contemporaneamente
+    const summaryQuery = organizationContext === 'personal' 
+      ? { userId: userIdToUse, gridFsFileId: { $in: selectedIds } } 
+      : { organizationId: context?.organizationId, gridFsFileId: { $in: selectedIds } };
+    
     const [summariesFromDb, fileContentPromises] = await Promise.all([
       db.collection('file_summaries')
-        .find({ userId: userIdToUse, gridFsFileId: { $in: selectedIds } })
+        .find(summaryQuery)
         .project({ gridFsFileId: 1, summary: 1 })
         .toArray(),
       Promise.all(filesToProcess.map(async (fileMeta) => {
