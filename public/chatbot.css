@@ -281,26 +281,35 @@ body {
 .kommander-user {
   background: var(--kommander-user-message-bg);
   color: var(--kommander-text-color-light) !important;
-  border-bottom-right-radius: 4px; /* Pointy corner towards user avatar */
-  margin-right: 0; /* Ensure no extra margin */
+  border-bottom-right-radius: 8px;
+  margin-right: 0;
   border-color: var(--kommander-user-message-bg);
+  border-radius: 18px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .kommander-assistant {
   background: var(--kommander-assistant-message-bg);
   color: var(--kommander-text-color-dark);
   border: 1px solid var(--kommander-assistant-message-border);
-  border-bottom-left-radius: 4px; /* Pointy corner towards assistant avatar */
-  margin-left: 0; /* Ensure no extra margin */
+  border-bottom-left-radius: 8px;
+  margin-left: 0;
+  border-radius: 18px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .kommander-agent {
-  background: #dcfce7; /* Light green background for agent */
-  color: #166534; /* Dark green text */
-  border: 1px solid #22c55e; /* Green border */
-  border-left: 3px solid #22c55e; /* Thicker left border */
-  border-bottom-left-radius: 4px;
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #22c55e;
+  border-left: 3px solid #22c55e;
+  border-bottom-left-radius: 8px;
   margin-left: 0;
+  border-radius: 18px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.1);
 }
 
 /* Dark mode agent styles */
