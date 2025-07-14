@@ -259,15 +259,18 @@ export async function deleteFaq(id: string) {
 const MaxFileSize = 5 * 1024 * 1024; // 5MB
 const AcceptedFileTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
 
-export async function uploadFileAndProcess(formData: FormData): Promise<{ success?: string; error?: string; fileId?: string }> {
-  console.log('[app/training/actions.ts] uploadFileAndProcess (GridFS): BEGIN.');
+export async function uploadFileAndProcess(formData: FormData, context?: { type: 'personal' | 'organization', organizationId?: string }): Promise<{ success?: string; error?: string; fileId?: string }> {
+  console.log('[app/training/actions.ts] uploadFileAndProcess (GridFS): BEGIN.', 'context:', context);
   
   const session = await auth();
-  if (!session?.user?.id) {
+  const organizationContext = context?.type || 'personal';
+  
+  if (!session?.user?.id && organizationContext === 'personal') {
     console.error('[app/training/actions.ts] uploadFileAndProcess: User not authenticated.');
     return { error: 'User not authenticated. Please log in.' };
   }
-  const userId = session.user.id;
+  const userId = organizationContext === 'personal' ? session?.user?.id : undefined;
+  const organizationId = organizationContext === 'organization' ? context?.organizationId : undefined;
 
   const file = formData.get('file') as File | null;
 
@@ -307,7 +310,8 @@ export async function uploadFileAndProcess(formData: FormData): Promise<{ succes
     
     const { db } = await connectToDatabase();
     const fileMetaDoc = {
-        userId, // Add userId
+        ...userId ? { userId } : {},
+        ...organizationId ? { organizationId } : {},
         fileName: file.name,
         originalFileType: file.type,
         length: file.size,
@@ -321,7 +325,8 @@ export async function uploadFileAndProcess(formData: FormData): Promise<{ succes
     try {
       summary = await summarizeDocument(fileBuffer, file.type, file.name);
       await db.collection('file_summaries').insertOne({
-        userId,
+        ...userId ? { userId } : {},
+        ...organizationId ? { organizationId } : {},
         gridFsFileId: uploadStream.id,
         fileName: file.name,
         summary,
@@ -342,8 +347,8 @@ export async function uploadFileAndProcess(formData: FormData): Promise<{ succes
   }
 }
 
-export async function getUploadedFiles(): Promise<DocumentDisplayItem[]> {
-  console.log('[app/training/actions.ts] getUploadedFiles (GridFS): Fetching uploaded files metadata...');
+export async function getUploadedFiles(context?: { type: 'personal' | 'organization', organizationId?: string }): Promise<DocumentDisplayItem[]> {
+  console.log('[app/training/actions.ts] getUploadedFiles (GridFS): Fetching uploaded files metadata...', 'context:', context);
   
   const session = await auth();
   if (!session?.user?.id) {
@@ -351,12 +356,14 @@ export async function getUploadedFiles(): Promise<DocumentDisplayItem[]> {
     return [];
   }
   const userId = session.user.id;
-  console.log('[app/training/actions.ts] getUploadedFiles (GridFS): Fetching files for user:', userId);
+  const organizationContext = context?.type || 'personal';
+  console.log('[app/training/actions.ts] getUploadedFiles (GridFS): Fetching files for user:', userId, 'organization:', organizationContext === 'organization' ? context?.organizationId : 'N/A');
 
   try {
     const { db } = await connectToDatabase();
+    const query = organizationContext === 'personal' ? { userId: userId } : { organizationId: context?.organizationId };
     const filesFromDb = await db.collection('raw_files_meta')
-      .find({ userId: userId }) // Filter by userId
+      .find(query)
       .project({ fileName: 1, originalFileType: 1, uploadedAt: 1, gridFsFileId: 1, length: 1 })
       .sort({ uploadedAt: -1 })
       .toArray();

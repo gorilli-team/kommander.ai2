@@ -11,6 +11,7 @@ import { Textarea } from '@/frontend/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/frontend/components/ui/form';
 import { createFaq, updateFaq } from '@/app/training/actions'; // Keep this path
 import { useToast } from '@/frontend/hooks/use-toast';
+import { useOrganization } from '@/frontend/contexts/OrganizationContext';
 import React from 'react';
 
 type FaqInput = Omit<Faq, 'userId'>;
@@ -23,6 +24,7 @@ interface FaqFormProps {
 export default function FaqForm({ faq, onSuccess }: FaqFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const { currentContext, currentOrganization } = useOrganization();
 
   const ClientFaqSchema = React.useMemo(() => FaqSchema.omit({ userId: true }), []);
 
@@ -41,11 +43,16 @@ export default function FaqForm({ faq, onSuccess }: FaqFormProps) {
   const onSubmit = async (values: FaqInput) => {
     setIsSubmitting(true);
     try {
+      const context = {
+        type: currentContext,
+        organizationId: currentOrganization?.id
+      };
+      
       let response;
       if (faq?.id) {
         response = await updateFaq(faq.id, values);
       } else {
-        response = await createFaq(values);
+        response = await createFaq(values, context);
       }
 
       if (response.error) {

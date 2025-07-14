@@ -29,7 +29,8 @@ import {
 import { Skeleton } from '@/frontend/components/ui/skeleton';
 import { useToast } from '@/frontend/hooks/use-toast';
 import { UploadCloud, Search, RefreshCw, FileText, Trash2, Info } from 'lucide-react';
-import { formatDate } from '@/frontend/lib/formatDate'; 
+import { formatDate } from '@/frontend/lib/formatDate';
+import { useOrganization } from '@/frontend/contexts/OrganizationContext';
 
 export default function FileList() {
   const [files, setFiles] = useState<DocumentDisplayItem[]>([]);
@@ -37,18 +38,23 @@ export default function FileList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const { toast } = useToast();
+  const { currentContext, currentOrganization } = useOrganization();
 
   const fetchFiles = useCallback(async () => {
     setIsLoading(true);
     try {
-      const fetchedFiles = await getUploadedFiles();
+      const context = {
+        type: currentContext,
+        organizationId: currentOrganization?.id
+      };
+      const fetchedFiles = await getUploadedFiles(context);
       setFiles(fetchedFiles);
     } catch (error) {
       toast({ title: 'Errore', description: 'Impossibile caricare i file.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, currentContext, currentOrganization?.id]);
 
   useEffect(() => {
     fetchFiles();

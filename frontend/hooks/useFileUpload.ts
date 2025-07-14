@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { uploadFileAndProcess } from '@/app/training/actions'; // Keep this path
 import { useToast } from '@/frontend/hooks/use-toast';
+import { useOrganization } from '@/frontend/contexts/OrganizationContext';
 
 interface UseFileUploadOptions {
   onUploadComplete?: () => void;
@@ -16,6 +17,7 @@ export function useFileUpload({ onUploadComplete }: UseFileUploadOptions = {}) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [lastFile, setLastFile] = useState<File | null>(null);
   const { toast } = useToast();
+  const { currentContext, currentOrganization } = useOrganization();
 
   const uploadFile = async (file: File, isRetry = false) => {
     setLastFile(file);
@@ -27,13 +29,18 @@ export function useFileUpload({ onUploadComplete }: UseFileUploadOptions = {}) {
     const formData = new FormData();
     formData.append('file', file);
 
+    const context = {
+      type: currentContext,
+      organizationId: currentOrganization?.id
+    };
+
     try {
       // Simulate incremental progress for better UX
       setUploadProgress(25);
       await new Promise(resolve => setTimeout(resolve, 300));
       
       setUploadProgress(50);
-      const response = await uploadFileAndProcess(formData);
+      const response = await uploadFileAndProcess(formData, context);
       
       setUploadProgress(85);
       await new Promise(resolve => setTimeout(resolve, 200));

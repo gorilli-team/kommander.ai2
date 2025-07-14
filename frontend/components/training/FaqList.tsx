@@ -31,6 +31,7 @@ import {
 } from '@/frontend/components/ui/dialog';
 import { Skeleton } from '@/frontend/components/ui/skeleton';
 import { Input } from '@/frontend/components/ui/input';
+import { useOrganization } from '@/frontend/contexts/OrganizationContext';
 
 interface FaqListProps {}
 
@@ -42,18 +43,23 @@ export default function FaqList(props: FaqListProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
+  const { currentContext, currentOrganization } = useOrganization();
 
   const fetchFaqs = useCallback(async () => {
     setIsLoading(true);
     try {
-      const fetchedFaqsResult = await getFaqs();
+      const context = {
+        type: currentContext,
+        organizationId: currentOrganization?.id
+      };
+      const fetchedFaqsResult = await getFaqs(context);
       setFaqs(fetchedFaqsResult);
     } catch (error) {
       toast({ title: 'Errore', description: 'Impossibile caricare le FAQ.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
-  }, [toast, setIsLoading, setFaqs]); 
+  }, [toast, setIsLoading, setFaqs, currentContext, currentOrganization?.id]);
 
   useEffect(() => {
     fetchFaqs();
