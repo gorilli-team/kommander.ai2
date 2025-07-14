@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useTransition, useEffect } from 'react';
+import React, { useState, useTransition, useEffect, Suspense } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { 
@@ -34,7 +34,7 @@ interface PendingRegistration {
   name?: string;
 }
 
-export default function AuthForm() {
+function AuthFormContent() {
   const [view, setView] = useState<AuthView>('login');
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -535,5 +535,31 @@ export default function AuthForm() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+export default function AuthForm() {
+  return (
+    <Suspense fallback={
+      <Card className="w-full max-w-md shadow-xl">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-foreground mb-1">
+            Loading...
+          </CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
+            Please wait
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </CardContent>
+      </Card>
+    }>
+      <AuthFormContent />
+    </Suspense>
   );
 }
