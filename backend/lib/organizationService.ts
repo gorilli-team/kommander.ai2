@@ -17,15 +17,23 @@ import crypto from 'crypto';
 
 export class OrganizationService {
   private db: any;
+  private initPromise: Promise<void>;
 
   constructor() {
-    this.initializeDb();
+    this.initPromise = this.initializeDb();
   }
 
   private async initializeDb() {
     const { db } = await connectToDatabase();
     this.db = db;
     await this.createIndexes();
+  }
+
+  private async ensureInitialized() {
+    await this.initPromise;
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
   }
 
   private async createIndexes() {
@@ -87,7 +95,7 @@ export class OrganizationService {
     ownerId: string;
     settings?: any;
   }): Promise<string> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     // Validate ownerId is a valid ObjectId
     if (!ObjectId.isValid(data.ownerId)) {
@@ -565,7 +573,7 @@ export class OrganizationService {
    * Accept invitation
    */
   async acceptInvitation(token: string, userId: string): Promise<boolean> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
 
     const invitation = await this.db.collection('invitations').findOne({
       token,
@@ -573,41 +581,101 @@ export class OrganizationService {
       expiresAt: { $gt: new Date() }
     });
 
-    if (!invitation) return false;
+    if (!invitation) {
+      console.log('[acceptInvitation] Invitation not found or expired');
+      return false;
+    }
 
     // Check if user email matches invitation email
     const user = await this.db.collection('users').findOne({
       _id: new ObjectId(userId)
     });
 
-    if (!user || user.email.toLowerCase() !== invitation.email.toLowerCase()) {
+    if (!user) {
+      console.log('[acceptInvitation] User not found');
       return false;
     }
 
-    // Add user to organization
-    await this.addMember({
-      organizationId: invitation.organizationId.toString(),
-      userId,
-      role: invitation.role,
-      permissions: invitation.permissions,
-      invitedBy: invitation.invitedBy.toString(),
-      joinedAt: new Date()
+    // More flexible email matching - normalize both emails
+    const userEmail = user.email.toLowerCase().trim();
+    const inviteEmail = invitation.email.toLowerCase().trim();
+    
+    if (userEmail !== inviteEmail) {
+      console.log(`[acceptInvitation] Email mismatch: ${userEmail} vs ${inviteEmail}`);
+      return false;
+    }
+
+    // Check if user is already a member of the organization
+    const existingMember = await this.db.collection('organization_members').findOne({
+      organizationId: invitation.organizationId,
+      userId: new ObjectId(userId)
     });
 
-    // Update invitation status
-    await this.db.collection('invitations').updateOne(
-      { _id: invitation._id },
-      {
-        $set: {
-          status: 'accepted',
-          acceptedAt: new Date(),
-          acceptedBy: new ObjectId(userId),
-          updatedAt: new Date()
+    if (existingMember) {
+      console.log('[acceptInvitation] User is already a member of this organization');
+      // Update invitation status to accepted even if user is already a member
+      await this.db.collection('invitations').updateOne(
+        { _id: invitation._id },
+        {
+          $set: {
+            status: 'accepted',
+            acceptedAt: new Date(),
+            acceptedBy: new ObjectId(userId),
+            updatedAt: new Date()
+          }
         }
-      }
-    );
+      );
+      return true;
+    }
 
-    return true;
+    try {
+      // Add user to organization
+      await this.addMember({
+        organizationId: invitation.organizationId.toString(),
+        userId,
+        role: invitation.role,
+        permissions: invitation.permissions,
+        invitedBy: invitation.invitedBy.toString(),
+        joinedAt: new Date()
+      });
+
+      // Update invitation status
+      await this.db.collection('invitations').updateOne(
+        { _id: invitation._id },
+        {
+          $set: {
+            status: 'accepted',
+            acceptedAt: new Date(),
+            acceptedBy: new ObjectId(userId),
+            updatedAt: new Date()
+          }
+        }
+      );
+
+      console.log('[acceptInvitation] Successfully accepted invitation and added user to organization');
+      return true;
+    } catch (error: any) {
+      console.error('[acceptInvitation] Error adding member to organization:', error);
+      
+      // Check if it's a duplicate key error (user already exists)
+      if (error.code === 11000) {
+        console.log('[acceptInvitation] Duplicate member detected, updating invitation status');
+        await this.db.collection('invitations').updateOne(
+          { _id: invitation._id },
+          {
+            $set: {
+              status: 'accepted',
+              acceptedAt: new Date(),
+              acceptedBy: new ObjectId(userId),
+              updatedAt: new Date()
+            }
+          }
+        );
+        return true;
+      }
+      
+      return false;
+    }
   }
 
   /**

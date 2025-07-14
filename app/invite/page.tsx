@@ -53,14 +53,14 @@ function InviteContent() {
   useEffect(() => {
     if (status === 'authenticated' && typeof window !== 'undefined') {
       const storedToken = sessionStorage.getItem('pendingInviteToken');
-      if (storedToken && storedToken === token) {
+      if (storedToken && storedToken === token && invitation) {
         // User just authenticated with pending invitation - auto-accept
         setTimeout(() => {
           handleAcceptInvitation();
         }, 1000);
       }
     }
-  }, [status, token]);
+  }, [status, token, invitation]);
 
   const fetchInvitation = async () => {
     try {
