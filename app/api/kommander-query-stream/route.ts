@@ -60,10 +60,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const chatHistory: ChatMessage[] = Array.isArray(history) ? history : [];
     const convId = conversationId || new ObjectId().toString();
     const existing = conversationId ? await getConversation(userId, convId) : null;
     const handledBy = existing?.handledBy || 'bot';
+    
+    // **MEMORIA CONVERSAZIONE**: Carica la storia esistente dal database
+    let chatHistory: ChatMessage[] = [];
+    if (existing && existing.messages.length > 0) {
+      // Converte i messaggi dal formato database al formato richiesto da generateChatResponse
+      const allMessages = existing.messages
+        .filter(msg => msg.role !== 'system') // Esclude messaggi di sistema
+        .map(msg => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.text || msg.content || ''
+        }));
+      
+      // Limita la storia agli ultimi 10 messaggi per evitare superamento token limit
+      chatHistory = allMessages.slice(-10);
+      
+      console.log(`[kommander-query-stream] Caricata storia conversazione con ${chatHistory.length} messaggi (da ${allMessages.length} totali)`);
+    } else {
+      // Fallback alla storia fornita nella richiesta (per compatibilità)
+      chatHistory = Array.isArray(history) ? history.slice(-10) : [];
+      console.log(`[kommander-query-stream] Utilizzando storia dalla richiesta con ${chatHistory.length} messaggi`);
+    }
     
     // Track new conversation if this is the first message
     if (!existing && chatHistory.length === 0) {
