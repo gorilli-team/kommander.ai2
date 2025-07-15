@@ -227,11 +227,15 @@ export async function generateStreamingChatResponse(
 
   try {
     // 🔍 **SEMANTIC FAQ MATCHING**: Check for FAQ match BEFORE OpenAI call
-    console.log('[generateStreamingChatResponse] Checking for semantic FAQ match...');
+    console.log('[generateStreamingChatResponse] 🔍 STARTING FAQ CHECK for message:', userMessage);
+    console.log('[generateStreamingChatResponse] 🔍 User ID:', userIdToUse);
+    
     const faqResult = await handleFAQQuery(userMessage, userIdToUse);
+    console.log('[generateStreamingChatResponse] 🔍 FAQ Result:', faqResult);
     
     if (faqResult.isFaqMatch) {
-      console.log(`[generateStreamingChatResponse] FAQ match found with similarity ${faqResult.similarity?.toFixed(3)}`);
+      console.log(`[generateStreamingChatResponse] ✅ FAQ MATCH FOUND! Similarity: ${faqResult.similarity?.toFixed(3)}`);
+      console.log(`[generateStreamingChatResponse] ✅ FAQ Answer:`, faqResult.answer.substring(0, 100) + '...');
       
       // Stream the exact FAQ answer
       const faqAnswer = faqResult.answer;
@@ -257,10 +261,11 @@ export async function generateStreamingChatResponse(
         }
       };
       
+      console.log('[generateStreamingChatResponse] ✅ RETURNING FAQ SOURCE');
       return { sources: [faqSource] };
     }
     
-    console.log('[generateStreamingChatResponse] No FAQ match found, proceeding with OpenAI...');
+    console.log('[generateStreamingChatResponse] ❌ No FAQ match found, proceeding with OpenAI...');
     
     const { db } = await connectToDatabase();
 
