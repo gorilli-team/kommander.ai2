@@ -19,7 +19,7 @@ export function capitalizeSentences(text: string): string {
   if (!text) return text;
   
   // Regex to identify the beginning of a sentence (after . ! ? or at the start)
-  return text.replace(/(^|[.!?]\s+)([a-z])/g, (match, prefix, letter) = {
+  return text.replace(/(^|[.!?]\s+)([a-z])/g, (match, prefix, letter) => {
     return prefix + letter.toUpperCase();
   });
 }
