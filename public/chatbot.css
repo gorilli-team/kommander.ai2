@@ -483,7 +483,7 @@ body {
   box-shadow: 0 4px 10px var(--kommander-message-shadow);
 }
 
-/* Nuovo loader senza avatar */
+/* New loader without avatar */
 .kommander-typing-new {
   position: relative;
   padding: 12px 16px;
@@ -774,7 +774,7 @@ body {
   }
 }
 
-/* Stili per il pulsante indietro */
+/* Styles for the back button */
 .kommander-back-btn {
   background: rgba(255, 255, 255, 0.2);
   border: none;
@@ -801,7 +801,7 @@ body {
   height: 16px;
 }
 
-/* Stili per la lista conversazioni */
+/* Styles for the conversation list */
 .kommander-conversations-header {
   padding: 16px;
   border-bottom: 1px solid var(--kommander-border-color);
@@ -900,7 +900,7 @@ body {
   opacity: 0.8;
 }
 
-/* Stili per l'upload dei file */
+/* Styles for file upload */
 .kommander-file-btn {
   background: none;
   border: none;

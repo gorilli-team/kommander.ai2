@@ -21,13 +21,13 @@ export function useFileProcessor() {
   const [uploadedFiles, setUploadedFiles] = useState<ProcessedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Funzione per estrarre testo da diversi formati file
+  // Function to extract text from different file formats
   const extractTextContent = useCallback(async (file: File, userId?: string): Promise<string> => {
     const fileType = file.type.toLowerCase();
     const fileName = file.name.toLowerCase();
 
     try {
-      // Per PDF e DOCX, usa il server se possibile
+      // For PDF and DOCX, use the server if possible
       if ((fileType.includes('application/pdf') || fileName.endsWith('.pdf') || 
            fileType.includes('application/msword') || 
            fileType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') || 
@@ -50,23 +50,23 @@ export function useFileProcessor() {
           if (result.success && result.content && result.content.trim()) {
             return result.content;
           } else {
-            // Fallback se il server non può estrarre il testo
-            return `[${file.name}]\n\n⚠️ Non è stato possibile estrarre testo da questo documento.\n\nSe è un documento testuale (non una scansione):\n1. Aprilo\n2. Seleziona tutto il testo (Ctrl+A o Cmd+A)\n3. Copialo e incollalo in un nuovo messaggio\n\nAltrimenti posso aiutarti con le mie conoscenze di base sull'argomento.`;
+            // Fallback if the server cannot extract text
+            return `[${file.name}]\n\n⚠️ Unable to extract text from this document.\n\nIf it's a textual document (not a scan):\n1. Open it\n2. Select all text (Ctrl+A or Cmd+A)\n3. Copy and paste it into a new message\n\nOtherwise I can help you with my basic knowledge on the topic.`;
           }
         } catch (serverError) {
           console.error('Server processing failed:', serverError);
-          // Fallback al messaggio di istruzioni
-          return `[${file.name}]\n\n⚠️ Elaborazione server non disponibile.\n\nPer analizzare questo documento:\n1. Aprilo\n2. Seleziona tutto il testo (Ctrl+A o Cmd+A)\n3. Copialo e incollalo in un nuovo messaggio`;
+          // Fallback to instruction message
+          return `[${file.name}]\n\n⚠️ Server processing not available.\n\nTo analyze this document:\n1. Open it\n2. Select all text (Ctrl+A or Cmd+A)\n3. Copy and paste it into a new message`;
         }
       }
       
-      // Elaborazione locale per altri tipi di file
+      // Local processing for other file types
       if (fileType.includes('text/') || fileName.endsWith('.txt') || fileName.endsWith('.md')) {
-        // File di testo semplice
+        // Plain text files
         return await file.text();
       } 
       else if (fileType.includes('application/json') || fileName.endsWith('.json')) {
-        // File JSON
+        // JSON files
         const text = await file.text();
         try {
           const json = JSON.parse(text);
@@ -76,30 +76,30 @@ export function useFileProcessor() {
         }
       }
       else if (fileType.includes('text/csv') || fileName.endsWith('.csv')) {
-        // File CSV
+        // CSV files
         const text = await file.text();
         return text;
       }
       else if (fileType.includes('text/html') || fileName.endsWith('.html') || fileName.endsWith('.htm')) {
-        // File HTML - rimuoviamo i tag
+        // HTML files - remove tags
         const text = await file.text();
         const div = document.createElement('div');
         div.innerHTML = text;
         return div.textContent || div.innerText || text;
       }
       else if (fileName.endsWith('.js') || fileName.endsWith('.ts') || fileName.endsWith('.jsx') || fileName.endsWith('.tsx') || fileName.endsWith('.py') || fileName.endsWith('.java') || fileName.endsWith('.cpp') || fileName.endsWith('.c') || fileName.endsWith('.css') || fileName.endsWith('.scss') || fileName.endsWith('.php')) {
-        // File di codice
+        // Code files
         return await file.text();
       }
       else {
-        throw new Error(`Formato file non supportato: ${fileType || 'sconosciuto'}`);
+        throw new Error(`Unsupported file format: ${fileType || 'unknown'}`);
       }
     } catch (error) {
-      throw new Error(`Errore durante l'elaborazione del file: ${error instanceof Error ? error.message : 'errore sconosciuto'}`);
+      throw new Error(`Error during file processing: ${error instanceof Error ? error.message : 'unknown error'}`);
     }
   }, []);
 
-  // Validazione file
+  // File validation
   const validateFile = useCallback((file: File): { valid: boolean; error?: string } => {
     const maxSize = 10 * 1024 * 1024; // 10MB
     const supportedTypes = [
@@ -109,7 +109,7 @@ export function useFileProcessor() {
     ];
 
     if (file.size > maxSize) {
-      return { valid: false, error: 'Il file è troppo grande (max 10MB)' };
+      return { valid: false, error: 'File is too large (max 10MB)' };
     }
 
     const isSupported = supportedTypes.some(type => 
@@ -119,13 +119,13 @@ export function useFileProcessor() {
     );
 
     if (!isSupported) {
-      return { valid: false, error: 'Formato file non supportato' };
+      return { valid: false, error: 'Unsupported file format' };
     }
 
     return { valid: true };
   }, []);
 
-  // Processo un singolo file
+  // Process a single file
   const processFile = useCallback(async (file: File, userId?: string): Promise<FileProcessingResult> => {
     setIsProcessing(true);
 
@@ -152,14 +152,14 @@ export function useFileProcessor() {
     } catch (error) {
       return { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Errore durante l\'elaborazione del file' 
+        error: error instanceof Error ? error.message : 'Error during file processing'
       };
     } finally {
       setIsProcessing(false);
     }
   }, [extractTextContent, validateFile]);
 
-  // Processo multipli file
+  // Process multiple files
   const processFiles = useCallback(async (files: FileList, userId?: string): Promise<FileProcessingResult[]> => {
     const results: FileProcessingResult[] = [];
     
@@ -171,36 +171,36 @@ export function useFileProcessor() {
     return results;
   }, [processFile]);
 
-  // Rimuovi un file
+  // Remove a file
   const removeFile = useCallback((fileId: string) => {
     setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
   }, []);
 
-  // Rimuovi tutti i file
+  // Remove all files
   const clearFiles = useCallback(() => {
     setUploadedFiles([]);
   }, []);
 
-  // Genera context string per l'AI
+  // Generate context string for AI
   const getFilesContext = useCallback((): string => {
     if (uploadedFiles.length === 0) return '';
 
     const context = uploadedFiles.map(file => {
       const truncatedContent = file.content.length > 3000 
-        ? file.content.substring(0, 3000) + '\n\n[...contenuto troncato...]'
+        ? file.content.substring(0, 3000) + '\n\n[...content truncated...]'
         : file.content;
 
       return `=== FILE: ${file.name} ===
-Tipo: ${file.type}
-Dimensione: ${(file.size / 1024).toFixed(1)}KB
-Caricato: ${file.uploadedAt.toLocaleString('it-IT')}
+Type: ${file.type}
+Size: ${(file.size / 1024).toFixed(1)}KB
+Uploaded: ${file.uploadedAt.toLocaleString('en-US')}
 
 ${truncatedContent}
 
-=== FINE FILE ===`;
+=== END FILE ===
     }).join('\n\n');
 
-    return `DOCUMENTI CARICATI DALL'UTENTE:\n\n${context}\n\nRispondi tenendo conto di questi documenti oltre alle tue conoscenze di base.`;
+    return `DOCUMENTS UPLOADED BY USER:\n\n${context}\n\nRespond taking into account these documents in addition to your basic knowledge.`;
   }, [uploadedFiles]);
 
   return {
@@ -211,6 +211,6 @@ ${truncatedContent}
     removeFile,
     clearFiles,
     getFilesContext,
-    supportedFormats: ['TXT', 'MD', 'JSON', 'CSV', 'PDF', 'DOC', 'DOCX', 'HTML', 'JS', 'TS', 'PY', 'e altri file di testo']
+    supportedFormats: ['TXT', 'MD', 'JSON', 'CSV', 'PDF', 'DOC', 'DOCX', 'HTML', 'JS', 'TS', 'PY', 'and other text files']
   };
 }

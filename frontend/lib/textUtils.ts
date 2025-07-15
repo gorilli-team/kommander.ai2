@@ -1,44 +1,44 @@
 /**
- * Capitalizza automaticamente la prima lettera di ogni frase
- * @param text - Il testo da capitalizzare
- * @returns Il testo con la prima lettera di ogni frase capitalizzata
+ * Automatically capitalize the first letter of each sentence
+ * @param text - The text to capitalize
+ * @returns The text with the first letter of each sentence capitalized
  */
 export function capitalizeFirstLetter(text: string): string {
   if (!text) return text;
   
-  // Capitalizza la prima lettera se è una lettera
+  // Capitalize the first letter if it is a letter
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /**
- * Capitalizza automaticamente la prima lettera di ogni frase in un testo
- * @param text - Il testo da processare
- * @returns Il testo con tutte le frasi capitalizzate
+ * Automatically capitalize the first letter of each sentence in a text
+ * @param text - The text to process
+ * @returns The text with all sentences capitalized
  */
 export function capitalizeSentences(text: string): string {
   if (!text) return text;
   
-  // Regex per identificare l'inizio di una frase (dopo . ! ? o all'inizio)
-  return text.replace(/(^|[.!?]\s+)([a-z])/g, (match, prefix, letter) => {
+  // Regex to identify the beginning of a sentence (after . ! ? or at the start)
+  return text.replace(/(^|[.!?]\s+)([a-z])/g, (match, prefix, letter) = {
     return prefix + letter.toUpperCase();
   });
 }
 
 /**
- * Applica capitalizzazione in tempo reale mentre l'utente scrive
- * @param text - Il testo corrente
- * @param previousText - Il testo precedente per confronto
- * @returns Il testo con capitalizzazione applicata
+ * Apply capitalization in real time as the user writes
+ * @param text - The current text
+ * @param previousText - The previous text for comparison
+ * @returns The text with applied capitalization
  */
 export function applyRealtimeCapitalization(text: string, previousText: string = ''): string {
   if (!text) return text;
   
-  // Se è il primo carattere, capitalizzalo
+  // If it is the first character, capitalize it
   if (text.length === 1 && /^[a-z]$/.test(text)) {
     return text.toUpperCase();
   }
   
-  // Capitalizza dopo punteggiatura seguita da spazio
+  // Capitalize after punctuation followed by space
   return text.replace(/(^|[.!?]\s+)([a-z])/g, (match, prefix, letter) => {
     return prefix + letter.toUpperCase();
   });

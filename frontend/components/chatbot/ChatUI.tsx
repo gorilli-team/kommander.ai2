@@ -34,7 +34,7 @@ function ChatMessage({ message }: { message: Message }) {
         isUser ? 'justify-end' : 'justify-start'
       )}
     >
-      {/* Avatar rimosso per layout più pulito */}
+      {/* Avatar removed for cleaner layout */}
       <div
         className={cn(
           'max-w-[90%] sm:max-w-md md:max-w-lg lg:max-w-xl rounded-xl px-4 sm:px-5 py-3 sm:py-4 shadow-md', /* Aumentato spazio orizzontale */
@@ -93,7 +93,7 @@ function ChatMessage({ message }: { message: Message }) {
           {format(message.timestamp, 'p')}
         </p>
       </div>
-      {/* Avatar utente rimosso per layout più pulito */}
+      {/* User avatar removed for cleaner layout */}
     </div>
   );
 }
@@ -122,7 +122,7 @@ export default function ChatUI({
   const viewportRef = useRef<HTMLDivElement>(null);
   const prevInputValue = useRef('');
 
-  // Auto-scroll disabilitato durante streaming - lascia che controlli l'utente
+  // Auto-scroll disabled during streaming - let user control
   // useEffect(() => {
   //   if (viewportRef.current) {
   //     viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
@@ -199,7 +199,7 @@ export default function ChatUI({
             value={inputValue}
             onChange={(e) => {
               const newValue = e.target.value;
-              // Applica capitalizzazione automatica
+              // Apply automatic capitalization
               const capitalizedValue = applyRealtimeCapitalization(newValue, inputValue);
               setInputValue(capitalizedValue);
             }}

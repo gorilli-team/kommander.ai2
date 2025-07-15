@@ -193,7 +193,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
     const last = selected.messages[selected.messages.length - 1];
     if (last && last.role === 'user' && typeof window !== 'undefined') {
       if (Notification.permission === 'granted') {
-        new Notification('Nuovo messaggio', { body: last.text });
+        new Notification('New message', { body: last.text });
       } else if (Notification.permission === 'default') {
         Notification.requestPermission();
       }
@@ -263,54 +263,54 @@ export default function ConversationsClient({ conversations: initial }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Totale Conversazioni</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Conversations</CardTitle>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{analytics.total}</div>
-              <p className="text-xs text-muted-foreground">Conversazioni totali</p>
+              <p className="text-xs text-muted-foreground">Total conversations</p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Gestite da AI</CardTitle>
+              <CardTitle className="text-sm font-medium">Handled by AI</CardTitle>
               <Bot className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{analytics.botHandled}</div>
-              <p className="text-xs text-muted-foreground">{analytics.botPercentage}% del totale</p>
+              <p className="text-xs text-muted-foreground">{analytics.botPercentage}% of total</p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Gestite da Operatori</CardTitle>
+              <CardTitle className="text-sm font-medium">Handled by Operators</CardTitle>
               <User className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{analytics.agentHandled}</div>
-              <p className="text-xs text-muted-foreground">{analytics.agentPercentage}% del totale</p>
+              <p className="text-xs text-muted-foreground">{analytics.agentPercentage}% of total</p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Messaggi per Conversazione</CardTitle>
+              <CardTitle className="text-sm font-medium">Messages per Conversation</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{analytics.avgMessagesPerConversation}</div>
-              <p className="text-xs text-muted-foreground">Media messaggi</p>
+              <p className="text-xs text-muted-foreground">Average messages</p>
             </CardContent>
           </Card>
         </div>
       </div>
       
-      {/* Tabs per Conversazioni e Analytics */}
+      {/* Tabs for Conversations and Analytics */}
       <Tabs defaultValue="conversations" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="conversations">Conversazioni</TabsTrigger>
+          <TabsTrigger value="conversations">Conversations</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
         
@@ -324,12 +324,12 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                   {/* Search Bar */}
                   <div className="relative max-w-sm">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      placeholder="Cerca nelle conversazioni..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                    />
+                      <Input
+                        placeholder="Search in conversations..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9"
+                      />
                   </div>
                   
                   {/* Filters Row */}
@@ -340,15 +340,15 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="sm">
                             <Filter className="h-4 w-4 mr-2" />
-                            {filterBy === 'all' ? 'Tutti' : filterBy === 'bot' ? 'AI' : 'Operatori'}
+                            {filterBy === 'all' ? 'All' : filterBy === 'bot' ? 'AI' : 'Operators'}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuLabel>Filtro per gestore</DropdownMenuLabel>
+                          <DropdownMenuLabel>Filter by handler</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setFilterBy('all')}>Tutti</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setFilterBy('bot')}>Gestite da AI</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setFilterBy('agent')}>Gestite da Operatori</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setFilterBy('all')}>All</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setFilterBy('bot')}>Handled by AI</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setFilterBy('agent')}>Handled by Operators</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                       
@@ -357,18 +357,18 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="sm">
                             <Globe className="h-4 w-4 mr-2" />
-                            {siteFilter === 'all' ? 'Tutti i siti' : siteFilter}
+                            {siteFilter === 'all' ? 'All sites' : siteFilter}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuLabel>Filtro per sito</DropdownMenuLabel>
+                          <DropdownMenuLabel>Filter by site</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           {uniqueSites.map((site) => (
                             <DropdownMenuItem 
                               key={site} 
                               onClick={() => setSiteFilter(site)}
                             >
-                              {site === 'all' ? 'Tutti i siti' : site}
+                              {site === 'all' ? 'All sites' : site}
                             </DropdownMenuItem>
                           ))}
                         </DropdownMenuContent>
@@ -379,18 +379,18 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="sm">
                             <Clock className="h-4 w-4 mr-2" />
-                            {dateFilter === 'all' ? 'Tutte le date' : 
-                             dateFilter === 'today' ? 'Oggi' :
-                             dateFilter === 'week' ? 'Questa settimana' : 'Questo mese'}
+                            {dateFilter === 'all' ? 'All dates' : 
+                             dateFilter === 'today' ? 'Today' :
+                             dateFilter === 'week' ? 'This week' : 'This month'}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuLabel>Filtro per data</DropdownMenuLabel>
+                          <DropdownMenuLabel>Filter by date</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setDateFilter('all')}>Tutte le date</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setDateFilter('today')}>Oggi</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setDateFilter('week')}>Questa settimana</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setDateFilter('month')}>Questo mese</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDateFilter('all')}>All dates</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDateFilter('today')}>Today</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDateFilter('week')}>This week</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDateFilter('month')}>This month</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                       
@@ -399,16 +399,16 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="sm">
                             <MessageSquare className="h-4 w-4 mr-2" />
-                            {typeFilter === 'all' ? 'Tutti i tipi' : 
+                            {typeFilter === 'all' ? 'All types' : 
                              typeFilter === 'widget' ? 'Widget' : 'Dashboard'}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuLabel>Filtro per tipo</DropdownMenuLabel>
+                          <DropdownMenuLabel>Filter by type</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setTypeFilter('all')}>Tutti i tipi</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setTypeFilter('widget')}>Conversazioni Widget</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setTypeFilter('dashboard')}>Conversazioni Dashboard</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setTypeFilter('all')}>All types</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setTypeFilter('widget')}>Widget Conversations</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setTypeFilter('dashboard')}>Dashboard Conversations</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                       
@@ -417,15 +417,15 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="sm">
                             <Clock className="h-4 w-4 mr-2" />
-                            {sortBy === 'newest' ? 'Più recenti' : sortBy === 'oldest' ? 'Più vecchie' : 'Per messaggi'}
+                            {sortBy === 'newest' ? 'Newest' : sortBy === 'oldest' ? 'Oldest' : 'By messages'}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuLabel>Ordina per</DropdownMenuLabel>
+                          <DropdownMenuLabel>Sort by</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setSortBy('newest')}>Più recenti</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setSortBy('oldest')}>Più vecchie</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setSortBy('messages')}>Per numero messaggi</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setSortBy('newest')}>Newest</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setSortBy('oldest')}>Oldest</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setSortBy('messages')}>By message count</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -438,10 +438,10 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                         className="flex items-center gap-2"
                       >
                         {isExporting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                        Esporta
+                        Export
                       </Button>
                       <Badge variant="secondary" className="flex items-center gap-1">
-                        {filteredConversations.length} risultati
+                        {filteredConversations.length} results
                       </Badge>
                     </div>
                   </div>
@@ -456,10 +456,10 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                     <MessageSquare className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                      Conversazioni
+                      Conversations
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      {filteredConversations.length} di {conversations.length} conversazioni
+                      {filteredConversations.length} of {conversations.length} conversations
                     </p>
                   </CardHeader>
                   <ScrollArea className="h-[calc(70vh-8rem)]">
@@ -468,10 +468,10 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                         <div className="text-center py-8">
                           <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                           <p className="text-muted-foreground">
-                            {searchQuery ? 'Nessun risultato trovato' : 'Nessuna conversazione ancora'}
+                            {searchQuery ? 'No results found' : 'No conversations yet'}
                           </p>
                           <p className="text-sm text-muted-foreground mt-1">
-                            {searchQuery ? 'Prova a modificare i termini di ricerca' : 'Le conversazioni appariranno qui'}
+                            {searchQuery ? 'Try changing search terms' : 'Conversations will appear here'}
                           </p>
                         </div>
                       ) : (
@@ -496,7 +496,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium line-clamp-2 mb-1">
-                                      {last?.text || 'Nuova conversazione'}
+                                      {last?.text || 'New conversation'}
                                     </p>
                                     {c.site && (
                                       <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
@@ -514,11 +514,11 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                                     <DropdownMenuContent align="end">
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); copyConversationLink(c.id); }}>
                                         <Copy className="h-4 w-4 mr-2" />
-                                        Copia link
+                                        Copy link
                                       </DropdownMenuItem>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedId(c.id); }}>
                                         <ExternalLink className="h-4 w-4 mr-2" />
-                                        Apri dettagli
+                                        Open details
                                       </DropdownMenuItem>
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem 
@@ -526,7 +526,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                                         className="text-destructive"
                                       >
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        Elimina
+                                        Delete
                                       </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
@@ -544,7 +544,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                                       )}
                                     >
                                       {c.handledBy === 'agent' ? (
-                                        <><User className="h-3 w-3 mr-1" />Operatore</>
+                                        <><User className="h-3 w-3 mr-1" />Operator</>
                                       ) : (
                                         <><Bot className="h-3 w-3 mr-1" />AI</>
                                       )}
@@ -575,7 +575,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                         <div>
                           <CardTitle className="flex items-center gap-2">
                             <MessageSquare className="h-5 w-5" />
-                            Conversazione {selected.id.slice(-8)}
+                            Conversation {selected.id.slice(-8)}
                           </CardTitle>
                           <p className="text-sm text-muted-foreground mt-1">
                             {selected.updatedAt ? format(new Date(selected.updatedAt), 'PPpp') : ''}
@@ -597,7 +597,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                             )}
                           >
                             {selected.handledBy === 'agent' ? (
-                              <><User className="h-3 w-3 mr-1" />Operatore</>
+                              <><User className="h-3 w-3 mr-1" />Operator</>
                             ) : (
                               <><Bot className="h-3 w-3 mr-1" />AI</>
                             )}
@@ -697,10 +697,10 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                         <Input
                           name="agentMsg"
                           className="flex-1"
-                          placeholder="Scrivi una risposta come operatore..."
+                          placeholder="Write a response as an operator..."
                         />
                         <Button type="submit" size="sm">
-                          Invia
+                          Send
                         </Button>
                       </form>
                     )}
@@ -709,8 +709,8 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                   <Card className="h-full flex items-center justify-center">
                     <div className="text-center space-y-3">
                       <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto" />
-                      <p className="text-muted-foreground">Seleziona una conversazione per visualizzare i dettagli</p>
-                      <p className="text-sm text-muted-foreground">I messaggi appariranno qui</p>
+                      <p className="text-muted-foreground">Select a conversation to view details</p>
+                      <p className="text-sm text-muted-foreground">Messages will appear here</p>
                     </div>
                   </Card>
                 )}
@@ -723,14 +723,14 @@ export default function ConversationsClient({ conversations: initial }: Props) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Distribuzione Gestori</CardTitle>
+                <CardTitle>Handler Distribution</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Bot className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                      <span>Gestite da AI</span>
+                      <span>Handled by AI</span>
                     </div>
                     <span className="font-bold">{analytics.botPercentage}%</span>
                   </div>
@@ -740,7 +740,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-green-500" />
-                      <span>Gestite da Operatori</span>
+                      <span>Handled by Operators</span>
                     </div>
                     <span className="font-bold">{analytics.agentPercentage}%</span>
                   </div>
@@ -753,18 +753,18 @@ export default function ConversationsClient({ conversations: initial }: Props) {
             
             <Card>
               <CardHeader>
-                <CardTitle>Statistiche Messaggi</CardTitle>
+                <CardTitle>Message Statistics</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-muted rounded-lg">
                       <p className="text-2xl font-bold">{analytics.totalMessages}</p>
-                      <p className="text-sm text-muted-foreground">Totale messaggi</p>
+                      <p className="text-sm text-muted-foreground">Total messages</p>
                     </div>
                     <div className="text-center p-4 bg-muted rounded-lg">
                       <p className="text-2xl font-bold">{analytics.avgMessagesPerConversation}</p>
-                      <p className="text-sm text-muted-foreground">Media per conversazione</p>
+                      <p className="text-sm text-muted-foreground">Average per conversation</p>
                     </div>
                   </div>
                 </div>

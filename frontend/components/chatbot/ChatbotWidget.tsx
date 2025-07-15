@@ -60,16 +60,16 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
 
 useEffect(() => {
     if (handledBy === 'agent' && prevHandledBy.current !== 'agent') {
-      addMessage('system', 'Stai parlando con un operatore umano');
+      addMessage('system', 'You are speaking with a human operator');
     } else if (handledBy === 'bot' && prevHandledBy.current !== 'bot') {
-      addMessage('system', 'Ora sei tornato a parlare con il bot');
+      addMessage('system', 'You are now back to talking with the bot');
     }
     prevHandledBy.current = handledBy;
   }, [handledBy, addMessage]);
 
 useEffect(() => {
     if (open && messages.length === 0) {
-      addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi? 👋`);
+      addMessage('assistant', `Hello, I'm ${botName}! How can I help you today? 👋`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, botName]);
@@ -87,13 +87,13 @@ useEffect(() => {
     e.preventDefault();
     if (!inputValue.trim()) return;
     
-    // Ottieni il context dei file se presenti
+    // Get the context of files if present
     const filesContext = getFilesContext();
     
     sendMessage(inputValue, filesContext);
     setInputValue('');
     
-    // Chiudi l'area upload dopo l'invio
+    // Close the upload area after sending
     setShowFileUploader(false);
   };
 
@@ -105,7 +105,7 @@ useEffect(() => {
         style={{ backgroundColor: botColor }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        aria-label="Apri chat"
+        aria-label="Open chat"
       >
         ⌘
       </motion.button>
@@ -201,9 +201,9 @@ useEffect(() => {
                   userId={userId}
                   onFilesProcessed={(files) => {
                     if (files.length > 0) {
-                      // Aggiungi messaggio di sistema per confermare il caricamento
+                      // Add system message to confirm the upload
                       const fileNames = files.map(f => f.name).join(', ');
-                      addMessage('system', `📎 File caricato: ${fileNames}\n\nOra puoi farmi domande sul contenuto di questo file o chiedere un riassunto.`);
+                      addMessage('system', `📎 File uploaded: ${fileNames}\n\nNow you can ask me questions about the content of this file or request a summary.`);
                     }
                   }}
                 />
@@ -218,9 +218,9 @@ useEffect(() => {
               {uploadedFiles.length > 0 && (
                 <div className="flex items-center space-x-2 text-xs text-muted-foreground bg-blue-50 p-2 rounded border">
                   <FileText className="w-3 h-3" />
-                  <span>{uploadedFiles.length} file caricato{uploadedFiles.length !== 1 ? 'i' : ''}</span>
+                  <span>{uploadedFiles.length} file{uploadedFiles.length !== 1 ? 's' : ''} uploaded</span>
                   <span>•</span>
-                  <span>Inclusi nella conversazione</span>
+                  <span>Included in the conversation</span>
                 </div>
               )}
               
@@ -234,7 +234,7 @@ useEffect(() => {
                     "rounded-full",
                     showFileUploader && "bg-primary/10 text-primary"
                   )}
-                  aria-label="Carica file"
+                  aria-label="Upload file"
                 >
                   <Paperclip className="w-4 h-4" />
                 </Button>
@@ -247,7 +247,7 @@ useEffect(() => {
                     const capitalizedValue = applyRealtimeCapitalization(newValue, inputValue);
                     setInputValue(capitalizedValue);
                   }}
-                  placeholder="Scrivi qui…"
+                  placeholder="Type here…"
                   disabled={isLoading}
                   className="flex-1 !bg-white text-black rounded-xl focus:ring-primary focus:border-primary"
                 />
@@ -256,7 +256,7 @@ useEffect(() => {
                   type="submit"
                   size="icon"
                   disabled={isLoading || !inputValue.trim()}
-                  aria-label="Invia"
+                  aria-label="Send"
                   className="rounded-full"
                 >
                   <Send className="w-4 h-4" />
