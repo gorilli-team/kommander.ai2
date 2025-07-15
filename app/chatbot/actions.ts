@@ -188,6 +188,143 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
   return rawText.trim();
 }
 
+// Funzione per ottenere una risposta contestuale basata su tutte le FAQ e documenti disponibili
+async function getContextualResponse(
+  userMessage: string,
+  userId: string,
+  history: ChatMessage[]
+): Promise<string> {
+  try {
+    console.log('[getContextualResponse] Preparando contesto completo per LLM...');
+    
+    const { db } = await connectToDatabase();
+    
+    // Recupera TUTTE le FAQ dell'utente
+    const allFaqs = await db.collection('faqs').find({ userId }).toArray();
+    console.log(`[getContextualResponse] Caricate ${allFaqs.length} FAQ`);
+    
+    // Recupera TUTTI i documenti dell'utente
+    const allFiles = await db.collection('raw_files_meta')
+      .find({ userId })
+      .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
+      .sort({ uploadedAt: -1 })
+      .toArray();
+    console.log(`[getContextualResponse] Caricati ${allFiles.length} file`);
+    
+    // Recupera impostazioni utente
+    const userSettings = await getSettings(userId);
+    
+    // Trasforma le FAQ nel formato corretto
+    const faqs: Faq[] = allFaqs.map(doc => ({
+      id: doc._id.toString(),
+      userId: doc.userId,
+      question: doc.question,
+      answer: doc.answer,
+      createdAt: doc.createdAt ? new Date(doc.createdAt) : undefined,
+      updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : undefined,
+    }));
+    
+    // Processa i file per estrarre il contenuto
+    const filesForPromptContext: UploadedFileInfoForPrompt[] = allFiles.map(doc => ({
+      fileName: doc.fileName,
+      originalFileType: doc.originalFileType,
+    }));
+    
+    // Estrai contenuto dai file più recenti (limitiamo a 10 per performance)
+    const filesToProcess = allFiles.slice(0, 10);
+    const fileContentPromises = await Promise.all(
+      filesToProcess.map(async (fileMeta) => {
+        const fileBufferResult = await getFileContent(fileMeta.gridFsFileId.toString(), userId);
+        return { fileMeta, fileBufferResult };
+      })
+    );
+    
+    // Estrai testo dai file
+    const extractedTextSnippets: DocumentSnippet[] = await Promise.all(
+      fileContentPromises.map(async ({ fileMeta, fileBufferResult }) => {
+        if ('error' in fileBufferResult) {
+          return { fileName: fileMeta.fileName, snippet: `Impossibile recuperare il contenuto: ${fileBufferResult.error}` };
+        } else {
+          let text = await extractTextFromFileBuffer(fileBufferResult, fileMeta.originalFileType, fileMeta.fileName);
+          // Limita la lunghezza per evitare prompt troppo lunghi
+          const MAX_TEXT_LENGTH = 5000;
+          if (text.length > MAX_TEXT_LENGTH) {
+            text = text.substring(0, MAX_TEXT_LENGTH) + "\n[...contenuto troncato...]";
+          }
+          return { fileName: fileMeta.fileName, snippet: text };
+        }
+      })
+    );
+    
+    // Costruisci il prompt con tutto il contesto disponibile
+    const { messages } = buildPromptServer(
+      userMessage,
+      faqs,
+      filesForPromptContext,
+      extractedTextSnippets,
+      history,
+      [], // summaries vuoto per ora
+      userSettings || undefined
+    );
+    
+    // Configura parametri del modello
+    let temperature = 0.7;
+    let maxTokens = 2000;
+    
+    if (userSettings?.personality) {
+      switch (userSettings.personality) {
+        case 'casual':
+          temperature = 0.8;
+          maxTokens = 2200;
+          break;
+        case 'formal':
+          temperature = 0.6;
+          maxTokens = 2000;
+          break;
+        case 'neutral':
+        default:
+          temperature = 0.7;
+          maxTokens = 2000;
+          break;
+      }
+    }
+    
+    // Genera risposta usando OpenAI
+    const completion = await createTrackedChatCompletion(
+      {
+        model: 'gpt-3.5-turbo',
+        messages: messages,
+        temperature: temperature,
+        max_tokens: maxTokens,
+      },
+      {
+        userId,
+        endpoint: 'contextual-response',
+        userMessage,
+        metadata: {
+          personality: userSettings?.personality,
+          traits: userSettings?.traits,
+          totalFaqs: faqs.length,
+          totalFiles: allFiles.length
+        }
+      }
+    );
+    
+    const response = completion.choices[0]?.message?.content;
+    
+    if (!response) {
+      return 'Mi dispiace, non sono riuscito a elaborare una risposta in questo momento.';
+    }
+    
+    console.log('[getContextualResponse] Risposta generata con successo');
+    return response.trim();
+    
+  } catch (error: any) {
+    console.error('[getContextualResponse] Errore:', error);
+    return 'Mi dispiace, si è verificato un errore durante l\'elaborazione della tua richiesta.';
+  }
+}
+
 
 // Action per il chatbot principale che gestisce l'autenticazione automaticamente
 export async function generateChatResponseForUI(
@@ -230,40 +367,45 @@ export async function generateStreamingChatResponse(
     console.log('[generateStreamingChatResponse] 🔍 STARTING FAQ CHECK for message:', userMessage);
     console.log('[generateStreamingChatResponse] 🔍 User ID:', userIdToUse);
     
-    const faqResult = await handleFAQQuery(userMessage, userIdToUse);
+    let faqResult = await handleFAQQuery(userMessage, userIdToUse);
     console.log('[generateStreamingChatResponse] 🔍 FAQ Result:', faqResult);
     
-    if (faqResult.isFaqMatch) {
-      console.log(`[generateStreamingChatResponse] ✅ FAQ MATCH FOUND! Similarity: ${faqResult.similarity?.toFixed(3)}`);
-      console.log(`[generateStreamingChatResponse] ✅ FAQ Answer:`, faqResult.answer.substring(0, 100) + '...');
+    if (!faqResult.isFaqMatch) {
+      console.log('[generateStreamingChatResponse] ❌ No FAQ match found, preparing context for LLM.');
       
-      // Stream the exact FAQ answer
-      const faqAnswer = faqResult.answer;
-      const words = faqAnswer.split(' ');
-      
-      // Simulate streaming by sending words gradually
-      for (let i = 0; i < words.length; i++) {
-        const chunk = i === 0 ? words[i] : ' ' + words[i];
-        onChunk(chunk);
-        // Small delay to simulate streaming
-        await new Promise(resolve => setTimeout(resolve, 30));
-      }
-      
-      // Return FAQ source
-      const faqSource: MessageSource = {
-        type: 'faq',
-        title: 'FAQ Match (Semantic)',
-        relevance: faqResult.similarity || 1.0,
-        content: faqAnswer,
-        metadata: {
-          faqId: faqResult.faqId,
-          hasLinks: faqAnswer.includes('http')
-        }
+      // Create a detailed context for LLM to generate answer
+      const contextResponse = await getContextualResponse(userMessage, userIdToUse, history);
+      faqResult = {
+        isFaqMatch: true,
+        answer: contextResponse,
+        similarity: 1.0
       };
-      
-      console.log('[generateStreamingChatResponse] ✅ RETURNING FAQ SOURCE');
-      return { sources: [faqSource] };
     }
+
+    console.log(`[generateStreamingChatResponse] ✅ Confirmed Contextual Answer:`, faqResult.answer.substring(0, 100) + '...');
+    
+    // Stream the exact context answer
+    const contextAnswer = faqResult.answer;
+    const words = contextAnswer.split(' ');
+    
+    // Simulate streaming by sending words gradually
+    for (let i = 0; i < words.length; i++) {
+      const chunk = i === 0 ? words[i] : ' ' + words[i];
+      onChunk(chunk);
+      // Small delay to simulate streaming
+      await new Promise(resolve => setTimeout(resolve, 30));
+    }
+
+    // Return constructed response source
+    const contextSource: MessageSource = {
+      type: 'contextual',
+      title: 'Generated Contextual Answer',
+      relevance: 1.0,
+      content: contextAnswer
+    };
+
+    console.log('[generateStreamingChatResponse] ✅ RETURNING CONTEXTUAL SOURCE');
+    return { sources: [contextSource] };
     
     console.log('[generateStreamingChatResponse] ❌ No FAQ match found, proceeding with OpenAI...');
     
