@@ -9,6 +9,7 @@ import { ObjectId, type GridFSFile } from 'mongodb';
 import { Readable } from 'stream';
 import { auth } from '@/frontend/auth'; // Import auth for session
 import { getOpenAI } from '@/backend/lib/openai';
+import { generateEmbedding } from '@/backend/lib/embeddings';
 import mammoth from 'mammoth';
 // Context helpers removed since we'll pass context as parameters
 
@@ -116,11 +117,23 @@ export async function createFaq(data: unknown, context?: { type: 'personal' | 'o
   try {
     const { db } = await connectToDatabase();
     console.log('[app/training/actions.ts] createFaq: Connected to database.');
+    
+    // Generate embedding for the question
+    let embedding: number[] | undefined;
+    try {
+      embedding = await generateEmbedding(question);
+      console.log('[app/training/actions.ts] createFaq: Generated embedding for question');
+    } catch (embeddingError: any) {
+      console.error('[app/training/actions.ts] createFaq: Failed to generate embedding:', embeddingError.message);
+      // Continue without embedding - it can be generated later
+    }
+    
     const result = await db.collection<Omit<Faq, 'id'>>('faqs').insertOne({
       ...userId ? { userId } : {},
       ...organizationId ? { organizationId } : {},
       question,
       answer,
+      ...(embedding && { embedding }),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -202,9 +215,31 @@ export async function updateFaq(id: string, data: unknown) {
 
   try {
     const { db } = await connectToDatabase();
+    
+    // Check if question has changed to decide whether to regenerate embedding
+    const currentFaq = await db.collection('faqs').findOne({ _id: new ObjectId(id), userId: userId });
+    if (!currentFaq) {
+      console.warn(`[app/training/actions.ts] updateFaq: FAQ not found or user ${userId} not authorized to update ID ${id}.`);
+      return { error: 'FAQ not found or you are not authorized to update it.' };
+    }
+    
+    const updateFields: any = { question, answer, updatedAt: new Date() };
+    
+    // If question changed, regenerate embedding
+    if (currentFaq.question !== question) {
+      try {
+        const newEmbedding = await generateEmbedding(question);
+        updateFields.embedding = newEmbedding;
+        console.log('[app/training/actions.ts] updateFaq: Regenerated embedding for updated question');
+      } catch (embeddingError: any) {
+        console.error('[app/training/actions.ts] updateFaq: Failed to regenerate embedding:', embeddingError.message);
+        // Continue with update even if embedding generation fails
+      }
+    }
+    
     const result = await db.collection('faqs').updateOne(
       { _id: new ObjectId(id), userId: userId }, // Ensure FAQ belongs to the user
-      { $set: { question, answer, updatedAt: new Date() } }
+      { $set: updateFields }
     );
 
     if (result.matchedCount === 0) {
