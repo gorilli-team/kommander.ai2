@@ -10,9 +10,11 @@ export default async function ChatbotPage() {
   const settings = await getSettings();
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai';
   
+  const organizationId = session?.user?.organizationId;
+
   const snippet = `<div id="kommander-chatbot"></div>
 <script src="${baseUrl}/chatbot.js"></script>
-<script>window.initKommanderChatbot({ userId: '${userId}' });</script>`;
+<script>window.initKommanderChatbot({ userId: '${userId}', organizationId: '${organizationId}' });</script>`;
 
   return (
     <div className="flex flex-col h-full space-y-4 overflow-hidden">
@@ -41,7 +43,11 @@ export default async function ChatbotPage() {
 
       {/* Contenitore della chat */}
       <div className="flex-1 overflow-hidden">
-        <ChatUI accentColor={settings?.color} title={`${settings?.name || 'Kommander.ai'} Chat`} />
+        <ChatUI
+          accentColor={settings?.color}
+          title={`${settings?.name || 'Kommander.ai'} Chat`}
+          organizationId={organizationId}
+        />
       </div>
     </div>
   );

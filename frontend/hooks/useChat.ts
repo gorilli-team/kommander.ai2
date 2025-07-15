@@ -21,7 +21,7 @@ export interface Message {
   isRetry?: boolean;
 }
 
-export function useChat() {
+export function useChat(organizationId?: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -83,7 +83,12 @@ export function useChat() {
       .map((msg) => ({ role: msg.role as 'user' | 'assistant', content: msg.content }));
       
     try {
-      const result = await generateChatResponseForUI(userMessageContent, historyForAI, conversationId || undefined);
+      const result = await generateChatResponseForUI(
+        userMessageContent,
+        historyForAI,
+        conversationId || undefined,
+        organizationId
+      );
       
       if (result.error) {
         const errorMsg = `I encountered an error: ${result.error}`;
