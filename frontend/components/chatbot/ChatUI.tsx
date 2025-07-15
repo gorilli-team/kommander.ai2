@@ -104,6 +104,7 @@ interface ChatUIProps {
   headerExtras?: React.ReactNode;
   title?: string;
   accentColor?: string;
+  organizationId?: string;
 }
 
 export default function ChatUI({
@@ -112,8 +113,9 @@ export default function ChatUI({
   headerExtras,
   title = 'Kommander.ai Chat',
   accentColor,
+  organizationId,
 }: ChatUIProps) {
-  const { messages, isLoading, sendMessage } = useChat();
+  const { messages, isLoading, sendMessage } = useChat(organizationId);
   const [inputValue, setInputValue] = useState('');
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);

@@ -108,37 +108,28 @@ interface UploadedFileInfoForPrompt {
   originalFileType: string;
 }
 
-// Funzione per estrarre la sezione più rilevante di un testo
 function extractMostRelevantSection(text: string, userQuery: string): string {
   const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
-  const queryWords = userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-  
-  // Calcola il punteggio di rilevanza per ogni frase
-  const sentenceScores = sentences.map(sentence => {
-    const lowerSentence = sentence.toLowerCase();
-    let score = 0;
-    
-    queryWords.forEach(word => {
-      if (lowerSentence.includes(word)) {
-        score += 1;
-      }
-    });
-    
-    return { sentence: sentence.trim(), score };
-  });
-  
-  // Ordina le frasi per punteggio
-  sentenceScores.sort((a, b) => b.score - a.score);
-  
-  // Prendi le prime 10 frasi più rilevanti
-  const topSentences = sentenceScores.slice(0, 10);
-  
-  // Se non ci sono frasi rilevanti, prendi le prime 5 frasi del documento
-  if (topSentences.every(s => s.score === 0)) {
+  if (sentences.length === 0) return "";
+
+  const queryWords = new Set(userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2));
+  if (queryWords.size === 0) {
     return sentences.slice(0, 5).join('. ') + '.';
   }
-  
-  // Costruisci la sezione rilevante
+
+  let topSentences = sentences.map(sentence => {
+    const lowerSentence = sentence.toLowerCase();
+    const score = Array.from(queryWords).reduce((acc, word) => acc + (lowerSentence.includes(word) ? 1 : 0), 0);
+    return { sentence: sentence.trim(), score };
+  })
+  .filter(item => item.score > 0)
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 10);
+
+  if (topSentences.length === 0) {
+    return sentences.slice(0, 5).join('. ') + '.';
+  }
+
   return topSentences.map(s => s.sentence).join('. ') + '.';
 }
 
@@ -201,14 +192,19 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
 export async function generateChatResponseForUI(
   userMessage: string,
   history: ChatMessage[],
-  conversationId?: string
+  conversationId?: string,
+  organizationId?: string
 ): Promise<{ response?: string; error?: string; sources?: MessageSource[]; conversationId?: string }> {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: 'User not authenticated.' };
   }
+
+  const context = organizationId
+    ? { type: 'organization' as const, organizationId }
+    : { type: 'personal' as const };
   
-  return generateChatResponse(userMessage, history, session.user.id, conversationId);
+  return generateChatResponse(userMessage, history, session.user.id, conversationId, context);
 }
 
 export async function generateStreamingChatResponse(
@@ -436,7 +432,7 @@ export async function generateChatResponse(
     
     // **PARALLELIZZAZIONE**: Esegui tutte le query database contemporaneamente
     const [faqsCursor, allUploadedFilesMeta, userSettings] = await Promise.all([
-      db.collection('faqs').find(faqQuery).limit(50).toArray(),
+      db.collection('faqs').find(faqQuery).limit(100).toArray(),
       db.collection('raw_files_meta')
         .find(fileQuery)
         .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
@@ -455,8 +451,8 @@ export async function generateChatResponse(
     }));
 
     // Aumentiamo significativamente il numero di file analizzati per risposte più approfondite
-    const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '10', 10);
-    const filesToProcess = allUploadedFilesMeta.slice(0, isNaN(maxFilesEnv) ? 10 : maxFilesEnv);
+    const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '20', 10);
+    const filesToProcess = allUploadedFilesMeta.slice(0, isNaN(maxFilesEnv) ? 20 : maxFilesEnv);
 
     const filesForPromptContext: UploadedFileInfoForPrompt[] = filesToProcess.map(doc => ({
         fileName: doc.fileName,

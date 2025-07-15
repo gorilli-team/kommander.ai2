@@ -97,6 +97,15 @@ export function buildPromptServer(
       cleanUserMessage = parts[1].trim();
       console.log('[buildPromptServer] DEBUG - embeddedFileContent length:', embeddedFileContent.length);
       console.log('[buildPromptServer] DEBUG - cleanUserMessage:', cleanUserMessage);
+    } else {
+      // Fallback nel caso in cui il separatore non sia presente, ma il file sì
+      embeddedFileContent = userMessage.substring(userMessage.indexOf('DOCUMENTI CARICATI DALL\'UTENTE:')).trim();
+      cleanUserMessage = ''; // L'utente potrebbe non aver scritto un messaggio
+      console.log('[buildPromptServer] DEBUG - Fallback, embeddedFileContent length:', embeddedFileContent.length);
+    }
+
+    if (!cleanUserMessage) {
+      console.log("[buildPromptServer] WARNING - cleanUserMessage is empty. The user may have only uploaded a file without a specific question.");
     }
   }
   
