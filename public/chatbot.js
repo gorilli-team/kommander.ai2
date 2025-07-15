@@ -498,7 +498,15 @@ ${truncatedContent}
             text: m.text,
             time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           }));
-          setMessages(msgs);
+          
+          // Always add welcome message at the beginning of every conversation
+          const welcomeMessage = {
+            role: 'assistant',
+            text: `Ciao, sono ${botName}! Come posso aiutarti oggi?`,
+            time: formatTime()
+          };
+          
+          setMessages([welcomeMessage, ...msgs]);
           if (msgs.length) {
             lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
           }
@@ -633,7 +641,8 @@ ${truncatedContent}
         localStorage.setItem(storageKey, convId);
         console.log('[Chatbot] Saved conversation ID to localStorage:', convId);
       }
-      setMessages([]); // Clear current messages
+      setMessages([]); // Clear current messages and then add welcome message
+      addMessage('system', 'Benvenuto! Come posso aiutarti oggi?');
       lastTimestampRef.current = '';
       setShowConversationsList(false); // Torna alla chat
       // fetchInitial sarà chiamato automaticamente dal useEffect
@@ -649,7 +658,8 @@ ${truncatedContent}
         localStorage.setItem(storageKey, newId);
         console.log('[Chatbot] Saved new conversation ID to localStorage:', newId);
       }
-      setMessages([]);
+      setMessages([]); // Clear messages and then add welcome message
+      addMessage('system', 'Benvenuto! Come posso aiutarti oggi?');
       lastTimestampRef.current = '';
       setShowConversationsList(false);
     };

@@ -6,20 +6,23 @@ import { Button } from '@/frontend/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/frontend/components/ui/radio-group';
 import { Checkbox } from '@/frontend/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
+import { Badge } from '@/frontend/components/ui/badge';
+import { Settings, Zap, Palette, MessageSquare, Smartphone, Cog, Bot, Sparkles, Clock, ArrowRight } from 'lucide-react';
 import { saveSettings } from './actions';
 import { PersonalityTester } from './personality-tester';
 import { TemplateGallery } from './template-gallery';
 import { WhatsAppIntegration } from './whatsapp-integration';
+import { cn } from '@/frontend/lib/utils';
 
 const traitOptions = [
-  { value: 'avventuroso', label: '🦁 Avventuroso' },
-  { value: 'fiducioso', label: '💪 Fiducioso' },
-  { value: 'convincente', label: '🤝 Convincente' },  
-  { value: 'energetico', label: '⚡ Energetico' },
-  { value: 'amichevole', label: '🙂 Amichevole' },
-  { value: 'divertente', label: '🤣 Divertente' },
-  { value: 'ironico', label: '😜 Ironico' },
-  { value: 'professionista', label: '💼 Professionista' },
+  { value: 'adventurous', label: '🦁 Adventurous' },
+  { value: 'confident', label: '💪 Confident' },
+  { value: 'convincing', label: '🤝 Convincing' },  
+  { value: 'energetic', label: '⚡ Energetic' },
+  { value: 'friendly', label: '🙂 Friendly' },
+  { value: 'fun', label: '🤣 Fun' },
+  { value: 'ironic', label: '😜 Ironic' },
+  { value: 'professional', label: '💼 Professional' },
 ] as const;
 
 type Trait = typeof traitOptions[number]['value'];
@@ -80,114 +83,70 @@ export default function SettingsClient({ initialSettings }: Props) {
     setShowTemplateGallery(false);
   };
 
-  const sidebarSections = [
+  const navigationSections = [
     {
       id: 'customization',
-      title: 'Customization',
-      icon: '🎨',
-      description: 'Personalizza il tuo chatbot'
+      title: 'Personalizzazione',
+      icon: Palette,
+      description: 'Personalizza il tuo chatbot',
+      badge: 'Attivo'
     },
     {
-      id: 'im-integration',
-      title: 'IM Integration',
-      icon: '💬',
-      description: 'Integra con messaggistica',
-      subsections: [
-        {
-          id: 'whatsapp',
-          title: 'WhatsApp',
-          icon: '📱'
-        }
-      ]
+      id: 'automations',
+      title: 'Automazioni',
+      icon: Bot,
+      description: 'Automatizza le interazioni',
+      badge: 'Presto'
     }
   ];
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <div className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-            ⚙️ Settings
-          </h2>
-          
-          <nav className="space-y-2">
-            {sidebarSections.map((section) => (
-              <div key={section.id}>
-                <button
-                  onClick={() => setActiveSection(section.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
-                    activeSection === section.id
-                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-l-4 border-blue-500'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <span className="text-lg">{section.icon}</span>
-                  <div className="flex-1">
-                    <div className="font-medium">{section.title}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {section.description}
-                    </div>
-                  </div>
-                </button>
-                
-                {/* Subsections */}
-                {section.subsections && activeSection === section.id && (
-                  <div className="ml-6 mt-2 space-y-1">
-                    {section.subsections.map((subsection) => (
-                      <button
-                        key={subsection.id}
-                        onClick={() => setActiveSection(subsection.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-all duration-200 ${
-                          activeSection === subsection.id
-                            ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        <span>{subsection.icon}</span>
-                        <span className="text-sm font-medium">{subsection.title}</span>
-                      </button>
-                    ))}
-                  </div>
+    <div className="container mx-auto py-6 space-y-8 max-w-7xl">
+      {/* Header Section */}
+      <div className="text-center space-y-4">
+        <div className="flex items-center justify-center space-x-2 mb-4">
+          <div className="p-3 bg-primary/10 rounded-full">
+            <Cog className="h-8 w-8 text-primary" />
+          </div>
+        </div>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          Impostazioni
+        </h1>
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          Personalizza e configura il tuo assistente AI. Gestisci impostazioni, aspetto e automazioni per ottimizzare l'esperienza utente.
+        </p>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="flex justify-center mb-8">
+        <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+          {navigationSections.map((section) => {
+            const IconComponent = section.icon;
+            return (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={cn(
+                  'flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200',
+                  activeSection === section.id
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                 )}
-              </div>
-            ))}
-          </nav>
+              >
+                <IconComponent className="h-4 w-4" />
+                <span>{section.title}</span>
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {section.badge}
+                </Badge>
+              </button>
+            );
+          })}
         </div>
       </div>
-      
-      {/* Main Content */}
-      <div className="flex-1 p-8 bg-white dark:bg-gray-900">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              {activeSection === 'customization' && 'Customization'}
-              {activeSection === 'im-integration' && 'IM Integration'}
-              {activeSection === 'whatsapp' && 'WhatsApp Integration'}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300">
-              {activeSection === 'customization' && 'Personalizza il tuo chatbot con nome, colori e personalità'}
-              {activeSection === 'im-integration' && 'Connetti il tuo chatbot a piattaforme di messaggistica'}
-              {activeSection === 'whatsapp' && 'Configura l\'integrazione WhatsApp per rispondere ai messaggi'}
-            </p>
-          </div>
           
           {/* Customization Section */}
           {activeSection === 'customization' && (
             <>
-              <div className="mb-6">
-                <div className="flex gap-3 mb-6">
-                  <Button
-                    type="button"
-                    onClick={() => setShowTemplateGallery(true)}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    <span className="mr-2">✨</span>
-                    Browse Templates
-                  </Button>
-                </div>
-              </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid gap-6 lg:grid-cols-2">
@@ -245,104 +204,8 @@ export default function SettingsClient({ initialSettings }: Props) {
                     </CardContent>
                   </Card>
 
-                  {/* Personality Card */}
-                  <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-                    <CardHeader className="space-y-2 pb-4">
-                      <CardTitle className="flex items-center gap-3 text-xl font-semibold text-gray-900 dark:text-white">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center">
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        Personality Type
-                      </CardTitle>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Choose how your chatbot communicates</p>
-                    </CardHeader>
-                    <CardContent>
-                      <RadioGroup value={personality} onValueChange={setPersonality} className="grid gap-3">
-                        {[
-                          { value: 'neutral', label: '👋 Neutro', desc: 'Balanced and professional' },
-                          { value: 'casual', label: '🤙 Casual', desc: 'Friendly and relaxed' },
-                          { value: 'formal', label: '🤝 Formale', desc: 'Professional and structured' }
-                        ].map((option) => (
-                          <label key={option.value} className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900/20 cursor-pointer transition-all duration-200 group">
-                            <RadioGroupItem value={option.value} className="text-gray-600" />
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-900 dark:text-white">{option.label}</div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">{option.desc}</div>
-                            </div>
-                          </label>
-                        ))}
-                      </RadioGroup>
-                    </CardContent>
-                  </Card>
                 </div>
 
-                {/* Character Traits Card */}
-                <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-                  <CardHeader className="space-y-2 pb-6">
-                    <CardTitle className="flex items-center gap-3 text-xl font-semibold text-gray-900 dark:text-white">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center">
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                        </svg>
-                      </div>
-                      Character Traits
-                      <span className="ml-auto text-sm font-normal text-gray-500 dark:text-gray-400">
-                        {traits.length}/3 selected
-                      </span>
-                    </CardTitle>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Select up to 3 traits that define your chatbot's personality
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      {traitOptions.map((trait) => {
-                        const isSelected = traits.includes(trait.value);
-                        const isDisabled = !isSelected && traits.length >= 3;
-                        
-                        return (
-                          <label 
-                            key={trait.value} 
-                            className={`
-                              relative flex items-center gap-3 p-4 rounded-xl border transition-all duration-200 cursor-pointer
-                              ${isSelected 
-                                ? 'border-gray-400 dark:border-gray-500 bg-gray-50 dark:bg-gray-900/20 ring-2 ring-gray-500/20' 
-                                : isDisabled
-                                  ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed'
-                                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900/20'
-                              }
-                            `}
-                          >
-                            <Checkbox 
-                              checked={isSelected} 
-                              onCheckedChange={() => !isDisabled && toggleTrait(trait.value)}
-                              disabled={isDisabled}
-                              className="text-gray-600"
-                            />
-                            <span className={`text-sm font-medium select-none ${
-                              isSelected 
-                                ? 'text-gray-700 dark:text-gray-300'
-                                : isDisabled
-                                  ? 'text-gray-400 dark:text-gray-500'
-                                  : 'text-gray-700 dark:text-gray-300'
-                            }`}>
-                              {trait.label}
-                            </span>
-                            {isSelected && (
-                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-gray-500 rounded-full flex items-center justify-center">
-                                <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                            )}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6">
@@ -411,57 +274,44 @@ export default function SettingsClient({ initialSettings }: Props) {
             </>
           )}
           
-          {/* IM Integration Section */}
-          {activeSection === 'im-integration' && (
-            <div className="space-y-8">
-              <div className="space-y-6">
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Available Platforms</h2>
-                <div className="grid gap-4">
-                  <button
-                    onClick={() => setActiveSection('whatsapp')}
-                    className="flex items-center gap-4 p-6 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-green-300 hover:bg-green-50 dark:hover:bg-green-900/10 transition-all duration-200"
-                  >
-                    <div className="w-12 h-12 rounded-lg bg-green-500 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
-                      </svg>
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className="text-lg font-medium text-gray-900 dark:text-white">WhatsApp</div>
-                      <div className="text-gray-500 dark:text-gray-400">Integra il tuo chatbot con WhatsApp per messaggi diretti</div>
-                    </div>
-                    <div className="text-gray-400">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </button>
-                  
-                  {/* Future integrations */}
-                  <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl opacity-50">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-lg bg-blue-500 flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">T</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-lg font-medium text-gray-900 dark:text-white">Telegram</div>
-                        <div className="text-gray-500 dark:text-gray-400">Coming soon - Telegram bot integration</div>
-                      </div>
-                    </div>
+      {/* Automations Section */}
+      {activeSection === 'automations' && (
+        <div className="space-y-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Card className="max-w-lg mx-auto border-dashed border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 hover:border-primary/40 transition-all duration-300 group">
+              <CardContent className="p-12 text-center">
+                <div className="mb-6 relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                  <div className="relative">
+                    <Bot className="mx-auto h-16 w-16 text-primary mb-4 group-hover:scale-110 transition-transform duration-300" />
+                    <Sparkles className="absolute -top-2 -right-2 h-6 w-6 text-secondary animate-pulse" />
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
-          
-          {/* WhatsApp Integration Section */}
-          {activeSection === 'whatsapp' && (
-            <div className="space-y-8">
-              <WhatsAppIntegration />
-            </div>
-          )}
+                <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  Automazioni 🤖
+                </h2>
+                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                  Le automazioni intelligenti arriveranno presto! Potrai automatizzare risposte, 
+                  programmare messaggi e creare flussi di lavoro personalizzati.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span>Prossimamente disponibile</span>
+                </div>
+                <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-dashed border-muted-foreground/20">
+                  <h3 className="font-semibold mb-2 text-sm">Funzionalità previste:</h3>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li>• Risposte automatiche intelligenti</li>
+                    <li>• Programmazione messaggi</li>
+                    <li>• Flussi di lavoro personalizzati</li>
+                    <li>• Integrazioni con servizi esterni</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
