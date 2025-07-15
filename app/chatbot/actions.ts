@@ -12,6 +12,7 @@ import { ConversationService } from '@/backend/lib/conversationService';
 import { ConversationMessage, MessageSource } from '@/backend/schemas/conversation';
 import { analyticsService } from '@/backend/lib/analytics';
 import { cache, cacheKeys, cacheTTL } from '@/backend/lib/cache';
+import { handleFAQQuery } from '@/backend/lib/faqHandler';
 
 import mammoth from 'mammoth';
 
@@ -225,6 +226,42 @@ export async function generateStreamingChatResponse(
   }
 
   try {
+    // 🔍 **SEMANTIC FAQ MATCHING**: Check for FAQ match BEFORE OpenAI call
+    console.log('[generateStreamingChatResponse] Checking for semantic FAQ match...');
+    const faqResult = await handleFAQQuery(userMessage, userIdToUse);
+    
+    if (faqResult.isFaqMatch) {
+      console.log(`[generateStreamingChatResponse] FAQ match found with similarity ${faqResult.similarity?.toFixed(3)}`);
+      
+      // Stream the exact FAQ answer
+      const faqAnswer = faqResult.answer;
+      const words = faqAnswer.split(' ');
+      
+      // Simulate streaming by sending words gradually
+      for (let i = 0; i < words.length; i++) {
+        const chunk = i === 0 ? words[i] : ' ' + words[i];
+        onChunk(chunk);
+        // Small delay to simulate streaming
+        await new Promise(resolve => setTimeout(resolve, 30));
+      }
+      
+      // Return FAQ source
+      const faqSource: MessageSource = {
+        type: 'faq',
+        title: 'FAQ Match (Semantic)',
+        relevance: faqResult.similarity || 1.0,
+        content: faqAnswer,
+        metadata: {
+          faqId: faqResult.faqId,
+          hasLinks: faqAnswer.includes('http')
+        }
+      };
+      
+      return { sources: [faqSource] };
+    }
+    
+    console.log('[generateStreamingChatResponse] No FAQ match found, proceeding with OpenAI...');
+    
     const { db } = await connectToDatabase();
 
     // **CACHING**: Prova a ottenere dati dalla cache prima
@@ -419,10 +456,42 @@ export async function generateChatResponse(
   }
 
   try {
+    // 🔍 **SEMANTIC FAQ MATCHING**: Check for FAQ match BEFORE OpenAI call
+    console.log('[generateChatResponse] Checking for semantic FAQ match...');
+    
+    const organizationContext = context?.type || 'personal';
+    const faqUserId = organizationContext === 'personal' ? userIdToUse : undefined;
+    const faqOrgId = organizationContext === 'organization' ? context?.organizationId : undefined;
+    
+    const faqResult = await handleFAQQuery(userMessage, faqUserId, faqOrgId);
+    
+    if (faqResult.isFaqMatch) {
+      console.log(`[generateChatResponse] FAQ match found with similarity ${faqResult.similarity?.toFixed(3)}`);
+      
+      // Return exact FAQ answer
+      const faqSource: MessageSource = {
+        type: 'faq',
+        title: 'FAQ Match (Semantic)',
+        relevance: faqResult.similarity || 1.0,
+        content: faqResult.answer,
+        metadata: {
+          faqId: faqResult.faqId,
+          hasLinks: faqResult.answer.includes('http')
+        }
+      };
+      
+      return {
+        response: faqResult.answer,
+        sources: [faqSource],
+        conversationId: conversationId
+      };
+    }
+    
+    console.log('[generateChatResponse] No FAQ match found, proceeding with OpenAI...');
+    
     const { db } = await connectToDatabase();
     
     // Determine context for queries
-    const organizationContext = context?.type || 'personal';
     const faqQuery = organizationContext === 'personal' 
       ? { userId: userIdToUse } 
       : { organizationId: context?.organizationId };
