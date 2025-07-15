@@ -187,15 +187,17 @@ export async function getFaqs(context?: { type: 'personal' | 'organization', org
   }
 }
 
-export async function updateFaq(id: string, data: unknown) {
-  console.log(`[app/training/actions.ts] updateFaq: Updating FAQ with ID: ${id}`, data);
+export async function updateFaq(id: string, data: unknown, context?: { type: 'personal' | 'organization', organizationId?: string }) {
+  console.log(`[app/training/actions.ts] updateFaq: Updating FAQ with ID: ${id}`, data, 'context:', context);
   
   const session = await auth();
-  if (!session?.user?.id) {
+  const organizationContext = context?.type || 'personal';
+  
+  if (!session?.user?.id && organizationContext === 'personal') {
     console.error('[app/training/actions.ts] updateFaq: User not authenticated.');
     return { error: 'User not authenticated. Please log in.' };
   }
-  const userId = session.user.id;
+  const userId = session?.user?.id;
 
   if (!ObjectId.isValid(id)) {
     console.error('[app/training/actions.ts] updateFaq: Invalid FAQ ID.');
@@ -211,15 +213,23 @@ export async function updateFaq(id: string, data: unknown) {
   }
 
   const { question, answer } = validatedFields.data;
-  console.log('[app/training/actions.ts] updateFaq: Validated data for user:', userId, { question, answer });
+  console.log('[app/training/actions.ts] updateFaq: Validated data for user:', userId, 'organization:', organizationContext === 'organization' ? context?.organizationId : 'N/A', { question, answer });
 
   try {
     const { db } = await connectToDatabase();
     
+    // Build query based on context
+    let query: any = { _id: new ObjectId(id) };
+    if (organizationContext === 'personal') {
+      query.userId = userId;
+    } else if (organizationContext === 'organization') {
+      query.organizationId = context?.organizationId;
+    }
+    
     // Check if question has changed to decide whether to regenerate embedding
-    const currentFaq = await db.collection('faqs').findOne({ _id: new ObjectId(id), userId: userId });
+    const currentFaq = await db.collection('faqs').findOne(query);
     if (!currentFaq) {
-      console.warn(`[app/training/actions.ts] updateFaq: FAQ not found or user ${userId} not authorized to update ID ${id}.`);
+      console.warn(`[app/training/actions.ts] updateFaq: FAQ not found or user ${userId} not authorized to update ID ${id} in context ${organizationContext}.`);
       return { error: 'FAQ not found or you are not authorized to update it.' };
     }
     
@@ -238,16 +248,16 @@ export async function updateFaq(id: string, data: unknown) {
     }
     
     const result = await db.collection('faqs').updateOne(
-      { _id: new ObjectId(id), userId: userId }, // Ensure FAQ belongs to the user
+      query, // Use context-aware query
       { $set: updateFields }
     );
 
     if (result.matchedCount === 0) {
-      console.warn(`[app/training/actions.ts] updateFaq: FAQ not found or user ${userId} not authorized to update ID ${id}.`);
+      console.warn(`[app/training/actions.ts] updateFaq: FAQ not found or user ${userId} not authorized to update ID ${id} in context ${organizationContext}.`);
       return { error: 'FAQ not found or you are not authorized to update it.' };
     }
 
-    console.log('[app/training/actions.ts] updateFaq: FAQ updated successfully for user:', userId);
+    console.log('[app/training/actions.ts] updateFaq: FAQ updated successfully for user:', userId, 'context:', organizationContext);
     revalidatePath('/training');
     return { success: 'FAQ updated successfully.' };
   } catch (error: any) {
