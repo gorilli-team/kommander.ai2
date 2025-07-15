@@ -11,6 +11,7 @@ export const Permission = z.enum([
   'write_organization', 
   'manage_members',
   'invite_users',
+  'manage_invitations',
   'remove_users',
   'manage_billing',
   'access_analytics',
@@ -19,6 +20,7 @@ export const Permission = z.enum([
   'write_conversations',
   'delete_conversations',
   'manage_settings',
+  'manage_organization',
   'admin_access'
 ]);
 export type PermissionType = z.infer<typeof Permission>;
@@ -74,7 +76,7 @@ export const InvitationSchema = z.object({
   role: UserRole,
   permissions: z.array(Permission).optional(),
   token: z.string(),
-  status: z.enum(['pending', 'accepted', 'rejected', 'expired', 'cancelled']).default('pending'),
+  status: z.enum(['pending', 'accepted', 'rejected', 'expired', 'cancelled', 'revoked']).default('pending'),
   message: z.string().optional(),
   expiresAt: z.date(),
   invitedBy: z.custom<ObjectId>((val) => ObjectId.isValid(val as string) || typeof val === 'object'),
@@ -122,6 +124,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRoleType, PermissionType[]> = 
     'write_organization',
     'manage_members',
     'invite_users',
+    'manage_invitations',
     'remove_users',
     'manage_billing',
     'access_analytics',
@@ -130,12 +133,14 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRoleType, PermissionType[]> = 
     'write_conversations',
     'delete_conversations',
     'manage_settings',
+    'manage_organization',
     'admin_access'
   ],
   manager: [
     'read_organization',
     'manage_members',
     'invite_users',
+    'manage_invitations',
     'access_analytics',
     'manage_chatbots',
     'read_conversations',

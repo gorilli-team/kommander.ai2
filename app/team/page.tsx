@@ -83,6 +83,8 @@ export default function TeamPage() {
   // Modal states
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [createOrgModalOpen, setCreateOrgModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   
   // Form states
   const [inviteForm, setInviteForm] = useState<InviteMemberForm>({
@@ -101,6 +103,8 @@ export default function TeamPage() {
   const [isCreatingOrg, startCreateOrgTransition] = useTransition();
   const [isUpdatingMember, startUpdateMemberTransition] = useTransition();
   const [isRemovingMember, startRemoveMemberTransition] = useTransition();
+  const [isDeletingOrg, startDeleteOrgTransition] = useTransition();
+  const [isRevokingInvitation, startRevokeInvitationTransition] = useTransition();
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -277,6 +281,59 @@ export default function TeamPage() {
     });
   };
 
+  const handleDeleteOrganization = () => {
+    if (!selectedOrg) return;
+
+    startDeleteOrgTransition(async () => {
+      try {
+        const response = await fetch(`/api/organizations/${selectedOrg.id}`, {
+          method: 'DELETE'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to delete organization');
+        }
+
+        setSuccess(`Organization "${selectedOrg.name}" has been deleted successfully`);
+        
+        // Close both modals
+        setDeleteConfirmOpen(false);
+        setSettingsModalOpen(false);
+        
+        // Refresh organizations list and clear selection
+        await fetchOrganizations();
+        setSelectedOrg(null);
+        
+      } catch (err: any) {
+        setError(err.message || 'Failed to delete organization');
+      }
+    });
+  };
+
+  const handleRevokeInvitation = async (invitationId: string, email: string) => {
+    if (!confirm(`Are you sure you want to revoke the invitation for ${email}?`)) return;
+
+    startRevokeInvitationTransition(async () => {
+      try {
+        const response = await fetch(`/api/invitations/${invitationId}`, {
+          method: 'DELETE'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to revoke invitation');
+        }
+
+        setSuccess(`Invitation for ${email} has been revoked`);
+        fetchInvitations(); // Refresh invitations list
+        
+      } catch (err: any) {
+        setError(err.message || 'Failed to revoke invitation');
+      }
+    });
+  };
+
   const copyInviteLink = (token: string) => {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     const inviteLink = `${baseUrl}/invite?token=${token}`;
@@ -316,6 +373,9 @@ export default function TeamPage() {
   const canManageMembers = selectedOrg?.userPermissions?.includes('manage_members') || false;
   const canInviteUsers = selectedOrg?.userPermissions?.includes('invite_users') || false;
   const canRemoveUsers = selectedOrg?.userPermissions?.includes('remove_users') || false;
+  const canManageInvitations = selectedOrg?.userPermissions?.includes('manage_invitations') || false;
+  const canManageOrganization = selectedOrg?.userPermissions?.includes('manage_organization') || selectedOrg?.userRole === 'admin' || selectedOrg?.userRole === 'owner' || false;
+  const canDeleteOrganization = selectedOrg?.userRole === 'admin' || selectedOrg?.userRole === 'owner' || false;
 
   if (status === 'loading' || loading) {
     return (
@@ -445,10 +505,16 @@ export default function TeamPage() {
                         </CardDescription>
                       )}
                     </div>
-                    <Button variant="outline" size="sm">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Settings
-                    </Button>
+                    {canManageOrganization && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setSettingsModalOpen(true)}
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Settings
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -616,16 +682,32 @@ export default function TeamPage() {
                               {new Date(invitation.expiresAt).toLocaleDateString()}
                             </TableCell>
                             <TableCell className="text-right">
-                              {invitation.status === 'pending' && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => copyInviteLink(invitation.token)}
-                                >
-                                  <Copy className="h-4 w-4 mr-2" />
-                                  Copy Link
-                                </Button>
-                              )}
+                              <div className="flex items-center gap-2 justify-end">
+                                {invitation.status === 'pending' && (
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => copyInviteLink(invitation.token)}
+                                    >
+                                      <Copy className="h-4 w-4 mr-2" />
+                                      Copy Link
+                                    </Button>
+                                    {canManageInvitations && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleRevokeInvitation(invitation.id, invitation.email)}
+                                        disabled={isRevokingInvitation}
+                                        className="text-destructive hover:text-destructive"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Revoke
+                                      </Button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -789,6 +871,115 @@ export default function TeamPage() {
                 <>
                   <Mail className="h-4 w-4 mr-2" />
                   Send Invitation
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Organization Settings Modal */}
+      <Dialog open={settingsModalOpen} onOpenChange={setSettingsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Organization Settings</DialogTitle>
+            <DialogDescription>
+              Manage settings for {selectedOrg?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 border rounded-lg">
+              <h3 className="font-semibold mb-2">Organization Information</h3>
+              <div className="space-y-2 text-sm">
+                <div><strong>Name:</strong> {selectedOrg?.name}</div>
+                <div><strong>Slug:</strong> {selectedOrg?.slug}</div>
+                <div><strong>Members:</strong> {selectedOrg?.memberCount}</div>
+                <div><strong>Your Role:</strong> {selectedOrg?.userRole}</div>
+              </div>
+            </div>
+            
+            {canDeleteOrganization && (
+              <div className="p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/10">
+                <h3 className="font-semibold mb-2 text-red-800 dark:text-red-200">Danger Zone</h3>
+                <p className="text-sm text-red-700 dark:text-red-300 mb-3">
+                  Once you delete an organization, there is no going back. Please be certain.
+                </p>
+                <Button
+                  variant="destructive"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  className="w-full"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Organization
+                </Button>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSettingsModalOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Organization Confirmation Modal */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Organization</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{selectedOrg?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Warning</AlertTitle>
+              <AlertDescription>
+                This will permanently delete the organization and all associated data including:
+                <ul className="mt-2 list-disc list-inside space-y-1">
+                  <li>All team members will lose access</li>
+                  <li>All pending invitations will be cancelled</li>
+                  <li>All FAQs and content will be removed</li>
+                  <li>All files and data will be permanently deleted</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="text-sm font-medium mb-2">Type the organization name to confirm:</p>
+              <p className="text-sm text-muted-foreground mb-2">{selectedOrg?.name}</p>
+              <Input
+                placeholder="Enter organization name"
+                onChange={(e) => {
+                  // Simple confirmation by typing org name
+                  const confirmButton = document.getElementById('delete-confirm-btn') as HTMLButtonElement;
+                  if (confirmButton) {
+                    confirmButton.disabled = e.target.value !== selectedOrg?.name;
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              id="delete-confirm-btn"
+              variant="destructive"
+              onClick={handleDeleteOrganization}
+              disabled={isDeletingOrg || true} // Initially disabled
+            >
+              {isDeletingOrg ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Organization
                 </>
               )}
             </Button>

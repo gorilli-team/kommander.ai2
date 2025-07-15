@@ -768,6 +768,182 @@ export class OrganizationService {
 
     return result.modifiedCount > 0;
   }
+
+  /**
+   * Revoke invitation with permission checks
+   */
+  async revokeInvitation(invitationId: string, requestingUserId: string): Promise<boolean> {
+    await this.ensureInitialized();
+
+    // Validate inputs
+    if (!ObjectId.isValid(invitationId)) {
+      throw new Error(`Invalid invitationId: ${invitationId}`);
+    }
+    if (!ObjectId.isValid(requestingUserId)) {
+      throw new Error(`Invalid requestingUserId: ${requestingUserId}`);
+    }
+
+    // Get the invitation first to check permissions
+    const invitation = await this.db.collection('invitations').findOne({
+      _id: new ObjectId(invitationId)
+    });
+
+    if (!invitation) {
+      throw new Error('Invitation not found');
+    }
+
+    if (invitation.status !== 'pending') {
+      throw new Error('Can only revoke pending invitations');
+    }
+
+    // Check if the requesting user has permission to revoke invitations
+    const hasPermission = await this.hasPermission(
+      requestingUserId, 
+      invitation.organizationId.toString(), 
+      'manage_invitations'
+    );
+
+    // Also allow the person who sent the invitation to revoke it
+    const isInviter = invitation.invitedBy.toString() === requestingUserId;
+
+    if (!hasPermission && !isInviter) {
+      throw new Error('Insufficient permissions to revoke invitation');
+    }
+
+    const result = await this.db.collection('invitations').updateOne(
+      { _id: new ObjectId(invitationId) },
+      {
+        $set: {
+          status: 'revoked',
+          revokedBy: new ObjectId(requestingUserId),
+          revokedAt: new Date(),
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    return result.modifiedCount > 0;
+  }
+
+  /**
+   * Delete organization and all related data
+   */
+  async deleteOrganization(organizationId: string, requestingUserId: string): Promise<boolean> {
+    await this.ensureInitialized();
+
+    // Validate inputs
+    if (!ObjectId.isValid(organizationId)) {
+      throw new Error(`Invalid organizationId: ${organizationId}`);
+    }
+    if (!ObjectId.isValid(requestingUserId)) {
+      throw new Error(`Invalid requestingUserId: ${requestingUserId}`);
+    }
+
+    // Check if the requesting user is the owner or has admin permissions
+    const organization = await this.db.collection('organizations').findOne({
+      _id: new ObjectId(organizationId),
+      isActive: true
+    });
+
+    if (!organization) {
+      throw new Error('Organization not found or already deleted');
+    }
+
+    // Check if user is the owner
+    const isOwner = organization.ownerId.toString() === requestingUserId;
+    
+    // Check if user has admin permissions
+    const hasAdminPermission = await this.hasPermission(requestingUserId, organizationId, 'manage_organization');
+    
+    if (!isOwner && !hasAdminPermission) {
+      throw new Error('Insufficient permissions to delete organization');
+    }
+
+    const objectIdOrganizationId = new ObjectId(organizationId);
+    
+    try {
+      // Start a transaction for data consistency
+      const session = this.db.client?.startSession();
+      
+      if (session) {
+        await session.withTransaction(async () => {
+          // Delete all organization members
+          await this.db.collection('organization_members').deleteMany(
+            { organizationId: objectIdOrganizationId },
+            { session }
+          );
+          
+          // Cancel all pending invitations
+          await this.db.collection('invitations').updateMany(
+            { organizationId: objectIdOrganizationId, status: 'pending' },
+            { 
+              $set: { 
+                status: 'cancelled', 
+                updatedAt: new Date() 
+              } 
+            },
+            { session }
+          );
+          
+          // Delete the organization (mark as inactive instead of hard delete)
+          await this.db.collection('organizations').updateOne(
+            { _id: objectIdOrganizationId },
+            { 
+              $set: { 
+                isActive: false, 
+                deletedAt: new Date(),
+                updatedAt: new Date() 
+              } 
+            },
+            { session }
+          );
+          
+          // TODO: Add cleanup for other related data like:
+          // - FAQs created within the organization
+          // - Files uploaded to the organization
+          // - Chat sessions/conversations
+          // - Organization-specific settings
+          
+          console.log(`[deleteOrganization] Successfully deleted organization ${organizationId}`);
+        });
+        
+        await session.endSession();
+      } else {
+        // Fallback without transaction if session is not available
+        await this.db.collection('organization_members').deleteMany(
+          { organizationId: objectIdOrganizationId }
+        );
+        
+        await this.db.collection('invitations').updateMany(
+          { organizationId: objectIdOrganizationId, status: 'pending' },
+          { 
+            $set: { 
+              status: 'cancelled', 
+              updatedAt: new Date() 
+            } 
+          }
+        );
+        
+        await this.db.collection('organizations').updateOne(
+          { _id: objectIdOrganizationId },
+          { 
+            $set: { 
+              isActive: false, 
+              deletedAt: new Date(),
+              updatedAt: new Date() 
+            } 
+          }
+        );
+        
+        console.log(`[deleteOrganization] Successfully deleted organization ${organizationId} (without transaction)`);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error(`[deleteOrganization] Error deleting organization ${organizationId}:`, error);
+      throw error;
+    }
+  }
 }
 
 export const organizationService = new OrganizationService();
