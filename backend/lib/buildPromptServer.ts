@@ -143,16 +143,23 @@ export function buildPromptServer(
   context += "🔍 VERIFICA PERSONALITÀ: Prima di rispondere, chiediti: 'Questa risposta riflette davvero la mia personalità ${personality} e i miei caratteri ${settings?.traits?.join(', ') || 'nessuno'}?'\n\n";
   
   
+  context += "🚨 REGOLE FONDAMENTALI PER RISPOSTE BASATE SUI DATI:\n";
+  context += "- RISPONDI SOLO utilizzando le informazioni presenti nelle FAQ e nei documenti forniti\n";
+  context += "- SE NON trovi informazioni sufficienti nei dati forniti, dì chiaramente: 'Non ho informazioni sufficienti nei documenti caricati per rispondere a questa domanda'\n";
+  context += "- NON inventare o aggiungere informazioni generiche non presenti nei materiali\n";
+  context += "- NON dare consigli generali se non sono basati sui documenti specifici\n";
+  context += "- Mantieni sempre il contesto specifico dei materiali forniti\n\n";
+  
   context += "ISTRUZIONI PER RISPOSTE APPROFONDITE:\n";
   context += "- Analizza TUTTI i materiali (FAQ, documenti) per risposte complete e dettagliate\n";
   context += "- SEMPRE includere i link REALI ed ESATTI presenti nelle FAQ quando li menzioni (NO placeholder!)\n";
-  context += "- Fornire tutorial step-by-step quando appropriato\n";
+  context += "- Fornire tutorial step-by-step quando appropriato SOLO se presenti nei documenti\n";
   context += "- Usa Markdown avanzato: **grassetto**, *corsivo*, # titoli, liste numerate, `codice`, [testo](URL_REALE)\n";
   context += "- Menziona fonti specifiche e includi SEMPRE i link reali quando disponibili\n";
   context += "- Struttura logica con sezioni, sottosezioni e dettagli rilevanti\n";
   context += "- Se una FAQ contiene un link (http/https), DEVI includerlo ESATTAMENTE come appare\n";
   context += "- NON usare placeholder come [link_FAQ] o [qui] - usa i link reali\n";
-  context += "- Aggiungi esempi pratici quando possibile\n\n";
+  context += "- Aggiungi esempi pratici SOLO se presenti nei documenti forniti\n\n";
   
   // Aggiungi istruzioni specifiche basate sulla personalità
   if (personality === 'casual') {
