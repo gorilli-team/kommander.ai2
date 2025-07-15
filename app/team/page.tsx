@@ -316,7 +316,7 @@ export default function TeamPage() {
 
     startRevokeInvitationTransition(async () => {
       try {
-        const response = await fetch(`/api/invitations/${invitationId}`, {
+        const response = await fetch(`/api/invitations/revoke?id=${invitationId}`, {
           method: 'DELETE'
         });
 

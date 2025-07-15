@@ -3,17 +3,15 @@ import { organizationService } from '@/backend/lib/organizationService';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const invitationId = params.id;
+    const url = new URL(request.url);
+    const invitationId = url.searchParams.get('id');
     
     if (!invitationId) {
       return NextResponse.json({ error: 'Invitation ID is required' }, { status: 400 });
