@@ -36,7 +36,7 @@ export async function getSettings(userId?: string): Promise<ChatbotSettingsDocum
   return doc || null;
 }
 
-export async function saveSettings(data: Partial<ChatbotSettingsDocument>) {
+export async function saveSettings(data: Partial<ChatbotSettingsDocument>, contextId?: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: 'Not authenticated' };
   const userId = session.user.id;
@@ -47,16 +47,18 @@ export async function saveSettings(data: Partial<ChatbotSettingsDocument>) {
     return { error: 'Invalid data' };
   }
 
+  const targetId = contextId || userId;
+
   const update = {
     $set: { ...parsed.data, updatedAt: new Date() },
-    $setOnInsert: { userId, createdAt: new Date() },
+    $setOnInsert: { userId: targetId, createdAt: new Date() },
   };
   await db
     .collection<ChatbotSettingsDocument>('chatbot_settings')
-    .updateOne({ userId }, update, { upsert: true });
+    .updateOne({ userId: targetId }, update, { upsert: true });
 
   // **CACHE INVALIDATION**: Rimuovi dalla cache quando vengono aggiornati
-  settingsCache.delete(userId);
+  settingsCache.delete(targetId);
 
   revalidatePath('/settings');
   return { success: true };

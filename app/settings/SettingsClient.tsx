@@ -13,6 +13,7 @@ import { PersonalityTester } from './personality-tester';
 import { TemplateGallery } from './template-gallery';
 import { WhatsAppIntegration } from './whatsapp-integration';
 import { cn } from '@/frontend/lib/utils';
+import { useOrganization } from '@/frontend/contexts/OrganizationContext';
 
 const traitOptions = [
   { value: 'adventurous', label: '🦁 Adventurous' },
@@ -33,6 +34,9 @@ interface Props {
 
 export default function SettingsClient({ initialSettings }: Props) {
   const { data: session } = useSession();
+  const { currentContext, currentOrganization } = useOrganization();
+  const contextId = currentOrganization?.id || session?.user.id;
+
   const [name, setName] = useState(initialSettings?.name || 'Kommander.ai');
   const [color, setColor] = useState(initialSettings?.color || '#6366f1');
   const [personality, setPersonality] = useState(initialSettings?.personality || 'neutral');
@@ -40,6 +44,32 @@ export default function SettingsClient({ initialSettings }: Props) {
   const [saving, setSaving] = useState(false);
   const [showTemplateGallery, setShowTemplateGallery] = useState(false);
   const [activeSection, setActiveSection] = useState('customization');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load settings when context changes
+  useEffect(() => {
+    const loadContextSettings = async () => {
+      if (!contextId) return;
+      
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/settings/${contextId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setName(data?.name || 'Kommander.ai');
+          setColor(data?.color || '#6366f1');
+          setPersonality(data?.personality || 'neutral');
+          setTraits(data?.traits || []);
+        }
+      } catch (error) {
+        console.error('Error loading context settings:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadContextSettings();
+  }, [contextId, currentContext]);
 
   const toggleTrait = (t: Trait) => {
     setTraits(prev => {
@@ -54,7 +84,7 @@ export default function SettingsClient({ initialSettings }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    await saveSettings({ name, color, personality, traits });
+    await saveSettings({ name, color, personality, traits }, contextId);
     setSaving(false);
   };
 
