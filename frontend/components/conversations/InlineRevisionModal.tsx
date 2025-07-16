@@ -134,15 +134,16 @@ export const InlineRevisionModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Edit className="w-5 h-5" />
             Revisiona Messaggio AI
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto">
+          <div className="space-y-6 p-1">
           {/* Context Section */}
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <h3 className="font-medium text-sm text-gray-700">Contesto della Conversazione</h3>
@@ -273,6 +274,7 @@ export const InlineRevisionModal = ({
               </Button>
             </div>
           </div>
+        </div>
         </div>
       </DialogContent>
     </Dialog>
