@@ -3,6 +3,7 @@
 import { connectToDatabase } from '@/backend/lib/mongodb';
 import { auth } from '@/frontend/auth';
 import type { ConversationDocument } from '@/backend/schemas/conversation';
+import { getContextInfo } from '@/backend/lib/contextHelpers';
 
 export interface ConversationMessageDisplay {
   role: 'user' | 'assistant' | 'agent';
@@ -25,11 +26,17 @@ export async function getConversations(): Promise<ConversationDisplayItem[]> {
   }
 
   const userId = session.user.id;
+  const { context, organizationId } = await getContextInfo();
   const { db } = await connectToDatabase();
+
+  // Determine the context ID (organization ID or user ID)
+  const contextId = context === 'organization' && organizationId ? organizationId : userId;
+  
+  console.log('[getConversations] Context:', context, 'ContextId:', contextId, 'OrganizationId:', organizationId);
 
   const docs = await db
     .collection<ConversationDocument>('conversations')
-    .find({ userId })
+    .find({ userId: contextId })
     .sort({ updatedAt: -1 })
     .toArray();
 
