@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ObjectId } from 'mongodb';
 
 export const MessageSourceSchema = z.object({
-  type: z.enum(['faq', 'document']),
+  type: z.enum(['faq', 'document', 'learned', 'contextual']),
   title: z.string(),
   relevance: z.number().min(0).max(1),
   content: z.string().optional(),
@@ -11,6 +11,15 @@ export const MessageSourceSchema = z.object({
     pageNumber: z.number().optional(),
     section: z.string().optional(),
     faqId: z.string().optional(),
+    // Metadati per risposte apprese
+    reviewedResponseId: z.string().optional(),
+    confidence: z.number().optional(),
+    matchType: z.enum(['embedding', 'keyword', 'hash', 'hybrid']).optional(),
+    usageCount: z.number().optional(),
+    // Metadati generali
+    hasLinks: z.boolean().optional(),
+    approvedBy: z.string().optional(),
+    approvalTimestamp: z.date().optional(),
   }).optional(),
 });
 

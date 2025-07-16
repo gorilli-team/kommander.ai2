@@ -13,6 +13,8 @@ import { ConversationMessage, MessageSource } from '@/backend/schemas/conversati
 import { analyticsService } from '@/backend/lib/analytics';
 import { cache, cacheKeys, cacheTTL } from '@/backend/lib/cache';
 import { handleFAQQuery } from '@/backend/lib/faqHandler';
+import { reviewedResponseService } from '@/backend/lib/reviewedResponseService';
+import { questionMatchingService } from '@/backend/lib/questionMatchingService';
 
 import mammoth from 'mammoth';
 
@@ -363,7 +365,61 @@ export async function generateStreamingChatResponse(
   }
 
   try {
-    // 🔍 **SEMANTIC FAQ MATCHING**: Check for FAQ match BEFORE OpenAI call
+    // 🧠 **LEARNED RESPONSE CHECK**: Check for learned responses FIRST
+    console.log('[generateStreamingChatResponse] 🧠 CHECKING FOR LEARNED RESPONSES...');
+    
+    const learnedResponseResult = await reviewedResponseService.findSimilarResponse(userMessage, userIdToUse);
+    
+    if (learnedResponseResult && learnedResponseResult.similarityScore > 0.8) {
+      console.log('[generateStreamingChatResponse] 🧠 LEARNED RESPONSE FOUND with similarity:', learnedResponseResult.similarityScore);
+      
+      // Stream the learned response
+      const learnedAnswer = learnedResponseResult.reviewedResponse.revisedAnswer;
+      const words = learnedAnswer.split(' ');
+      
+      for (let i = 0; i < words.length; i++) {
+        const chunk = i === 0 ? words[i] : ' ' + words[i];
+        onChunk(chunk);
+        await new Promise(resolve => setTimeout(resolve, 30));
+      }
+      
+      // Update usage statistics
+      await reviewedResponseService.updateUsageStats(
+        learnedResponseResult.reviewedResponse._id!.toString(),
+        1.0 // Perfect effectiveness since it's being used
+      );
+      
+      // Mark conversation message as learned response if we have conversationId
+      if (conversationId) {
+        const conversationService = new ConversationService();
+        const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        await conversationService.markAsLearnedResponse(
+          conversationId,
+          messageId,
+          learnedResponseResult.reviewedResponse._id!.toString(),
+          learnedResponseResult.similarityScore
+        );
+      }
+      
+      const learnedSource: MessageSource = {
+        type: 'learned',
+        title: 'Risposta Appresa',
+        relevance: learnedResponseResult.similarityScore,
+        content: learnedAnswer,
+        metadata: {
+          reviewedResponseId: learnedResponseResult.reviewedResponse._id!.toString(),
+          confidence: learnedResponseResult.confidence,
+          matchType: learnedResponseResult.matchType,
+          usageCount: learnedResponseResult.reviewedResponse.usageCount
+        }
+      };
+      
+      console.log('[generateStreamingChatResponse] 🧠 RETURNING LEARNED RESPONSE');
+      return { sources: [learnedSource] };
+    }
+    
+    // 🔍 **SEMANTIC FAQ MATCHING**: Check for FAQ match AFTER learned responses
     console.log('[generateStreamingChatResponse] 🔍 STARTING FAQ CHECK for message:', userMessage);
     console.log('[generateStreamingChatResponse] 🔍 User ID:', userIdToUse);
     
