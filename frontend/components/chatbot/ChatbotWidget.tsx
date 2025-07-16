@@ -24,7 +24,7 @@ interface ChatbotWidgetProps {
 
 export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
   const [open, setOpen] = useState(false);
-  const { getCurrentContextId } = useOrganization();
+  const { getCurrentContextId, currentContext, currentOrganization } = useOrganization();
   const currentContextId = getCurrentContextId() || userId;
   const { messages, isLoading, sendMessage, addMessage, handledBy } = useWidgetChat(currentContextId);
   const prevHandledBy = useRef<'bot' | 'agent'>('bot');
@@ -35,34 +35,38 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
   const [showFileUploader, setShowFileUploader] = useState(false);
   const { getFilesContext, uploadedFiles } = useFileProcessor();
 
-  useEffect(() => {
-    const fetchSettings = () => {
-      console.log('[ChatbotWidget] Fetching settings for contextId:', currentContextId);
-      fetch(`/api/settings/${currentContextId}`)
-        .then(res => res.json())
-        .then(data => {
-          console.log('[ChatbotWidget] Settings received:', data);
-          if (data.name) {
-            console.log('[ChatbotWidget] Setting bot name to:', data.name);
-            setBotName(data.name);
-          }
-          if (data.color) {
-            console.log('[ChatbotWidget] Setting bot color to:', data.color);
-            setBotColor(data.color);
-          }
-        })
-        .catch((err) => {
-          console.error('[ChatbotWidget] Error fetching settings:', err);
-        });
-    };
-    
-    fetchSettings();
-    
-    // Poll for settings changes every 5 seconds
-    const interval = setInterval(fetchSettings, 5000);
-    
-    return () => clearInterval(interval);
+  // Fetch settings function
+  const fetchSettings = React.useCallback(() => {
+    console.log('[ChatbotWidget] Fetching settings for contextId:', currentContextId);
+    fetch(`/api/settings/${currentContextId}`)
+      .then(res => res.json())
+      .then(data => {
+        console.log('[ChatbotWidget] Settings received:', data);
+        if (data.name) {
+          console.log('[ChatbotWidget] Setting bot name to:', data.name);
+          setBotName(data.name);
+        }
+        if (data.color) {
+          console.log('[ChatbotWidget] Setting bot color to:', data.color);
+          setBotColor(data.color);
+        }
+      })
+      .catch((err) => {
+        console.error('[ChatbotWidget] Error fetching settings:', err);
+      });
   }, [currentContextId]);
+
+  // Immediate fetch when context changes
+  useEffect(() => {
+    console.log('[ChatbotWidget] Context changed, fetching settings immediately');
+    fetchSettings();
+  }, [currentContext, currentOrganization?.id, fetchSettings]);
+
+  // Regular polling for settings changes
+  useEffect(() => {
+    const interval = setInterval(fetchSettings, 5000);
+    return () => clearInterval(interval);
+  }, [fetchSettings]);
 
   // Auto-scroll disabilitato - lascia che controlli l'utente durante streaming
   // useEffect(() => {
