@@ -103,7 +103,7 @@
     });
   }
 
-  function ChatbotWidget({ userId }) {
+  function ChatbotWidget({ userId, organizationId }) {
     const { useState, useRef, useEffect } = React;
     const [open, setOpen] = useState(false);
     const [messages, setMessages] = useState([]);
@@ -1229,7 +1229,7 @@ ${truncatedContent}
     );
   }
 
-  window.initKommanderChatbot = async function ({ userId }) {
+  window.initKommanderChatbot = async function ({ userId, organizationId }) {
     await ensureReact();
     loadStyles();
     let container = document.getElementById('kommander-chatbot');
@@ -1239,9 +1239,9 @@ ${truncatedContent}
       document.body.appendChild(container);
     }
     if (ReactDOM.createRoot) {
-      ReactDOM.createRoot(container).render(React.createElement(ChatbotWidget, { userId }));
+      ReactDOM.createRoot(container).render(React.createElement(ChatbotWidget, { userId, organizationId }));
     } else {
-      ReactDOM.render(React.createElement(ChatbotWidget, { userId }), container);
+      ReactDOM.render(React.createElement(ChatbotWidget, { userId, organizationId }), container);
     }
   };
 })();
