@@ -17,53 +17,79 @@ export async function POST(
   { params }: { params: { id: string; messageId: string } }
 ) {
   try {
+    console.log('[API] Starting revision process...');
+    
     const session = await auth();
     if (!session?.user?.id) {
+      console.log('[API] User not authenticated');
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
     }
+    console.log('[API] User authenticated:', session.user.id);
 
     const { id: conversationId, messageId } = params;
+    console.log('[API] Conversation ID:', conversationId, 'Message ID:', messageId);
+    
     const body = await request.json();
+    console.log('[API] Request body:', JSON.stringify(body, null, 2));
     
     // Valida i dati in input
     const validatedData = ReviseMessageSchema.parse(body);
+    console.log('[API] Data validated successfully');
     
     const conversationService = new ConversationService();
     
     // Verifica che la conversazione appartenga all'utente
+    console.log('[API] Fetching conversation...');
     const conversation = await conversationService.getConversation(conversationId);
-    if (!conversation || conversation.userId !== session.user.id) {
+    if (!conversation) {
+      console.log('[API] Conversation not found');
+      return NextResponse.json({ error: 'Conversazione non trovata' }, { status: 404 });
+    }
+    console.log('[API] Conversation found. User ID:', conversation.userId, 'Messages count:', conversation.messages.length);
+    
+    if (conversation.userId !== session.user.id) {
+      console.log('[API] Conversation does not belong to user');
       return NextResponse.json({ error: 'Conversazione non trovata' }, { status: 404 });
     }
 
     // Converti messageId (che è l'indice) in numero
     const messageIndex = parseInt(messageId);
+    console.log('[API] Message index:', messageIndex);
+    
     if (isNaN(messageIndex) || messageIndex < 0 || messageIndex >= conversation.messages.length) {
+      console.log('[API] Invalid message index');
       return NextResponse.json({ error: 'Indice messaggio non valido' }, { status: 400 });
     }
 
     // Trova il messaggio da revisionare usando l'indice
     const message = conversation.messages[messageIndex];
     if (!message) {
+      console.log('[API] Message not found at index');
       return NextResponse.json({ error: 'Messaggio non trovato' }, { status: 404 });
     }
+    console.log('[API] Message found. Role:', message.role, 'Content length:', message.content?.length);
 
     // Verifica che sia un messaggio dell'assistente
     if (message.role !== 'assistant') {
+      console.log('[API] Message is not from assistant');
       return NextResponse.json({ error: 'Solo i messaggi dell\'assistente possono essere revisionati' }, { status: 400 });
     }
 
     // Trova il messaggio utente precedente per creare la knowledge base
     const userMessage = conversation.messages[messageIndex - 1];
+    console.log('[API] User message:', userMessage?.role, userMessage?.content?.length);
     
     if (!userMessage || userMessage.role !== 'user') {
+      console.log('[API] Previous user message not found');
       return NextResponse.json({ error: 'Impossibile trovare la domanda dell\'utente' }, { status: 400 });
     }
 
     // Usa l'ID del messaggio per i servizi, genera uno se non esiste
     const actualMessageId = message.id || `msg-${messageIndex}-${Date.now()}`;
+    console.log('[API] Actual message ID:', actualMessageId);
     
     // Revisiona il messaggio
+    console.log('[API] Calling reviseMessage...');
     await conversationService.reviseMessage(
       conversationId,
       actualMessageId,
@@ -71,8 +97,10 @@ export async function POST(
       session.user.id,
       validatedData.revisionReason
     );
+    console.log('[API] Message revised successfully');
 
     // Crea una nuova risposta revisionata nella knowledge base
+    console.log('[API] Creating reviewed response...');
     const reviewedResponseId = await reviewedResponseService.createReviewedResponse(
       {
         originalQuestion: userMessage.content,
@@ -88,14 +116,17 @@ export async function POST(
       session.user.id,
       session.user.id
     );
+    console.log('[API] Reviewed response created:', reviewedResponseId);
 
     // Aggiorna il messaggio con il link alla knowledge base
+    console.log('[API] Marking as learned response...');
     await conversationService.markAsLearnedResponse(
       conversationId,
       actualMessageId,
       reviewedResponseId,
       1.0 // Perfect match since it's the exact revision
     );
+    console.log('[API] Marked as learned response successfully');
 
     return NextResponse.json({
       success: true,

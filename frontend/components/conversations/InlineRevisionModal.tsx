@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/frontend/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/frontend/components/ui/dialog';
 import { Button } from '@/frontend/components/ui/button';
 import { Textarea } from '@/frontend/components/ui/textarea';
 import { Input } from '@/frontend/components/ui/input';
@@ -140,6 +140,9 @@ export const InlineRevisionModal = ({
             <Edit className="w-5 h-5" />
             Revisiona Messaggio AI
           </DialogTitle>
+          <DialogDescription>
+            Modifica e migliora la risposta AI fornendo contenuto revisionato e specificando il motivo della revisione.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
