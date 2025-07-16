@@ -90,43 +90,59 @@ export async function POST(
     
     // Revisiona il messaggio
     console.log('[API] Calling reviseMessage...');
-    await conversationService.reviseMessage(
-      conversationId,
-      actualMessageId,
-      validatedData.revisedContent,
-      session.user.id,
-      validatedData.revisionReason
-    );
-    console.log('[API] Message revised successfully');
+    try {
+      await conversationService.reviseMessage(
+        conversationId,
+        actualMessageId,
+        validatedData.revisedContent,
+        session.user.id,
+        validatedData.revisionReason
+      );
+      console.log('[API] Message revised successfully');
+    } catch (error) {
+      console.error('[API] Error in reviseMessage:', error);
+      throw new Error('Failed to revise message: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
 
     // Crea una nuova risposta revisionata nella knowledge base
     console.log('[API] Creating reviewed response...');
-    const reviewedResponseId = await reviewedResponseService.createReviewedResponse(
-      {
-        originalQuestion: userMessage.content,
-        originalAnswer: message.content,
-        revisedAnswer: validatedData.revisedContent,
-        revisionReason: validatedData.revisionReason,
-        conversationId,
-        messageId: actualMessageId,
-        category: validatedData.category,
-        tags: validatedData.tags,
-        priority: validatedData.priority,
-      },
-      session.user.id,
-      session.user.id
-    );
-    console.log('[API] Reviewed response created:', reviewedResponseId);
+    let reviewedResponseId;
+    try {
+      reviewedResponseId = await reviewedResponseService.createReviewedResponse(
+        {
+          originalQuestion: userMessage.content,
+          originalAnswer: message.content,
+          revisedAnswer: validatedData.revisedContent,
+          revisionReason: validatedData.revisionReason,
+          conversationId,
+          messageId: actualMessageId,
+          category: validatedData.category,
+          tags: validatedData.tags,
+          priority: validatedData.priority,
+        },
+        session.user.id,
+        session.user.id
+      );
+      console.log('[API] Reviewed response created:', reviewedResponseId);
+    } catch (error) {
+      console.error('[API] Error in createReviewedResponse:', error);
+      throw new Error('Failed to create reviewed response: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
 
     // Aggiorna il messaggio con il link alla knowledge base
     console.log('[API] Marking as learned response...');
-    await conversationService.markAsLearnedResponse(
-      conversationId,
-      actualMessageId,
-      reviewedResponseId,
-      1.0 // Perfect match since it's the exact revision
-    );
-    console.log('[API] Marked as learned response successfully');
+    try {
+      await conversationService.markAsLearnedResponse(
+        conversationId,
+        actualMessageId,
+        reviewedResponseId,
+        1.0 // Perfect match since it's the exact revision
+      );
+      console.log('[API] Marked as learned response successfully');
+    } catch (error) {
+      console.error('[API] Error in markAsLearnedResponse:', error);
+      throw new Error('Failed to mark as learned response: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
 
     return NextResponse.json({
       success: true,
