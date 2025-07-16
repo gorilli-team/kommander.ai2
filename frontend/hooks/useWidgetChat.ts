@@ -9,7 +9,7 @@ export interface Message {
   timestamp: Date;
 }
 
-export function useWidgetChat(userId: string) {
+export function useWidgetChat(contextId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [handledBy, setHandledBy] = useState<'bot' | 'agent'>('bot');
@@ -19,7 +19,7 @@ export function useWidgetChat(userId: string) {
 
   const pollFnRef = useRef<() => Promise<void>>();
 
-  const storageKey = `kommander_conversation_${userId}`;
+  const storageKey = `kommander_conversation_${contextId}`;
   const site = typeof window !== 'undefined' ? window.location.hostname : '';
 // const POLL_INTERVAL_MS = 500;
 
@@ -29,9 +29,16 @@ export function useWidgetChat(userId: string) {
       if (stored) {
         conversationIdRef.current = stored;
         setConversationId(stored);
+      } else {
+        // Reset conversation state when switching contexts
+        conversationIdRef.current = '';
+        setConversationId('');
+        setMessages([]);
+        lastTimestampRef.current = '';
+        console.log('[useWidgetChat] Reset conversation state for new context:', contextId);
       }
     }
-  }, [storageKey]);
+  }, [storageKey, contextId]);
 
   useEffect(() => {
 
@@ -42,7 +49,7 @@ export function useWidgetChat(userId: string) {
 const fetchInitial = async () => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai'}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(userId)}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai'}/api/widget-conversations/${conversationId}?userId=${encodeURIComponent(contextId)}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -99,7 +106,7 @@ const fetchInitial = async () => {
 //   };
 
 fetchInitial();
-  }, [conversationId, userId]);
+  }, [conversationId, contextId]);
 
   const addMessage = (role: Message['role'], content: string) => {
     setMessages((prev) => [
@@ -140,7 +147,7 @@ fetchInitial();
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId,
+            userId: contextId,
             message: messageWithContext,
             conversationId: conversationIdRef.current,
             site,
@@ -230,7 +237,7 @@ fetchInitial();
         }
       }
     },
-    [userId, site, storageKey]
+    [contextId, site, storageKey]
   );
 
   return { messages, isLoading, sendMessage, addMessage, handledBy, setHandledBy };

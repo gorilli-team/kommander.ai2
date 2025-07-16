@@ -62,6 +62,15 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
     fetchSettings();
   }, [currentContext, currentOrganization?.id, fetchSettings]);
 
+  // Reset messages when context changes
+  useEffect(() => {
+    console.log('[ChatbotWidget] Context changed, clearing messages');
+    // Clear messages when switching contexts to start fresh
+    if (messages.length > 0) {
+      // We'll let the useWidgetChat hook handle the message reset based on contextId change
+    }
+  }, [currentContextId]);
+
   // Regular polling for settings changes
   useEffect(() => {
     const interval = setInterval(fetchSettings, 30000); // Reduced to 30 seconds
