@@ -21,10 +21,30 @@ export const ConversationMessageSchema = z.object({
   timestamp: z.date(),
   sources: z.array(MessageSourceSchema).optional(),
   isRetry: z.boolean().optional(),
+  // Campi per la revisione delle risposte
+  originalContent: z.string().optional(), // Contenuto originale prima della revisione
+  isRevised: z.boolean().optional().default(false), // Indica se la risposta è stata revisionata
+  revisedBy: z.string().optional(), // ID dell'operatore che ha fatto la revisione
+  revisionTimestamp: z.date().optional(), // Timestamp della revisione
+  revisionReason: z.string().optional(), // Motivo della revisione
+  
+  // Nuovi campi per il sistema di apprendimento AI
+  questionHash: z.string().optional(), // Hash della domanda per ricerca veloce
+  questionEmbedding: z.array(z.number()).optional(), // Embedding vettoriale per similarity
+  approvalStatus: z.enum(['pending', 'approved', 'rejected']).optional().default('pending'),
+  usageCount: z.number().optional().default(0), // Quante volte è stata usata questa risposta
+  effectiveness: z.number().optional().default(0), // Score di efficacia (0-1)
+  isLearnedResponse: z.boolean().optional().default(false), // Se è una risposta appresa
+  reviewedResponseId: z.string().optional(), // Link alla risposta nella knowledge base
+  
   metadata: z.object({
     processingTime: z.number().optional(),
     model: z.string().optional(),
     tokenCount: z.number().optional(),
+    // Nuovi metadati per tracking
+    similarityScore: z.number().optional(), // Score di similarità se risposta appresa
+    matchedQuestionId: z.string().optional(), // ID della domanda che ha fatto match
+    revisionQuality: z.number().optional(), // Valutazione qualità revisione
   }).optional(),
 });
 
