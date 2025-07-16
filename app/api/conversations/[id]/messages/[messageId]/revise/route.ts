@@ -36,8 +36,14 @@ export async function POST(
       return NextResponse.json({ error: 'Conversazione non trovata' }, { status: 404 });
     }
 
-    // Trova il messaggio da revisionare
-    const message = conversation.messages.find(msg => msg.id === messageId);
+    // Converti messageId (che è l'indice) in numero
+    const messageIndex = parseInt(messageId);
+    if (isNaN(messageIndex) || messageIndex < 0 || messageIndex >= conversation.messages.length) {
+      return NextResponse.json({ error: 'Indice messaggio non valido' }, { status: 400 });
+    }
+
+    // Trova il messaggio da revisionare usando l'indice
+    const message = conversation.messages[messageIndex];
     if (!message) {
       return NextResponse.json({ error: 'Messaggio non trovato' }, { status: 404 });
     }
@@ -48,17 +54,19 @@ export async function POST(
     }
 
     // Trova il messaggio utente precedente per creare la knowledge base
-    const messageIndex = conversation.messages.findIndex(msg => msg.id === messageId);
     const userMessage = conversation.messages[messageIndex - 1];
     
     if (!userMessage || userMessage.role !== 'user') {
       return NextResponse.json({ error: 'Impossibile trovare la domanda dell\'utente' }, { status: 400 });
     }
 
+    // Usa l'ID del messaggio per i servizi, genera uno se non esiste
+    const actualMessageId = message.id || `msg-${messageIndex}-${Date.now()}`;
+    
     // Revisiona il messaggio
     await conversationService.reviseMessage(
       conversationId,
-      messageId,
+      actualMessageId,
       validatedData.revisedContent,
       session.user.id,
       validatedData.revisionReason
@@ -72,7 +80,7 @@ export async function POST(
         revisedAnswer: validatedData.revisedContent,
         revisionReason: validatedData.revisionReason,
         conversationId,
-        messageId,
+        messageId: actualMessageId,
         category: validatedData.category,
         tags: validatedData.tags,
         priority: validatedData.priority,
@@ -84,7 +92,7 @@ export async function POST(
     // Aggiorna il messaggio con il link alla knowledge base
     await conversationService.markAsLearnedResponse(
       conversationId,
-      messageId,
+      actualMessageId,
       reviewedResponseId,
       1.0 // Perfect match since it's the exact revision
     );

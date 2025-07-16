@@ -347,26 +347,54 @@ export class ConversationService {
         throw new Error('Conversation not found');
       }
 
-      const message = conversation.messages.find((msg: any) => msg.id === messageId);
-      if (!message) {
+      // Trova il messaggio per ID se esiste, altrimenti prova a generarlo
+      let messageIndex = conversation.messages.findIndex((msg: any) => msg.id === messageId);
+      
+      // Se non trova il messaggio per ID, potrebbe essere che l'ID sia stato generato
+      if (messageIndex === -1) {
+        // Estrai l'indice dall'ID generato se ha il formato msg-{index}-{timestamp}
+        const match = messageId.match(/^msg-(\d+)-\d+$/);
+        if (match) {
+          const index = parseInt(match[1]);
+          if (index >= 0 && index < conversation.messages.length) {
+            messageIndex = index;
+          }
+        }
+      }
+      
+      if (messageIndex === -1) {
         throw new Error('Message not found');
+      }
+
+      const message = conversation.messages[messageIndex];
+      
+      // Se il messaggio non ha un ID, assegnagli quello generato
+      if (!message.id) {
+        await db.collection('conversations').updateOne(
+          { _id: new ObjectId(conversationId) },
+          {
+            $set: {
+              [`messages.${messageIndex}.id`]: messageId
+            }
+          }
+        );
       }
 
       // Aggiorna il messaggio con la revisione
       await db.collection('conversations').updateOne(
         { 
-          _id: new ObjectId(conversationId),
-          'messages.id': messageId
+          _id: new ObjectId(conversationId)
         },
         {
           $set: {
-            'messages.$.originalContent': message.originalContent || message.content,
-            'messages.$.content': revisedContent,
-            'messages.$.isRevised': true,
-            'messages.$.revisedBy': revisedBy,
-            'messages.$.revisionTimestamp': now,
-            'messages.$.revisionReason': revisionReason || 'Manual revision',
-            'messages.$.approvalStatus': 'pending',
+            [`messages.${messageIndex}.originalContent`]: message.originalContent || message.content,
+            [`messages.${messageIndex}.content`]: revisedContent,
+            [`messages.${messageIndex}.isRevised`]: true,
+            [`messages.${messageIndex}.revisedBy`]: revisedBy,
+            [`messages.${messageIndex}.revisionTimestamp`]: now,
+            [`messages.${messageIndex}.revisionReason`]: revisionReason || 'Manual revision',
+            [`messages.${messageIndex}.approvalStatus`]: 'pending',
+            [`messages.${messageIndex}.id`]: messageId,
             updatedAt: now
           }
         }
@@ -455,7 +483,8 @@ export class ConversationService {
     const now = new Date();
 
     try {
-      await db.collection('conversations').updateOne(
+      // Prima prova con il query normale
+      const result = await db.collection('conversations').updateOne(
         { 
           _id: new ObjectId(conversationId),
           'messages.id': messageId
@@ -473,6 +502,30 @@ export class ConversationService {
           }
         }
       );
+
+      // Se non ha trovato nulla, prova con l'indice del messaggio generato
+      if (result.matchedCount === 0) {
+        const match = messageId.match(/^msg-(\d+)-\d+$/);
+        if (match) {
+          const messageIndex = parseInt(match[1]);
+          await db.collection('conversations').updateOne(
+            { _id: new ObjectId(conversationId) },
+            {
+              $set: {
+                [`messages.${messageIndex}.isLearnedResponse`]: true,
+                [`messages.${messageIndex}.reviewedResponseId`]: reviewedResponseId,
+                [`messages.${messageIndex}.metadata.similarityScore`]: similarityScore,
+                [`messages.${messageIndex}.metadata.matchedQuestionId`]: reviewedResponseId,
+                [`messages.${messageIndex}.id`]: messageId,
+                updatedAt: now
+              },
+              $inc: {
+                [`messages.${messageIndex}.usageCount`]: 1
+              }
+            }
+          );
+        }
+      }
 
       console.log(`[ConversationService] Marked message ${messageId} as learned response`);
     } catch (error) {
