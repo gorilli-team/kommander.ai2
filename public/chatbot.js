@@ -390,8 +390,9 @@ ${truncatedContent}
 
     useEffect(() => {
       const fetchSettings = () => {
-        console.log('[Chatbot] Fetching settings for userId:', userId);
-        fetch(`${ORIGIN}/api/settings/${userId}`)
+        const contextId = organizationId || userId;
+        console.log('[Chatbot] Fetching settings for contextId:', contextId, 'organizationId:', organizationId, 'userId:', userId);
+        fetch(`${ORIGIN}/api/settings/${contextId}`)
           .then((res) => {
             console.log('[Chatbot] Settings response status:', res.status);
             return res.ok ? res.json() : null;
@@ -399,7 +400,7 @@ ${truncatedContent}
           .then((data) => {
             console.log('[Chatbot] Settings data received:', data);
             if (!data) {
-              console.log('[Chatbot] No settings found for userId:', userId);
+              console.log('[Chatbot] No settings found for contextId:', contextId);
               return;
             }
             if (data.name) {
@@ -439,7 +440,7 @@ ${truncatedContent}
       const interval = setInterval(fetchSettings, 1000);
       
       return () => clearInterval(interval);
-    }, [userId]);
+    }, [userId, organizationId]);
 
     const currentDate = new Date().toLocaleDateString('it-IT', {
       day: '2-digit',
@@ -719,7 +720,7 @@ ${truncatedContent}
       }
 
       const requestBody = {
-        userId,
+        userId: organizationId || userId,
         message: messageWithContext,
         conversationId: conversationIdRef.current,
         site: window.location.hostname,

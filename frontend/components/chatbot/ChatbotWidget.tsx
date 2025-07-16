@@ -16,6 +16,7 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 import { FileUploader } from './FileUploader';
 import { useFileProcessor, ProcessedFile } from '@/frontend/hooks/useFileProcessor';
 import { capitalizeFirstLetter, applyRealtimeCapitalization } from '@/frontend/lib/textUtils';
+import { useOrganization } from '@/frontend/contexts/OrganizationContext';
 
 interface ChatbotWidgetProps {
   userId: string;
@@ -23,7 +24,9 @@ interface ChatbotWidgetProps {
 
 export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
   const [open, setOpen] = useState(false);
-  const { messages, isLoading, sendMessage, addMessage, handledBy } = useWidgetChat(userId);
+  const { getCurrentContextId } = useOrganization();
+  const currentContextId = getCurrentContextId() || userId;
+  const { messages, isLoading, sendMessage, addMessage, handledBy } = useWidgetChat(currentContextId);
   const prevHandledBy = useRef<'bot' | 'agent'>('bot');
   const [inputValue, setInputValue] = useState('');
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -34,7 +37,7 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
 
   useEffect(() => {
     const fetchSettings = () => {
-      fetch(`/api/settings/${userId}`)
+      fetch(`/api/settings/${currentContextId}`)
         .then(res => res.json())
         .then(data => {
           if (data.name) setBotName(data.name);
@@ -49,7 +52,7 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
     const interval = setInterval(fetchSettings, 5000);
     
     return () => clearInterval(interval);
-  }, [userId]);
+  }, [currentContextId]);
 
   // Auto-scroll disabilitato - lascia che controlli l'utente durante streaming
   // useEffect(() => {

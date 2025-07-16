@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useOrganization } from '@/frontend/contexts/OrganizationContext';
 
 // Extend the Window interface to include globals
 declare global {
   interface Window {
     React: any;
     ReactDOM: any;
-    initKommanderChatbot: (options: { userId: string }) => void;
+    initKommanderChatbot: (options: { userId?: string; organizationId?: string }) => void;
   }
 }
 
@@ -16,6 +17,7 @@ interface RealChatbotWidgetProps {
 }
 
 export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
+  const { currentContext, currentOrganization } = useOrganization();
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -80,11 +82,15 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
             // Add the trial class for custom styling
             container.className = 'trial-chatbot-widget';
             
-            console.log('[Dashboard] Initializing chatbot widget for userId:', userId);
+            console.log('[Dashboard] Initializing chatbot widget for context:', currentContext, currentOrganization?.id || userId);
             
             // Initialize the chatbot in the container
             if (window.initKommanderChatbot) {
-              window.initKommanderChatbot({ userId });
+              if (currentContext === 'organization' && currentOrganization?.id) {
+                window.initKommanderChatbot({ organizationId: currentOrganization.id });
+              } else {
+                window.initKommanderChatbot({ userId });
+              }
               
               // Force the widget to be open by simulating a click after init
               setTimeout(() => {
@@ -113,7 +119,7 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
         container.innerHTML = '';
       }
     };
-  }, [userId]);
+  }, [userId, currentContext, currentOrganization?.id]);
 
   return (
     <div className="w-full">
