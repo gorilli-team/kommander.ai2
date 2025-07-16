@@ -91,5 +91,8 @@ body {
   }
 }
 
-/* Nasconde il selettore delle organizzazioni e il link team nella sidebar */
+/* Nasconde il selettore delle organizzazioni nella navbar e il link team nella sidebar */
 .lg\:col-span-1:has([class*="Organizations"]), a[href="/team"] { display: none !important; }
+
+/* Nasconde il ContextSwitcher (selettore organizzazioni) nella navbar */
+header div.flex.items-center.gap-4 > *:nth-child(2) { display: none !important; }
