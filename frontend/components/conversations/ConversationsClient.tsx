@@ -59,8 +59,8 @@ interface Props {
 }
 
 export default function ConversationsClient({ conversations: initial }: Props) {
-  const [conversations, setConversations] = useState(initial || []);
-  const [selectedId, setSelectedId] = useState(initial?.[0]?.id || '');
+  const [conversations, setConversations] = useState(() => initial || []);
+  const [selectedId, setSelectedId] = useState(() => initial?.[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBy, setFilterBy] = useState<'all' | 'bot' | 'agent'>('all');
   const [siteFilter, setSiteFilter] = useState<'all' | string>('all');
@@ -77,6 +77,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   
   // Function to fetch conversations with current context
   const fetchConversations = async () => {
+    if (typeof window === 'undefined') return;  // Ensure fetch only runs on client side
     setIsLoadingConversations(true);
     try {
       const response = await fetchWithContext('/api/conversations');
