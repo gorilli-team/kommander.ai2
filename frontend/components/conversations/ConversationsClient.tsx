@@ -54,7 +54,7 @@ import { KnowledgeBaseManager } from './KnowledgeBaseManager';
 import { InlineRevisionModal } from './InlineRevisionModal';
 import { QuickActions } from './QuickActions';
 import { MessageMetrics } from './MessageMetrics';
-import { useToast } from '@/frontend/components/ui/use-toast';
+import { useToast } from '@/frontend/hooks/use-toast';
 
 export interface ConversationMessageDisplay {
   role: 'user' | 'assistant' | 'agent';

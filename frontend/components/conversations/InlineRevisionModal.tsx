@@ -20,7 +20,7 @@ import {
   AlertCircle,
   Check
 } from 'lucide-react';
-import { useToast } from '@/frontend/components/ui/use-toast';
+import { useToast } from '@/frontend/hooks/use-toast';
 
 interface InlineRevisionModalProps {
   conversationId: string;

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/frontend/components/ui/badge';
 import { cn } from '@/frontend/lib/utils';
-import { useToast } from '@/frontend/components/ui/use-toast';
+import { useToast } from '@/frontend/hooks/use-toast';
 import { ConversationMessageDisplay } from './ConversationsClient';
 
 interface QuickActionsProps {
