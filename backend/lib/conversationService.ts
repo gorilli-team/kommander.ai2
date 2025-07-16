@@ -322,4 +322,300 @@ export class ConversationService {
       documentSources: 0
     };
   }
+
+  /**
+   * Revisiona un messaggio specifico in una conversazione
+   */
+  async reviseMessage(
+    conversationId: string, 
+    messageId: string, 
+    revisedContent: string,
+    revisedBy: string,
+    revisionReason?: string
+  ): Promise<void> {
+    const db = await this.connect();
+    const now = new Date();
+
+    try {
+      // Prima ottieni il messaggio originale
+      const conversation = await db.collection('conversations').findOne(
+        { _id: new ObjectId(conversationId) },
+        { projection: { messages: 1 } }
+      );
+
+      if (!conversation) {
+        throw new Error('Conversation not found');
+      }
+
+      const message = conversation.messages.find((msg: any) => msg.id === messageId);
+      if (!message) {
+        throw new Error('Message not found');
+      }
+
+      // Aggiorna il messaggio con la revisione
+      await db.collection('conversations').updateOne(
+        { 
+          _id: new ObjectId(conversationId),
+          'messages.id': messageId
+        },
+        {
+          $set: {
+            'messages.$.originalContent': message.originalContent || message.content,
+            'messages.$.content': revisedContent,
+            'messages.$.isRevised': true,
+            'messages.$.revisedBy': revisedBy,
+            'messages.$.revisionTimestamp': now,
+            'messages.$.revisionReason': revisionReason || 'Manual revision',
+            'messages.$.approvalStatus': 'pending',
+            updatedAt: now
+          }
+        }
+      );
+
+      console.log(`[ConversationService] Revised message ${messageId} in conversation ${conversationId}`);
+    } catch (error) {
+      console.error('[ConversationService] Error revising message:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Ottieni cronologia delle revisioni per una conversazione
+   */
+  async getRevisionHistory(conversationId: string): Promise<ConversationMessage[]> {
+    const db = await this.connect();
+
+    try {
+      const conversation = await db.collection('conversations').findOne(
+        { _id: new ObjectId(conversationId) },
+        { projection: { messages: 1 } }
+      );
+
+      if (!conversation) {
+        return [];
+      }
+
+      // Filtra solo i messaggi revisionati
+      const revisedMessages = conversation.messages.filter(
+        (msg: any) => msg.isRevised === true
+      );
+
+      return revisedMessages as ConversationMessage[];
+    } catch (error) {
+      console.error('[ConversationService] Error getting revision history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Approva o rifiuta una revisione
+   */
+  async approveRevision(
+    conversationId: string,
+    messageId: string,
+    status: 'approved' | 'rejected',
+    approvedBy: string
+  ): Promise<void> {
+    const db = await this.connect();
+    const now = new Date();
+
+    try {
+      await db.collection('conversations').updateOne(
+        { 
+          _id: new ObjectId(conversationId),
+          'messages.id': messageId
+        },
+        {
+          $set: {
+            'messages.$.approvalStatus': status,
+            'messages.$.metadata.approvedBy': approvedBy,
+            'messages.$.metadata.approvalTimestamp': now,
+            updatedAt: now
+          }
+        }
+      );
+
+      console.log(`[ConversationService] ${status} revision for message ${messageId}`);
+    } catch (error) {
+      console.error('[ConversationService] Error approving revision:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Segna un messaggio come risposta appresa
+   */
+  async markAsLearnedResponse(
+    conversationId: string,
+    messageId: string,
+    reviewedResponseId: string,
+    similarityScore: number
+  ): Promise<void> {
+    const db = await this.connect();
+    const now = new Date();
+
+    try {
+      await db.collection('conversations').updateOne(
+        { 
+          _id: new ObjectId(conversationId),
+          'messages.id': messageId
+        },
+        {
+          $set: {
+            'messages.$.isLearnedResponse': true,
+            'messages.$.reviewedResponseId': reviewedResponseId,
+            'messages.$.metadata.similarityScore': similarityScore,
+            'messages.$.metadata.matchedQuestionId': reviewedResponseId,
+            updatedAt: now
+          },
+          $inc: {
+            'messages.$.usageCount': 1
+          }
+        }
+      );
+
+      console.log(`[ConversationService] Marked message ${messageId} as learned response`);
+    } catch (error) {
+      console.error('[ConversationService] Error marking as learned response:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Ottieni statistiche delle revisioni per un utente
+   */
+  async getRevisionStats(userId: string): Promise<{
+    totalRevisions: number;
+    approvedRevisions: number;
+    pendingRevisions: number;
+    rejectedRevisions: number;
+    learnedResponses: number;
+    averageRevisionTime: number;
+  }> {
+    const db = await this.connect();
+
+    try {
+      const pipeline = [
+        { $match: { userId } },
+        { $unwind: '$messages' },
+        { $match: { 'messages.isRevised': true } },
+        {
+          $group: {
+            _id: null,
+            totalRevisions: { $sum: 1 },
+            approvedRevisions: { 
+              $sum: { $cond: [{ $eq: ['$messages.approvalStatus', 'approved'] }, 1, 0] }
+            },
+            pendingRevisions: { 
+              $sum: { $cond: [{ $eq: ['$messages.approvalStatus', 'pending'] }, 1, 0] }
+            },
+            rejectedRevisions: { 
+              $sum: { $cond: [{ $eq: ['$messages.approvalStatus', 'rejected'] }, 1, 0] }
+            },
+            learnedResponses: { 
+              $sum: { $cond: [{ $eq: ['$messages.isLearnedResponse', true] }, 1, 0] }
+            }
+          }
+        }
+      ];
+
+      const result = await db.collection('conversations').aggregate(pipeline).toArray();
+      
+      return result[0] || {
+        totalRevisions: 0,
+        approvedRevisions: 0,
+        pendingRevisions: 0,
+        rejectedRevisions: 0,
+        learnedResponses: 0,
+        averageRevisionTime: 0
+      };
+    } catch (error) {
+      console.error('[ConversationService] Error getting revision stats:', error);
+      return {
+        totalRevisions: 0,
+        approvedRevisions: 0,
+        pendingRevisions: 0,
+        rejectedRevisions: 0,
+        learnedResponses: 0,
+        averageRevisionTime: 0
+      };
+    }
+  }
+
+  /**
+   * Cerca conversazioni con messaggi revisionati
+   */
+  async searchRevisedConversations(
+    userId: string,
+    options: {
+      status?: 'pending' | 'approved' | 'rejected';
+      revisedBy?: string;
+      dateFrom?: Date;
+      dateTo?: Date;
+      limit?: number;
+      skip?: number;
+    } = {}
+  ): Promise<ConversationSummary[]> {
+    const db = await this.connect();
+    const { status, revisedBy, dateFrom, dateTo, limit = 20, skip = 0 } = options;
+
+    try {
+      const matchStage: any = {
+        userId,
+        'messages.isRevised': true
+      };
+
+      if (status) {
+        matchStage['messages.approvalStatus'] = status;
+      }
+
+      if (revisedBy) {
+        matchStage['messages.revisedBy'] = revisedBy;
+      }
+
+      if (dateFrom || dateTo) {
+        matchStage['messages.revisionTimestamp'] = {};
+        if (dateFrom) matchStage['messages.revisionTimestamp'].$gte = dateFrom;
+        if (dateTo) matchStage['messages.revisionTimestamp'].$lte = dateTo;
+      }
+
+      const pipeline = [
+        { $match: matchStage },
+        { 
+          $project: {
+            _id: 1,
+            userId: 1,
+            title: 1,
+            'metadata.lastActivity': 1,
+            'metadata.totalMessages': 1,
+            'metadata.isArchived': 1,
+            revisedMessages: {
+              $filter: {
+                input: '$messages',
+                cond: { $eq: ['$$this.isRevised', true] }
+              }
+            }
+          }
+        },
+        { $sort: { 'metadata.lastActivity': -1 } },
+        { $skip: skip },
+        { $limit: limit }
+      ];
+
+      const conversations = await db.collection('conversations').aggregate(pipeline).toArray();
+
+      return conversations.map(conv => ({
+        _id: conv._id,
+        userId: conv.userId,
+        title: conv.title,
+        lastMessage: conv.revisedMessages[0]?.content || '',
+        lastActivity: conv.metadata.lastActivity,
+        messageCount: conv.metadata.totalMessages,
+        isArchived: conv.metadata.isArchived || false
+      }));
+    } catch (error) {
+      console.error('[ConversationService] Error searching revised conversations:', error);
+      return [];
+    }
+  }
 }

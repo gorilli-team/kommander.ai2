@@ -233,3 +233,75 @@ export async function createTrackedChatCompletion(
     throw error;
   }
 }
+
+/**
+ * Crea embedding per il testo usando OpenAI
+ */
+export async function createEmbedding(
+  text: string,
+  model: string = 'text-embedding-3-small'
+): Promise<number[]> {
+  const startTime = Date.now();
+  const client = getOpenAI();
+  
+  try {
+    const response = await client.embeddings.create({
+      model,
+      input: text.substring(0, 8000), // Limita la lunghezza
+      encoding_format: 'float'
+    });
+    
+    const endTime = Date.now();
+    const responseTime = endTime - startTime;
+    
+    // Traccia l'uso dell'embedding
+    const usage = response.usage;
+    if (usage) {
+      const { inputCost } = calculateApiCost(model, usage.total_tokens, 0);
+      
+      await costTracker.trackApiUsage({
+        model,
+        inputTokens: usage.total_tokens,
+        outputTokens: 0,
+        totalTokens: usage.total_tokens,
+        inputCost,
+        outputCost: 0,
+        totalCost: inputCost,
+        responseTime,
+        success: true,
+        endpoint: 'embeddings',
+        userMessage: text.substring(0, 100),
+        metadata: {
+          textLength: text.length,
+          embeddingDimension: response.data[0].embedding.length
+        }
+      });
+    }
+    
+    return response.data[0].embedding;
+  } catch (error) {
+    const endTime = Date.now();
+    const responseTime = endTime - startTime;
+    
+    // Traccia gli errori
+    await costTracker.trackApiUsage({
+      model,
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      inputCost: 0,
+      outputCost: 0,
+      totalCost: 0,
+      responseTime,
+      success: false,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      endpoint: 'embeddings',
+      userMessage: text.substring(0, 100),
+      metadata: {
+        textLength: text.length
+      }
+    });
+    
+    throw error;
+  }
+}
