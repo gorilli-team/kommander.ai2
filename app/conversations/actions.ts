@@ -17,6 +17,7 @@ export interface ConversationDisplayItem {
   site?: string;
   createdAt?: string;
   updatedAt?: string;
+  handledBy?: 'bot' | 'agent';
 }
 
 export async function getConversations(): Promise<ConversationDisplayItem[]> {
@@ -34,10 +35,12 @@ export async function getConversations(): Promise<ConversationDisplayItem[]> {
   
   console.log('[getConversations] Context:', context, 'ContextId:', contextId, 'OrganizationId:', organizationId);
 
+  // Apply same limit as client-side to prevent hydration mismatch
   const docs = await db
     .collection<ConversationDocument>('conversations')
     .find({ userId: contextId })
     .sort({ updatedAt: -1 })
+    .limit(20)
     .toArray();
 
   return docs.map((doc) => ({

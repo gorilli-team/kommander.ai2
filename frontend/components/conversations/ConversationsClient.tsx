@@ -71,6 +71,8 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [failedRequests, setFailedRequests] = useState<Set<string>>(new Set());
+  const [hasMore, setHasMore] = useState(true);
+  const [currentLimit, setCurrentLimit] = useState(20);
   
   const { currentContext, currentOrganization } = useOrganization();
   const { fetchWithContext } = useContextualRequest();
@@ -78,14 +80,16 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   const selected = conversations.find((c) => c.id === selectedId);
   
   // Function to fetch conversations with current context
-  const fetchConversations = async () => {
+  const fetchConversations = async (limit?: number) => {
     if (typeof window === 'undefined') return;  // Ensure fetch only runs on client side
     setIsLoadingConversations(true);
     try {
-      const response = await fetchWithContext('/api/conversations');
+      const actualLimit = limit || currentLimit;
+      const response = await fetchWithContext(`/api/conversations?limit=${actualLimit}`);
       if (response.ok) {
         const data = await response.json();
         setConversations(data.conversations || []);
+        setHasMore(data.conversations?.length === actualLimit);
         // Reset selected ID if current selection doesn't exist in new data
         if (selectedId && !data.conversations?.some((c: any) => c.id === selectedId)) {
           setSelectedId(data.conversations?.[0]?.id || '');
@@ -100,6 +104,13 @@ export default function ConversationsClient({ conversations: initial }: Props) {
     } finally {
       setIsLoadingConversations(false);
     }
+  };
+  
+  // Function to load more conversations
+  const loadMoreConversations = () => {
+    const newLimit = currentLimit + 20;
+    setCurrentLimit(newLimit);
+    fetchConversations(newLimit);
   };
   
   // Effect to mark component as mounted
@@ -642,6 +653,24 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                             </div>
                           );
                         })
+                      )}
+                      {hasMore && conversations.length >= 20 && (
+                        <div className="text-center py-4">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={loadMoreConversations}
+                            disabled={isLoadingConversations}
+                            className="flex items-center gap-2"
+                          >
+                            {isLoadingConversations ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                            Load More
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </ScrollArea>
