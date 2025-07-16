@@ -36,6 +36,8 @@ import {
 } from 'lucide-react';
 import AgentControlBar from './AgentControlBar';
 import { Input } from '@/frontend/components/ui/input';
+import { useOrganization } from '@/frontend/contexts/OrganizationContext';
+import { useContextualRequest } from '@/frontend/hooks/useContextualRequest';
 
 export interface ConversationMessageDisplay {
   role: 'user' | 'assistant' | 'agent';
@@ -66,8 +68,40 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   const [typeFilter, setTypeFilter] = useState<'all' | 'widget' | 'dashboard'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'messages'>('newest');
   const [isExporting, setIsExporting] = useState(false);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  
+  const { currentContext, currentOrganization } = useOrganization();
+  const { fetchWithContext } = useContextualRequest();
   
   const selected = conversations.find((c) => c.id === selectedId);
+  
+  // Function to fetch conversations with current context
+  const fetchConversations = async () => {
+    setIsLoadingConversations(true);
+    try {
+      const response = await fetchWithContext('/api/conversations');
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data.conversations || []);
+        // Reset selected ID if current selection doesn't exist in new data
+        if (selectedId && !data.conversations?.some((c: any) => c.id === selectedId)) {
+          setSelectedId(data.conversations?.[0]?.id || '');
+        }
+      } else {
+        console.error('Failed to fetch conversations:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
+  
+  // Effect to reload conversations when context changes
+  useEffect(() => {
+    console.log('[ConversationsClient] Context changed:', currentContext, currentOrganization?.id);
+    fetchConversations();
+  }, [currentContext, currentOrganization?.id]);
   
   // Get unique sites for filter
   const uniqueSites = useMemo(() => {
@@ -430,16 +464,26 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                       </DropdownMenu>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handleExport}
-                        disabled={isExporting}
-                        className="flex items-center gap-2"
-                      >
-                        {isExporting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                        Export
-                      </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchConversations}
+              disabled={isLoadingConversations}
+              className="flex items-center gap-2"
+            >
+              {isLoadingConversations ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Refresh
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleExport}
+              disabled={isExporting}
+              className="flex items-center gap-2"
+            >
+              {isExporting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Export
+            </Button>
                       <Badge variant="secondary" className="flex items-center gap-1">
                         {filteredConversations.length} results
                       </Badge>
@@ -460,6 +504,16 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
                       {filteredConversations.length} of {conversations.length} conversations
+                      {currentContext === 'organization' && currentOrganization && (
+                        <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                          {currentOrganization.name}
+                        </span>
+                      )}
+                      {currentContext === 'personal' && (
+                        <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-300">
+                          Personal
+                        </span>
+                      )}
                     </p>
                   </CardHeader>
                   <ScrollArea className="h-[calc(70vh-8rem)]">

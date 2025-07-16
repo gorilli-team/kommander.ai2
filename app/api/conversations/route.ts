@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/frontend/auth';
 import { ConversationService } from '@/backend/lib/conversationService';
+import { getContextInfo } from '@/backend/lib/contextHelpers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,18 +18,26 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') as 'asc' | 'desc' || 'desc';
     const search = searchParams.get('search');
 
+    // Get context info to determine if we should filter by organization
+    const { context, organizationId } = await getContextInfo();
+    
+    console.log('[API /conversations] Context:', context, 'OrganizationId:', organizationId, 'UserId:', session.user.id);
+
     const conversationService = new ConversationService();
+
+    // Use organization ID if in organization context, otherwise use user ID
+    const contextId = context === 'organization' && organizationId ? organizationId : session.user.id;
 
     let conversations;
     if (search) {
       conversations = await conversationService.searchConversations(
-        session.user.id,
+        contextId,
         search,
         { limit, skip }
       );
     } else {
       conversations = await conversationService.getUserConversations(
-        session.user.id,
+        contextId,
         { limit, skip, includeArchived, sortBy, sortOrder }
       );
     }
