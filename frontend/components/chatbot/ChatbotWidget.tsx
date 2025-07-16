@@ -37,13 +37,23 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
 
   useEffect(() => {
     const fetchSettings = () => {
+      console.log('[ChatbotWidget] Fetching settings for contextId:', currentContextId);
       fetch(`/api/settings/${currentContextId}`)
         .then(res => res.json())
         .then(data => {
-          if (data.name) setBotName(data.name);
-          if (data.color) setBotColor(data.color);
+          console.log('[ChatbotWidget] Settings received:', data);
+          if (data.name) {
+            console.log('[ChatbotWidget] Setting bot name to:', data.name);
+            setBotName(data.name);
+          }
+          if (data.color) {
+            console.log('[ChatbotWidget] Setting bot color to:', data.color);
+            setBotColor(data.color);
+          }
         })
-        .catch(() => {});
+        .catch((err) => {
+          console.error('[ChatbotWidget] Error fetching settings:', err);
+        });
     };
     
     fetchSettings();
