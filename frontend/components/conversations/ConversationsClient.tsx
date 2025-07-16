@@ -32,17 +32,43 @@ import {
   Archive,
   Trash2,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Edit,
+  CheckCircle,
+  AlertCircle,
+  History,
+  ThumbsUp,
+  ThumbsDown,
+  BarChart3,
+  Brain,
+  Target,
+  Zap
 } from 'lucide-react';
 import AgentControlBar from './AgentControlBar';
 import { Input } from '@/frontend/components/ui/input';
 import { useOrganization } from '@/frontend/contexts/OrganizationContext';
 import { useContextualRequest } from '@/frontend/hooks/useContextualRequest';
+import { MessageRevisionPanel } from './MessageRevisionPanel';
+import { RevisionHistory } from './RevisionHistory';
+import { KnowledgeBaseManager } from './KnowledgeBaseManager';
+import { InlineRevisionModal } from './InlineRevisionModal';
+import { QuickActions } from './QuickActions';
+import { MessageMetrics } from './MessageMetrics';
+import { useToast } from '@/frontend/components/ui/use-toast';
 
 export interface ConversationMessageDisplay {
   role: 'user' | 'assistant' | 'agent';
   text: string;
   timestamp: string;
+  isRevised?: boolean;
+  revisionStatus?: 'pending' | 'approved' | 'rejected';
+  revisionCount?: number;
+  originalText?: string;
+  revisionId?: string;
+  lastRevisedAt?: string;
+  lastRevisedBy?: string;
+  confidence?: number;
+  tags?: string[];
 }
 
 export interface ConversationDisplayItem {
@@ -72,8 +98,24 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   const [isMounted, setIsMounted] = useState(false);
   const [failedRequests, setFailedRequests] = useState<Set<string>>(new Set());
   
+  // Revision modal state
+  const [revisionModalOpen, setRevisionModalOpen] = useState(false);
+  const [revisionData, setRevisionData] = useState<{
+    messageText: string;
+    userQuestion: string;
+    messageIndex: number;
+  } | null>(null);
+  
+  // MessageMetrics modal state
+  const [metricsModalOpen, setMetricsModalOpen] = useState(false);
+  const [metricsData, setMetricsData] = useState<{
+    messageIndex: number;
+    message: ConversationMessageDisplay;
+  } | null>(null);
+  
   const { currentContext, currentOrganization } = useOrganization();
   const { fetchWithContext } = useContextualRequest();
+  const { toast } = useToast();
   
   const selected = conversations.find((c) => c.id === selectedId);
   
@@ -303,6 +345,95 @@ export default function ConversationsClient({ conversations: initial }: Props) {
       navigator.clipboard.writeText(`${window.location.origin}/conversations?id=${id}`);
     }
   };
+  
+  // Function to open revision modal
+  const openRevisionModal = (messageText: string, messageIndex: number) => {
+    if (!selected) return;
+    
+    // Find the user question before this AI message
+    const userQuestion = selected.messages
+      .slice(0, messageIndex)
+      .filter(m => m.role === 'user')
+      .pop()?.text || 'Domanda non trovata';
+    
+    setRevisionData({
+      messageText,
+      userQuestion,
+      messageIndex
+    });
+    setRevisionModalOpen(true);
+  };
+  
+  // Function to handle quick actions
+  const handleQuickAction = async (action: 'approve' | 'reject' | 'regenerate', messageIndex: number) => {
+    if (!selected) return;
+    
+    try {
+      const response = await fetch(`/api/conversations/${selected.id}/messages/${messageIndex}/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update the message in the conversations state
+        setConversations(prev => prev.map(c => 
+          c.id === selected.id 
+            ? {
+                ...c,
+                messages: c.messages.map((msg, idx) => 
+                  idx === messageIndex 
+                    ? { 
+                        ...msg, 
+                        revisionStatus: action === 'regenerate' ? 'pending' : action as 'approved' | 'rejected',
+                        text: data.newText || msg.text,
+                        lastRevisedAt: new Date().toISOString(),
+                        lastRevisedBy: 'system'
+                      }
+                    : msg
+                )
+              }
+            : c
+        ));
+        
+        toast({
+          title: 'Azione completata',
+          description: `Messaggio ${action === 'approve' ? 'approvato' : action === 'reject' ? 'respinto' : 'rigenerato'} con successo`,
+          variant: action === 'reject' ? 'destructive' : 'default'
+        });
+      } else {
+        throw new Error('Failed to perform action');
+      }
+    } catch (error) {
+      console.error('Error performing quick action:', error);
+      toast({
+        title: 'Errore',
+        description: 'Impossibile completare l\'azione',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  // Function to copy message text
+  const handleCopyMessage = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: 'Copiato',
+      description: 'Testo copiato negli appunti',
+    });
+  };
+  
+  // Function to show message metrics
+  const handleViewMetrics = (messageIndex: number) => {
+    if (!selected) return;
+    
+    const message = selected.messages[messageIndex];
+    if (message) {
+      setMetricsData({ messageIndex, message });
+      setMetricsModalOpen(true);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -363,11 +494,13 @@ export default function ConversationsClient({ conversations: initial }: Props) {
         </div>
       </div>
       
-      {/* Tabs for Conversations and Analytics */}
+      {/* Tabs for Conversations, Analytics, Revisions, and Knowledge Base */}
       <Tabs defaultValue="conversations" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="conversations">Conversations</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="revisions">AI Revisions</TabsTrigger>
+          <TabsTrigger value="knowledge-base">Knowledge Base</TabsTrigger>
         </TabsList>
         
         <TabsContent value="conversations">
@@ -693,6 +826,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                           {(selected.messages || []).map((msg, idx) => {
                             const isUser = msg.role === 'user';
                             const isAgent = msg.role === 'agent';
+                            const isAI = msg.role === 'assistant';
                             return (
                               <div key={idx} className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
                                 <div className={cn('flex items-start gap-3 max-w-[85%]', isUser ? 'flex-row-reverse' : 'flex-row')}>
@@ -712,21 +846,47 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                                       <Bot className="h-4 w-4" />
                                     )}
                                   </div>
-                                  <div
-                                    className={cn(
-                                      'rounded-2xl px-4 py-3 shadow-sm',
-                                      isUser
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-muted border border-border'
+                                  <div className="flex-1 space-y-2">
+                                    <div
+                                      className={cn(
+                                        'rounded-2xl px-4 py-3 shadow-sm',
+                                        isUser
+                                          ? 'bg-primary text-primary-foreground'
+                                          : 'bg-muted border border-border'
+                                      )}
+                                    >
+                                      <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
+                                      <p className={cn(
+                                        'text-xs mt-2',
+                                        isUser ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                                      )}>
+                                        {format(new Date(msg.timestamp), 'HH:mm')}
+                                      </p>
+                                    </div>
+                                    {/* Quick Actions for AI messages */}
+                                    {isAI && (
+                                      <div className="space-y-2">
+                                        <QuickActions
+                                          message={msg}
+                                          messageIndex={idx}
+                                          conversationId={selected.id}
+                                          onQuickAction={handleQuickAction}
+                                          onCopyMessage={handleCopyMessage}
+                                          onViewMetrics={handleViewMetrics}
+                                        />
+                                        <div className="flex justify-start">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => openRevisionModal(msg.text, idx)}
+                                            className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground"
+                                          >
+                                            <Edit className="h-3 w-3 mr-1" />
+                                            Revisiona
+                                          </Button>
+                                        </div>
+                                      </div>
                                     )}
-                                  >
-                                    <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
-                                    <p className={cn(
-                                      'text-xs mt-2',
-                                      isUser ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                                    )}>
-                                      {format(new Date(msg.timestamp), 'HH:mm')}
-                                    </p>
                                   </div>
                                 </div>
                               </div>
@@ -853,7 +1013,153 @@ export default function ConversationsClient({ conversations: initial }: Props) {
             </Card>
           </div>
         </TabsContent>
+        
+        <TabsContent value="revisions">
+          <div className="space-y-6">
+            {/* Revision interface with conversation selection */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      Seleziona Conversazione
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Scegli una conversazione per gestire le revisioni dei messaggi AI
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[400px]">
+                      <div className="space-y-2">
+                        {conversations
+                          .filter(c => c.handledBy === 'bot' && c.messages?.some(m => m.role === 'assistant'))
+                          .map((c) => {
+                            const aiMessages = c.messages?.filter(m => m.role === 'assistant') || [];
+                            const lastMessage = c.messages?.[c.messages.length - 1];
+                            const isSelected = selectedId === c.id;
+                            
+                            return (
+                              <div
+                                key={c.id}
+                                className={cn(
+                                  'p-3 rounded-lg cursor-pointer transition-all duration-200 border',
+                                  isSelected
+                                    ? 'bg-primary/10 border-primary/30 ring-1 ring-primary/20'
+                                    : 'hover:bg-muted/50 border-border/50 hover:border-border'
+                                )}
+                                onClick={() => setSelectedId(c.id)}
+                              >
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <Badge variant="secondary" className="text-xs">
+                                      {aiMessages.length} AI messages
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {c.updatedAt ? formatDistanceToNow(new Date(c.updatedAt), { addSuffix: true }) : ''}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm line-clamp-2">
+                                    {lastMessage?.text || 'Nessun messaggio'}
+                                  </p>
+                                  {c.site && (
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <Globe className="h-3 w-3" />
+                                      {c.site}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="space-y-4">
+                {selectedId ? (
+                  <>
+                    {/* Message Revision Panel */}
+                    <MessageRevisionPanel 
+                      conversationId={selectedId}
+                      messages={selected?.messages || []}
+                    />
+                    
+                    {/* Revision History */}
+                    <RevisionHistory 
+                      conversationId={selectedId}
+                    />
+                  </>
+                ) : (
+                  <Card className="h-[400px] flex items-center justify-center">
+                    <div className="text-center space-y-3">
+                      <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto" />
+                      <p className="text-muted-foreground">Seleziona una conversazione</p>
+                      <p className="text-sm text-muted-foreground">
+                        Scegli una conversazione con messaggi AI da revisionare
+                      </p>
+                    </div>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="knowledge-base">
+          <KnowledgeBaseManager />
+        </TabsContent>
       </Tabs>
+      
+      {/* Inline Revision Modal */}
+      {revisionModalOpen && revisionData && (
+        <InlineRevisionModal
+          isOpen={revisionModalOpen}
+          onClose={() => {
+            setRevisionModalOpen(false);
+            setRevisionData(null);
+          }}
+          conversationId={selectedId}
+          messageText={revisionData.messageText}
+          userQuestion={revisionData.userQuestion}
+          messageIndex={revisionData.messageIndex}
+          onRevisionComplete={(newText) => {
+            // Update the message in the conversations state
+            if (selected) {
+              setConversations(prev => prev.map(c => 
+                c.id === selectedId 
+                  ? {
+                      ...c,
+                      messages: c.messages.map((msg, idx) => 
+                        idx === revisionData.messageIndex 
+                          ? { ...msg, text: newText }
+                          : msg
+                      )
+                    }
+                  : c
+              ));
+            }
+            setRevisionModalOpen(false);
+            setRevisionData(null);
+          }}
+        />
+      )}
+      
+      {/* MessageMetrics Modal */}
+      {metricsModalOpen && metricsData && (
+        <MessageMetrics
+          message={metricsData.message}
+          messageIndex={metricsData.messageIndex}
+          conversationId={selectedId}
+          isOpen={metricsModalOpen}
+          onClose={() => {
+            setMetricsModalOpen(false);
+            setMetricsData(null);
+          }}
+        />
+      )}
     </div>
   );
 }
