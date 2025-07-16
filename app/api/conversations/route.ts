@@ -12,8 +12,6 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const skip = parseInt(searchParams.get('skip') || '0');
     const search = searchParams.get('search');
 
     // Get context info to determine if we should filter by organization
@@ -41,8 +39,6 @@ export async function GET(request: NextRequest) {
       .collection<ConversationDocument>('conversations')
       .find(filter)
       .sort({ updatedAt: -1 })
-      .skip(skip)
-      .limit(limit)
       .toArray();
 
     // Format conversations for the client

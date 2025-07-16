@@ -35,12 +35,11 @@ export async function getConversations(): Promise<ConversationDisplayItem[]> {
   
   console.log('[getConversations] Context:', context, 'ContextId:', contextId, 'OrganizationId:', organizationId);
 
-  // Apply same limit as client-side to prevent hydration mismatch
+  // Load all conversations without limit
   const docs = await db
     .collection<ConversationDocument>('conversations')
     .find({ userId: contextId })
     .sort({ updatedAt: -1 })
-    .limit(20)
     .toArray();
 
   return docs.map((doc) => ({
