@@ -69,6 +69,8 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'messages'>('newest');
   const [isExporting, setIsExporting] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [failedRequests, setFailedRequests] = useState<Set<string>>(new Set());
   
   const { currentContext, currentOrganization } = useOrganization();
   const { fetchWithContext } = useContextualRequest();
@@ -88,6 +90,8 @@ export default function ConversationsClient({ conversations: initial }: Props) {
         if (selectedId && !data.conversations?.some((c: any) => c.id === selectedId)) {
           setSelectedId(data.conversations?.[0]?.id || '');
         }
+        // Clear failed requests when conversations are refreshed
+        setFailedRequests(new Set());
       } else {
         console.error('Failed to fetch conversations:', response.status);
       }
@@ -98,11 +102,17 @@ export default function ConversationsClient({ conversations: initial }: Props) {
     }
   };
   
+  // Effect to mark component as mounted
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
   // Effect to reload conversations when context changes
   useEffect(() => {
+    if (!isMounted) return;
     console.log('[ConversationsClient] Context changed:', currentContext, currentOrganization?.id);
     fetchConversations();
-  }, [currentContext, currentOrganization?.id]);
+  }, [currentContext, currentOrganization?.id, isMounted]);
   
   // Get unique sites for filter
   const uniqueSites = useMemo(() => {
@@ -203,7 +213,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   }, [conversations]);
 
   useEffect(() => {
-    if (!selectedId) return;
+    if (!selectedId || !isMounted || failedRequests.has(selectedId)) return;
     let interval: NodeJS.Timeout;
     const fetchConv = async () => {
       try {
@@ -213,15 +223,26 @@ export default function ConversationsClient({ conversations: initial }: Props) {
           setConversations((prev) =>
             prev.map((c) => (c.id === selectedId ? { ...c, ...data } : c)),
           );
+        } else if (res.status === 404) {
+          // Conversation was deleted or doesn't exist, reset selection
+          console.warn(`Conversation ${selectedId} not found (404), resetting selection`);
+          setFailedRequests(prev => new Set([...prev, selectedId]));
+          setSelectedId('');
+          // Optionally refresh the conversations list
+          fetchConversations();
+        } else {
+          console.error(`Error fetching conversation ${selectedId}:`, res.status, res.statusText);
         }
-      } catch {
-        // ignore
+      } catch (error) {
+        console.error('Error fetching conversation:', error);
       }
     };
-    fetchConv();
-    interval = setInterval(fetchConv, 3000);
+    if (selectedId) {
+      fetchConv();
+      interval = setInterval(fetchConv, 3000);
+    }
     return () => clearInterval(interval);
-  }, [selectedId]);
+  }, [selectedId, isMounted, failedRequests]);
 
   useEffect(() => {
     if (!selected || !selected.messages || selected.messages.length === 0) return;
@@ -546,7 +567,11 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                                   ? 'bg-primary/10 border-primary/30 shadow-sm ring-1 ring-primary/20' 
                                   : 'hover:bg-muted/50 border-border/50 hover:border-border'
                               )}
-                              onClick={() => setSelectedId(c.id)}
+                              onClick={() => {
+                                if (!failedRequests.has(c.id)) {
+                                  setSelectedId(c.id);
+                                }
+                              }}
                             >
                               <div className="space-y-3">
                                 <div className="flex items-start justify-between">
