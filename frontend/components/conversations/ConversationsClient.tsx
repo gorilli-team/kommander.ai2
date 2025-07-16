@@ -59,8 +59,8 @@ interface Props {
 }
 
 export default function ConversationsClient({ conversations: initial }: Props) {
-  const [conversations, setConversations] = useState(initial);
-  const [selectedId, setSelectedId] = useState(initial[0]?.id || '');
+  const [conversations, setConversations] = useState(initial || []);
+  const [selectedId, setSelectedId] = useState(initial?.[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBy, setFilterBy] = useState<'all' | 'bot' | 'agent'>('all');
   const [siteFilter, setSiteFilter] = useState<'all' | string>('all');
@@ -159,7 +159,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
     // Apply search query
     if (searchQuery.trim()) {
       filtered = filtered.filter(c => 
-        c.messages.some(m => 
+        (c.messages || []).some(m => 
           m.text.toLowerCase().includes(searchQuery.toLowerCase())
         ) || 
         c.site?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -172,7 +172,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
         case 'oldest':
           return new Date(a.updatedAt || 0).getTime() - new Date(b.updatedAt || 0).getTime();
         case 'messages':
-          return b.messages.length - a.messages.length;
+          return (b.messages?.length || 0) - (a.messages?.length || 0);
         case 'newest':
         default:
           return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
@@ -187,7 +187,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
     const total = conversations.length;
     const botHandled = conversations.filter(c => c.handledBy === 'bot').length;
     const agentHandled = conversations.filter(c => c.handledBy === 'agent').length;
-    const totalMessages = conversations.reduce((sum, c) => sum + c.messages.length, 0);
+    const totalMessages = conversations.reduce((sum, c) => sum + (c.messages?.length || 0), 0);
     const avgMessagesPerConversation = total > 0 ? (totalMessages / total).toFixed(1) : '0';
     
     return {
@@ -223,7 +223,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   }, [selectedId]);
 
   useEffect(() => {
-    if (!selected) return;
+    if (!selected || !selected.messages || selected.messages.length === 0) return;
     const last = selected.messages[selected.messages.length - 1];
     if (last && last.role === 'user' && typeof window !== 'undefined') {
       if (Notification.permission === 'granted') {
@@ -255,8 +255,8 @@ export default function ConversationsClient({ conversations: initial }: Props) {
           handled_by: c.handledBy,
           created_at: c.createdAt,
           updated_at: c.updatedAt,
-          messages_count: c.messages.length,
-          messages: c.messages
+          messages_count: c.messages?.length || 0,
+          messages: c.messages || []
         }))
       };
       
@@ -530,9 +530,10 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                         </div>
                       ) : (
                         filteredConversations.map((c) => {
-                          const last = c.messages[c.messages.length - 1];
+                          const messages = c.messages || [];
+                          const last = messages.length > 0 ? messages[messages.length - 1] : null;
                           const isSelected = selectedId === c.id;
-                          const messageCount = c.messages.length;
+                          const messageCount = messages.length;
                           const timeAgo = c.updatedAt ? formatDistanceToNow(new Date(c.updatedAt), { addSuffix: true }) : '';
                           
                           return (
@@ -663,7 +664,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                     <CardContent className="flex-1 overflow-hidden">
                       <ScrollArea className="h-full py-4">
                         <div className="space-y-4">
-                          {selected.messages.map((msg, idx) => {
+                          {(selected.messages || []).map((msg, idx) => {
                             const isUser = msg.role === 'user';
                             const isAgent = msg.role === 'agent';
                             return (
@@ -739,7 +740,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                             setConversations((prev) =>
                               prev.map((c) =>
                                 c.id === selected.id
-                                  ? { ...c, messages: [...c.messages, msg] }
+                                  ? { ...c, messages: [...(c.messages || []), msg] }
                                   : c,
                               ),
                             );
