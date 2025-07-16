@@ -34,8 +34,13 @@ interface Props {
 
 export default function SettingsClient({ initialSettings }: Props) {
   const { data: session } = useSession();
-  const { currentContext, currentOrganization } = useOrganization();
-  const contextId = currentOrganization?.id || session?.user.id;
+  const { currentContext, currentOrganization, getCurrentContextId } = useOrganization();
+  const contextId = getCurrentContextId() || session?.user.id;
+  
+  console.log('[SettingsClient] Current context:', currentContext);
+  console.log('[SettingsClient] Current organization:', currentOrganization);
+  console.log('[SettingsClient] Context ID:', contextId);
+  console.log('[SettingsClient] Session user ID:', session?.user.id);
 
   const [name, setName] = useState(initialSettings?.name || 'Kommander.ai');
   const [color, setColor] = useState(initialSettings?.color || '#6366f1');
@@ -49,25 +54,44 @@ export default function SettingsClient({ initialSettings }: Props) {
   // Load settings when context changes
   useEffect(() => {
     const loadContextSettings = async () => {
-      if (!contextId) return;
+      console.log('[SettingsClient] Loading settings for contextId:', contextId);
+      if (!contextId) {
+        console.log('[SettingsClient] No contextId, skipping settings load');
+        return;
+      }
       
       setIsLoading(true);
       try {
+        console.log('[SettingsClient] Fetching from API:', `/api/settings/${contextId}`);
         const response = await fetch(`/api/settings/${contextId}`);
+        console.log('[SettingsClient] API response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('[SettingsClient] Settings data received:', data);
+          
           setName(data?.name || 'Kommander.ai');
           setColor(data?.color || '#6366f1');
           setPersonality(data?.personality || 'neutral');
           setTraits(data?.traits || []);
+          
+          console.log('[SettingsClient] Settings applied:', {
+            name: data?.name || 'Kommander.ai',
+            color: data?.color || '#6366f1',
+            personality: data?.personality || 'neutral',
+            traits: data?.traits || []
+          });
+        } else {
+          console.log('[SettingsClient] API response not ok:', response.status);
         }
       } catch (error) {
-        console.error('Error loading context settings:', error);
+        console.error('[SettingsClient] Error loading context settings:', error);
       } finally {
         setIsLoading(false);
       }
     };
     
+    console.log('[SettingsClient] useEffect triggered with contextId:', contextId, 'currentContext:', currentContext);
     loadContextSettings();
   }, [contextId, currentContext]);
 
