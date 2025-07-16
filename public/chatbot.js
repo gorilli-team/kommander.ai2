@@ -434,10 +434,11 @@ ${truncatedContent}
           });
       };
       
+      // Fetch settings immediately when context changes
       fetchSettings();
       
-      // Poll for settings changes every 1 second
-      const interval = setInterval(fetchSettings, 1000);
+      // Poll for settings changes every 10 seconds (reduced from 1 second)
+      const interval = setInterval(fetchSettings, 10000);
       
       return () => clearInterval(interval);
     }, [userId, organizationId]);

@@ -20,6 +20,7 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
   const { currentContext, currentOrganization } = useOrganization();
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Initialize the chatbot once on component mount
   useEffect(() => {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai';
     
@@ -119,7 +120,36 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
         container.innerHTML = '';
       }
     };
-  }, [userId, currentContext, currentOrganization?.id]);
+  }, [userId]); // Only reinitialize if userId changes, not on context changes
+
+  // Update the chatbot context when context changes
+  useEffect(() => {
+    if (isLoaded && window.initKommanderChatbot) {
+      console.log('[Dashboard] Context changed, updating chatbot context:', currentContext, currentOrganization?.id || userId);
+      
+      // Clear the existing chatbot container
+      const container = document.getElementById('trial-chatbot-widget');
+      if (container) {
+        container.innerHTML = '';
+        container.className = 'trial-chatbot-widget';
+        
+        // Reinitialize with new context
+        if (currentContext === 'organization' && currentOrganization?.id) {
+          window.initKommanderChatbot({ organizationId: currentOrganization.id });
+        } else {
+          window.initKommanderChatbot({ userId });
+        }
+        
+        // Force the widget to be open
+        setTimeout(() => {
+          const button = container.querySelector('.kommander-button');
+          if (button) {
+            (button as HTMLElement).click();
+          }
+        }, 300);
+      }
+    }
+  }, [currentContext, currentOrganization?.id, userId, isLoaded]);
 
   return (
     <div className="w-full">

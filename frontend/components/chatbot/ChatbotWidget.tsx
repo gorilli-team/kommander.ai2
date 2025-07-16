@@ -64,7 +64,7 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
 
   // Regular polling for settings changes
   useEffect(() => {
-    const interval = setInterval(fetchSettings, 5000);
+    const interval = setInterval(fetchSettings, 30000); // Reduced to 30 seconds
     return () => clearInterval(interval);
   }, [fetchSettings]);
 
