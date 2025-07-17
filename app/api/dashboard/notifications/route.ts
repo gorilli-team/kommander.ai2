@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/frontend/auth';
+import { auth } from '@/frontend/auth';
 import { connectToDatabase } from '@/backend/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
