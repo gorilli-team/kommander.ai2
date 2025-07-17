@@ -8,13 +8,11 @@ import { Toaster } from "@/frontend/components/ui/toaster";
 import { SessionProvider } from 'next-auth/react';
 import CookieConsent from '@/frontend/components/privacy/CookieConsent';
 import { OrganizationProvider } from '@/frontend/contexts/OrganizationContext';
+import { defaultMetadata } from '@/frontend/lib/metadata';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
-export const metadata: Metadata = {
-  title: 'Kommander.ai Proto',
-  description: 'Kommander.ai Web App Prototype',
-};
+export const metadata: Metadata = defaultMetadata;
 
 export default function RootLayout({
   children,
