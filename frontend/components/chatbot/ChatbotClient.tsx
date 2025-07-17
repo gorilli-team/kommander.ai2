@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import ChatUI from '@/frontend/components/chatbot/ChatUI';
+import RealChatbotWidget from '@/app/chatbot-trial/RealChatbotWidget';
 import { useOrganization } from '@/frontend/contexts/OrganizationContext';
 import { Button } from '@/frontend/components/ui/button';
 import { Copy, Check } from 'lucide-react';
@@ -112,11 +112,7 @@ export default function ChatbotClient({ userId, settings, baseUrl }: ChatbotClie
 
       {/* Chat Container */}
       <div className="flex-1 overflow-hidden">
-        <ChatUI
-          accentColor={settings?.color}
-          title={contextInfo.title}
-          organizationId={currentContext === 'organization' ? currentOrganization?.id : undefined}
-        />
+        <RealChatbotWidget userId={userId} />
       </div>
     </div>
   );
