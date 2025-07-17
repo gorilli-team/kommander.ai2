@@ -53,18 +53,23 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
     customStyles.id = 'chatbot-trial-styles';
     customStyles.textContent = `
       .trial-chatbot-widget {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        min-height: 600px;
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: 600px !important;
+        width: 100% !important;
+        resize: none !important;
       }
       
-      /* Override the original fixed dimensions */
-      .trial-chatbot-widget .kommander-window {
+      /* Override ALL possible CSS rules with maximum specificity */
+      .trial-chatbot-widget .kommander-window,
+      .trial-chatbot-widget .kommander-window[style] {
         position: relative !important;
         inset: auto !important;
         bottom: auto !important;
         right: auto !important;
+        left: auto !important;
+        top: auto !important;
         width: 100% !important;
         height: 100% !important;
         min-height: 600px !important;
@@ -76,19 +81,38 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
         animation: none !important;
         display: flex !important;
         flex-direction: column !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        border: 1px solid rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        border: 1px solid rgba(0, 0, 0, 0.05) !important;
         padding: 0 !important;
+        margin: 0 !important;
+        z-index: auto !important;
       }
       
-      /* Override media queries from original CSS */
+      /* Override ALL media queries */
       @media (min-width: 640px) {
-        .trial-chatbot-widget .kommander-window {
+        .trial-chatbot-widget .kommander-window,
+        .trial-chatbot-widget .kommander-window[style] {
           inset: auto !important;
           bottom: auto !important;
           right: auto !important;
+          left: auto !important;
+          top: auto !important;
           width: 100% !important;
           height: 100% !important;
+          border-radius: 12px !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          position: relative !important;
+        }
+      }
+      
+      @media (max-width: 639px) {
+        .trial-chatbot-widget .kommander-window,
+        .trial-chatbot-widget .kommander-window[style] {
+          width: 100% !important;
+          height: 100% !important;
+          inset: auto !important;
+          position: relative !important;
           border-radius: 12px !important;
           padding: 0 !important;
         }
@@ -174,6 +198,33 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
               // Widget should be automatically open due to trialMode
               setTimeout(() => {
                 setIsLoaded(true);
+                
+                // Force dynamic resize handling
+                const forceResize = () => {
+                  const chatbotWindow = container.querySelector('.kommander-window');
+                  if (chatbotWindow) {
+                    // Force reset all inline styles that might override CSS
+                    (chatbotWindow as HTMLElement).style.cssText = '';
+                    // Force responsive styles
+                    (chatbotWindow as HTMLElement).style.setProperty('width', '100%', 'important');
+                    (chatbotWindow as HTMLElement).style.setProperty('height', '100%', 'important');
+                    (chatbotWindow as HTMLElement).style.setProperty('position', 'relative', 'important');
+                    (chatbotWindow as HTMLElement).style.setProperty('inset', 'auto', 'important');
+                    (chatbotWindow as HTMLElement).style.setProperty('max-width', 'none', 'important');
+                    (chatbotWindow as HTMLElement).style.setProperty('max-height', 'none', 'important');
+                  }
+                };
+                
+                // Force resize immediately
+                forceResize();
+                
+                // Add resize listener for dynamic resizing
+                window.addEventListener('resize', forceResize);
+                
+                // Store cleanup function
+                (window as any).chatbotTrialCleanup = () => {
+                  window.removeEventListener('resize', forceResize);
+                };
               }, 100); // Faster loading
             } else {
               console.error('[Dashboard] window.initKommanderChatbot not found');
@@ -192,6 +243,10 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
       const container = document.getElementById('trial-chatbot-widget');
       if (container) {
         container.innerHTML = '';
+      }
+      // Clean up resize listener
+      if ((window as any).chatbotTrialCleanup) {
+        (window as any).chatbotTrialCleanup();
       }
     };
   }, [userId]); // Only reinitialize if userId changes, not on context changes
