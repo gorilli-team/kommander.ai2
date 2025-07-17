@@ -52,18 +52,33 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
     const customStyles = document.createElement('style');
     customStyles.id = 'chatbot-trial-styles';
     customStyles.textContent = `
+      .trial-chatbot-widget {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      
       .trial-chatbot-widget .kommander-window {
         position: relative !important;
         inset: auto !important;
         bottom: auto !important;
         right: auto !important;
         width: 100% !important;
-        height: 625px !important; /* Aumentato del 25%: 500px -> 625px */
+        height: 100% !important;
+        min-height: 500px !important;
+        max-height: 80vh !important;
         border-radius: 12px !important;
         transform: none !important;
         opacity: 1 !important;
         animation: none !important;
-        display: block !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+      
+      .trial-chatbot-widget .kommander-messages {
+        flex: 1 !important;
+        overflow-y: auto !important;
       }
       
       .trial-chatbot-widget .kommander-button {
@@ -195,8 +210,8 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
   }, [currentContext, currentOrganization?.id, userId, isLoaded]);
 
   return (
-    <div className="w-full">
-      <div id="trial-chatbot-widget" className="block" />
+    <div className="w-full h-full flex flex-col">
+      <div id="trial-chatbot-widget" className="flex-1 min-h-0" />
     </div>
   );
 }
