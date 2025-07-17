@@ -15,12 +15,12 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/training', label: 'Training', icon: BookOpen, id: 'sidebar-training' },
-  { href: '/chatbot-trial', label: 'Chatbot Trial', icon: MessageCircle, id: 'sidebar-chatbot' },
+  { href: '/training', label: 'Addestramento', icon: BookOpen, id: 'sidebar-training' },
+  { href: '/chatbot-trial', label: 'Prova Chatbot', icon: MessageCircle, id: 'sidebar-chatbot' },
   { href: '/conversations', label: 'Conversazioni', icon: MessageSquare, id: 'sidebar-conversations' },
   { href: '/analytics', label: 'Analytics', icon: BarChart3, id: 'sidebar-analytics' },
-  { href: '/settings', label: 'Settings', icon: SettingsIcon, id: 'sidebar-settings' },
-  { href: '/team', label: 'Team Management', icon: Users, id: 'sidebar-team' },
+  { href: '/settings', label: 'Impostazioni', icon: SettingsIcon, id: 'sidebar-settings' },
+  { href: '/team', label: 'Gestione Team', icon: Users, id: 'sidebar-team' },
 ];
 
 export default function Sidebar() {

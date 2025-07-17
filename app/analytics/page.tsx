@@ -95,7 +95,7 @@ export default function AnalyticsPage() {
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex items-center space-x-2">
           <RefreshCw className="w-5 h-5 animate-spin" />
-          <span>Loading analytics...</span>
+          <span>Caricamento analytics...</span>
         </div>
       </div>
     );
@@ -107,10 +107,10 @@ export default function AnalyticsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <p>No analytics data available</p>
+              <p>Nessun dato di analytics disponibile</p>
               <Button onClick={fetchAnalytics} className="mt-4">
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Retry
+                Riprova
               </Button>
             </div>
           </CardContent>
@@ -126,8 +126,8 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-          <p className="text-muted-foreground">Insights into your AI assistant's performance</p>
+          <h1 className="text-3xl font-bold">Dashboard Analytics</h1>
+          <p className="text-muted-foreground">Analisi delle prestazioni del tuo assistente AI</p>
         </div>
         <div className="flex items-center space-x-2">
           <Select value={timeframe} onValueChange={(value: 'day' | 'week' | 'month') => setTimeframe(value)}>
@@ -135,9 +135,9 @@ export default function AnalyticsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="day">Today</SelectItem>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
+              <SelectItem value="day">Oggi</SelectItem>
+              <SelectItem value="week">Questa Settimana</SelectItem>
+              <SelectItem value="month">Questo Mese</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={fetchAnalytics} variant="outline" size="icon">
@@ -150,52 +150,52 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Conversations</CardTitle>
+            <CardTitle className="text-sm font-medium">Conversazioni Totali</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.overview.totalConversations}</div>
             <Badge variant="secondary" className="mt-1">
-              {Math.round(data.overview.avgMessagesPerConversation)} avg/conv
+              {Math.round(data.overview.avgMessagesPerConversation)} media/conv
             </Badge>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Messages</CardTitle>
+            <CardTitle className="text-sm font-medium">Messaggi Totali</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.overview.totalMessages}</div>
             <Badge variant="secondary" className="mt-1">
-              {data.overview.faqSources + data.overview.documentSources} sources
+              {data.overview.faqSources + data.overview.documentSources} fonti
             </Badge>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Response Time</CardTitle>
+            <CardTitle className="text-sm font-medium">Tempo Risposta Medio</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.overview.avgResponseTime}s</div>
             <Badge variant="secondary" className="mt-1">
-              Performance
+              Prestazioni
             </Badge>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">User Rating</CardTitle>
+            <CardTitle className="text-sm font-medium">Valutazione Utente</CardTitle>
             <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.overview.avgRating}/5</div>
             <Badge variant="secondary" className="mt-1">
-              Satisfaction
+              Soddisfazione
             </Badge>
           </CardContent>
         </Card>
@@ -204,10 +204,10 @@ export default function AnalyticsPage() {
       {/* Analytics Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="sources">Sources</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="engagement">Engagement</TabsTrigger>
+          <TabsTrigger value="overview">Panoramica</TabsTrigger>
+          <TabsTrigger value="sources">Fonti</TabsTrigger>
+          <TabsTrigger value="performance">Prestazioni</TabsTrigger>
+          <TabsTrigger value="engagement">Coinvolgimento</TabsTrigger>
           <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
         </TabsList>
 
@@ -216,8 +216,8 @@ export default function AnalyticsPage() {
             {/* Conversation Trends */}
             <Card>
               <CardHeader>
-                <CardTitle>Conversation Trends</CardTitle>
-                <p className="text-sm text-muted-foreground">Daily conversation and message volume</p>
+                <CardTitle>Tendenze Conversazioni</CardTitle>
+                <p className="text-sm text-muted-foreground">Volume giornaliero di conversazioni e messaggi</p>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -236,8 +236,8 @@ export default function AnalyticsPage() {
             {/* Source Usage */}
             <Card>
               <CardHeader>
-                <CardTitle>Source Usage</CardTitle>
-                <p className="text-sm text-muted-foreground">Distribution of information sources</p>
+                <CardTitle>Utilizzo Fonti</CardTitle>
+                <p className="text-sm text-muted-foreground">Distribuzione delle fonti di informazione</p>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -270,17 +270,17 @@ export default function AnalyticsPage() {
               {/* Sentiment Distribution */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Sentiment Distribution</CardTitle>
-                  <p className="text-sm text-muted-foreground">Overall conversation sentiment</p>
+                  <CardTitle>Distribuzione Sentiment</CardTitle>
+                  <p className="text-sm text-muted-foreground">Sentiment complessivo delle conversazioni</p>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
                         data={[
-                          { name: 'Positive', value: sentimentData.overview.sentimentDistribution.positive, color: '#059669' },
-                          { name: 'Neutral', value: sentimentData.overview.sentimentDistribution.neutral, color: '#6b7280' },
-                          { name: 'Negative', value: sentimentData.overview.sentimentDistribution.negative, color: '#dc2626' }
+                          { name: 'Positivo', value: sentimentData.overview.sentimentDistribution.positive, color: '#059669' },
+                          { name: 'Neutrale', value: sentimentData.overview.sentimentDistribution.neutral, color: '#6b7280' },
+                          { name: 'Negativo', value: sentimentData.overview.sentimentDistribution.negative, color: '#dc2626' }
                         ]}
                         cx="50%"
                         cy="50%"
@@ -291,9 +291,9 @@ export default function AnalyticsPage() {
                         dataKey="value"
                       >
                         {[
-                          { name: 'Positive', value: sentimentData.overview.sentimentDistribution.positive, color: '#059669' },
-                          { name: 'Neutral', value: sentimentData.overview.sentimentDistribution.neutral, color: '#6b7280' },
-                          { name: 'Negative', value: sentimentData.overview.sentimentDistribution.negative, color: '#dc2626' }
+                          { name: 'Positivo', value: sentimentData.overview.sentimentDistribution.positive, color: '#059669' },
+                          { name: 'Neutrale', value: sentimentData.overview.sentimentDistribution.neutral, color: '#6b7280' },
+                          { name: 'Negativo', value: sentimentData.overview.sentimentDistribution.negative, color: '#dc2626' }
                         ].map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
@@ -307,8 +307,8 @@ export default function AnalyticsPage() {
               {/* Customer Satisfaction */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Customer Satisfaction</CardTitle>
-                  <p className="text-sm text-muted-foreground">Overall satisfaction score</p>
+                  <CardTitle>Soddisfazione Clienti</CardTitle>
+                  <p className="text-sm text-muted-foreground">Punteggio di soddisfazione complessivo</p>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center">
@@ -317,7 +317,7 @@ export default function AnalyticsPage() {
                     </div>
                     <Progress value={sentimentData.overview.averageSatisfaction} className="h-3 mb-2" />
                     <div className="text-sm text-muted-foreground">
-                      Based on {sentimentData.overview.totalConversations} conversations
+                      Basato su {sentimentData.overview.totalConversations} conversazioni
                     </div>
                   </div>
                 </CardContent>
@@ -327,7 +327,7 @@ export default function AnalyticsPage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p>Loading sentiment analysis...</p>
+                  <p>Caricamento analisi sentiment...</p>
                 </div>
               </CardContent>
             </Card>

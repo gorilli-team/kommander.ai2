@@ -382,7 +382,7 @@ export default function TeamPage() {
       <div className="container mx-auto py-8 px-4">
         <div className="text-center">
           <Clock className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p>Loading team management...</p>
+          <p>Caricamento gestione team...</p>
         </div>
       </div>
     );
@@ -393,8 +393,8 @@ export default function TeamPage() {
       <div className="container mx-auto py-8 px-4">
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Authentication Required</AlertTitle>
-          <AlertDescription>Please log in to access team management.</AlertDescription>
+          <AlertTitle>Autenticazione Richiesta</AlertTitle>
+          <AlertDescription>Effettuare il login per accedere alla gestione del team.</AlertDescription>
         </Alert>
       </div>
     );
@@ -405,9 +405,9 @@ export default function TeamPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Team Management</h1>
+          <h1 className="text-3xl font-bold">Gestione Team</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your organization members, roles, and invitations
+            Gestisci i membri dell'organizzazione, i ruoli e gli inviti
           </p>
         </div>
         <div className="flex gap-3">
@@ -415,7 +415,7 @@ export default function TeamPage() {
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Plus className="h-4 w-4 mr-2" />
-                New Organization
+                Nuova Organizzazione
               </Button>
             </DialogTrigger>
           </Dialog>
@@ -425,7 +425,7 @@ export default function TeamPage() {
               <DialogTrigger asChild>
                 <Button>
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Invite Member
+                  Invita Membro
                 </Button>
               </DialogTrigger>
             </Dialog>
@@ -437,7 +437,7 @@ export default function TeamPage() {
       {error && (
         <Alert variant="destructive" className="mb-6">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>Errore</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -445,7 +445,7 @@ export default function TeamPage() {
       {success && (
         <Alert className="mb-6 border-green-500 bg-green-50 dark:bg-green-900/30">
           <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-          <AlertTitle className="text-green-700 dark:text-green-300">Success</AlertTitle>
+          <AlertTitle className="text-green-700 dark:text-green-300">Successo</AlertTitle>
           <AlertDescription className="text-green-700 dark:text-green-300">{success}</AlertDescription>
         </Alert>
       )}
@@ -457,7 +457,7 @@ export default function TeamPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                Organizations
+                Organizzazioni
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -474,7 +474,7 @@ export default function TeamPage() {
                   >
                     <div className="font-medium">{org.name}</div>
                     <div className="text-sm opacity-80">
-                      {org.memberCount} members • {org.userRole}
+                      {org.memberCount} membri • {org.userRole}
                     </div>
                   </div>
                 ))}
@@ -512,7 +512,7 @@ export default function TeamPage() {
                         onClick={() => setSettingsModalOpen(true)}
                       >
                         <Settings className="h-4 w-4 mr-2" />
-                        Settings
+                        Impostazioni
                       </Button>
                     )}
                   </div>
@@ -521,15 +521,15 @@ export default function TeamPage() {
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
                       <div className="text-2xl font-bold">{selectedOrg.memberCount}</div>
-                      <div className="text-sm text-muted-foreground">Members</div>
+                      <div className="text-sm text-muted-foreground">Membri</div>
                     </div>
                     <div>
                       <div className="text-2xl font-bold">{invitations.filter(inv => inv.status === 'pending').length}</div>
-                      <div className="text-sm text-muted-foreground">Pending Invites</div>
+                      <div className="text-sm text-muted-foreground">Inviti in Attesa</div>
                     </div>
                     <div>
                       <div className="text-2xl font-bold">{selectedOrg.plan}</div>
-                      <div className="text-sm text-muted-foreground">Plan</div>
+                      <div className="text-sm text-muted-foreground">Piano</div>
                     </div>
                   </div>
                 </CardContent>
@@ -538,20 +538,20 @@ export default function TeamPage() {
               {/* Members Table */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Team Members</CardTitle>
+                  <CardTitle>Membri del Team</CardTitle>
                   <CardDescription>
-                    Manage roles and permissions for your team members
+                    Gestisci ruoli e permessi per i membri del tuo team
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Member</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Joined</TableHead>
-                        <TableHead>Last Active</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>Membro</TableHead>
+                        <TableHead>Ruolo</TableHead>
+                        <TableHead>Iscritto</TableHead>
+                        <TableHead>Ultimo Accesso</TableHead>
+                        <TableHead className="text-right">Azioni</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -574,7 +574,7 @@ export default function TeamPage() {
                               </div>
                               <div>
                                 <div className="font-medium">
-                                  {member.user?.name || 'Unnamed User'}
+                                  {member.user?.name || 'Utente Senza Nome'}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
                                   {member.user?.email}
@@ -603,21 +603,21 @@ export default function TeamPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuLabel>Azioni</DropdownMenuLabel>
                                   <DropdownMenuSeparator />
                                   {canManageMembers && (
                                     <>
                                       <DropdownMenuItem onClick={() => handleUpdateMemberRole(member.userId, 'admin')}>
-                                        Make Admin
+                                        Rendi Admin
                                       </DropdownMenuItem>
                                       <DropdownMenuItem onClick={() => handleUpdateMemberRole(member.userId, 'manager')}>
-                                        Make Manager
+                                        Rendi Manager
                                       </DropdownMenuItem>
                                       <DropdownMenuItem onClick={() => handleUpdateMemberRole(member.userId, 'user')}>
-                                        Make User
+                                        Rendi Utente
                                       </DropdownMenuItem>
                                       <DropdownMenuItem onClick={() => handleUpdateMemberRole(member.userId, 'viewer')}>
-                                        Make Viewer
+                                        Rendi Osservatore
                                       </DropdownMenuItem>
                                       <DropdownMenuSeparator />
                                     </>
@@ -628,7 +628,7 @@ export default function TeamPage() {
                                       className="text-destructive"
                                     >
                                       <Trash2 className="h-4 w-4 mr-2" />
-                                      Remove Member
+                                      Rimuovi Membro
                                     </DropdownMenuItem>
                                   )}
                                 </DropdownMenuContent>

@@ -48,10 +48,10 @@ export default function BillingPage() {
       name: 'Free',
       price: 0,
       features: [
-        '50 conversations/month',
-        'Basic analytics',
-        'Email support',
-        'Standard templates'
+        '50 conversazioni/mese',
+        'Analytics di base',
+        'Supporto via email',
+        'Template standard'
       ]
     },
     {
@@ -59,11 +59,11 @@ export default function BillingPage() {
       name: 'Pro',
       price: 29,
       features: [
-        '1,000 conversations/month',
-        'Advanced analytics',
-        'Priority support',
-        'Custom templates',
-        'API access'
+        '1.000 conversazioni/mese',
+        'Analytics avanzate',
+        'Supporto prioritario',
+        'Template personalizzati',
+        'Accesso API'
       ],
       isPopular: true
     },
@@ -72,12 +72,12 @@ export default function BillingPage() {
       name: 'Enterprise',
       price: 99,
       features: [
-        'Unlimited conversations',
-        'Custom analytics',
-        'Dedicated support',
-        'White-label solution',
-        'Custom integrations',
-        'SLA guarantee'
+        'Conversazioni illimitate',
+        'Analytics personalizzate',
+        'Supporto dedicato',
+        'Soluzione white-label',
+        'Integrazioni personalizzate',
+        'Garanzia SLA'
       ]
     }
   ];
@@ -184,7 +184,7 @@ export default function BillingPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white mb-4">
             <CreditCard className="w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Billing & Subscriptions</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Fatturazione e Abbonamenti</h1>
           <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             Gestisci il tuo piano di abbonamento, monitora l'utilizzo e visualizza la cronologia fatturazione
           </p>
@@ -216,13 +216,13 @@ export default function BillingPage() {
                 ))}
               </div>
               {currentPlan?.id === 'free' && (
-                <Button 
-                  onClick={() => handleUpgrade('pro')} 
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                >
-                  <Zap className="w-4 h-4 mr-2" />
-                  Upgrade to Pro
-                </Button>
+                  <Button 
+                    onClick={() => handleUpgrade('pro')} 
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    Passa a Pro
+                  </Button>
               )}
             </CardContent>
           </Card>
@@ -368,7 +368,7 @@ export default function BillingPage() {
                               : ''
                           }`}
                         >
-                          Upgrade
+                          Passa a questo piano
                         </Button>
                       ) : (
                         <Button 
