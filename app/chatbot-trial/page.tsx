@@ -19,10 +19,12 @@ export default async function ChatbotTrialPage() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai';
 
   return (
-    <ChatbotTrialClient
-      userId={userId}
-      settings={settings}
-      baseUrl={baseUrl}
-    />
+    <div className="h-full min-h-screen p-6">
+      <ChatbotTrialClient
+        userId={userId}
+        settings={settings}
+        baseUrl={baseUrl}
+      />
+    </div>
   );
 }

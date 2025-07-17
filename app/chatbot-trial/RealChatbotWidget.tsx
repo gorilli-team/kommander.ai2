@@ -56,6 +56,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
         height: 100%;
         display: flex;
         flex-direction: column;
+        min-height: 600px;
       }
       
       .trial-chatbot-widget .kommander-window {
@@ -65,8 +66,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
         right: auto !important;
         width: 100% !important;
         height: 100% !important;
-        min-height: 500px !important;
-        max-height: 80vh !important;
+        min-height: 600px !important;
         border-radius: 12px !important;
         transform: none !important;
         opacity: 1 !important;
@@ -74,11 +74,13 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
         display: flex !important;
         flex-direction: column !important;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border: 1px solid rgba(0, 0, 0, 0.05);
       }
       
       .trial-chatbot-widget .kommander-messages {
         flex: 1 !important;
         overflow-y: auto !important;
+        min-height: 0 !important;
       }
       
       .trial-chatbot-widget .kommander-button {
