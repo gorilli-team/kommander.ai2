@@ -8,7 +8,7 @@ declare global {
   interface Window {
     React: any;
     ReactDOM: any;
-    initKommanderChatbot: (options: { userId?: string; organizationId?: string }) => void;
+    initKommanderChatbot: (options: { userId?: string; organizationId?: string; trialMode?: boolean }) => void;
   }
 }
 
@@ -46,9 +46,14 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
         transform: none !important;
         opacity: 1 !important;
         animation: none !important;
+        display: block !important;
       }
       
       .trial-chatbot-widget .kommander-button {
+        display: none !important;
+      }
+      
+      .trial-chatbot-widget .kommander-close {
         display: none !important;
       }
     `;
@@ -85,20 +90,16 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
             
             console.log('[Dashboard] Initializing chatbot widget for context:', currentContext, currentOrganization?.id || userId);
             
-            // Initialize the chatbot in the container
+            // Initialize the chatbot in the container with trialMode
             if (window.initKommanderChatbot) {
               if (currentContext === 'organization' && currentOrganization?.id) {
-                window.initKommanderChatbot({ organizationId: currentOrganization.id });
+                window.initKommanderChatbot({ organizationId: currentOrganization.id, trialMode: true });
               } else {
-                window.initKommanderChatbot({ userId });
+                window.initKommanderChatbot({ userId, trialMode: true });
               }
               
-              // Force the widget to be open by simulating a click after init
+              // Widget should be automatically open due to trialMode
               setTimeout(() => {
-                const button = container.querySelector('.kommander-button');
-                if (button) {
-                  (button as HTMLElement).click();
-                }
                 setIsLoaded(true);
               }, 300);
             } else {
@@ -133,19 +134,16 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
         container.innerHTML = '';
         container.className = 'trial-chatbot-widget';
         
-        // Reinitialize with new context
+        // Reinitialize with new context and trialMode
         if (currentContext === 'organization' && currentOrganization?.id) {
-          window.initKommanderChatbot({ organizationId: currentOrganization.id });
+          window.initKommanderChatbot({ organizationId: currentOrganization.id, trialMode: true });
         } else {
-          window.initKommanderChatbot({ userId });
+          window.initKommanderChatbot({ userId, trialMode: true });
         }
         
-        // Force the widget to be open
+        // Widget should be automatically open due to trialMode
         setTimeout(() => {
-          const button = container.querySelector('.kommander-button');
-          if (button) {
-            (button as HTMLElement).click();
-          }
+          // No need to force open, trialMode handles it
         }, 300);
       }
     }

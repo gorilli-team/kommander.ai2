@@ -103,9 +103,9 @@
     });
   }
 
-  function ChatbotWidget({ userId, organizationId }) {
+  function ChatbotWidget({ userId, organizationId, trialMode = false }) {
     const { useState, useRef, useEffect } = React;
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(trialMode ? true : false);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [handledBy, setHandledBy] = useState('bot');
@@ -826,7 +826,7 @@ ${truncatedContent}
     return React.createElement(
       React.Fragment,
       null,
-      React.createElement(
+      !trialMode && React.createElement(
         'button',
         {
           onClick: () => setOpen(!open),
@@ -849,7 +849,7 @@ ${truncatedContent}
           React.createElement('path', { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' })
         )
       ),
-      open &&
+      (open || trialMode) &&
         React.createElement(
           'div',
           { className: 'kommander-window' },
@@ -912,7 +912,7 @@ ${truncatedContent}
               { className: 'kommander-header-right' },
               React.createElement('span', { className: 'kommander-badge' }, 'Online'),
               React.createElement('span', { className: 'kommander-date' }, currentDate),
-              React.createElement(
+              !trialMode && React.createElement(
                 'button',
                 { onClick: () => setOpen(false), 'aria-label': 'Chiudi chatbot', className: 'kommander-close' },
                 '×',
@@ -1231,7 +1231,7 @@ ${truncatedContent}
     );
   }
 
-  window.initKommanderChatbot = async function ({ userId, organizationId }) {
+  window.initKommanderChatbot = async function ({ userId, organizationId, trialMode = false }) {
     await ensureReact();
     loadStyles();
     let container = document.getElementById('kommander-chatbot');
@@ -1241,9 +1241,9 @@ ${truncatedContent}
       document.body.appendChild(container);
     }
     if (ReactDOM.createRoot) {
-      ReactDOM.createRoot(container).render(React.createElement(ChatbotWidget, { userId, organizationId }));
+      ReactDOM.createRoot(container).render(React.createElement(ChatbotWidget, { userId, organizationId, trialMode }));
     } else {
-      ReactDOM.render(React.createElement(ChatbotWidget, { userId, organizationId }), container);
+      ReactDOM.render(React.createElement(ChatbotWidget, { userId, organizationId, trialMode }), container);
     }
   };
 })();
