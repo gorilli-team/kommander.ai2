@@ -13,7 +13,7 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between bg-background py-3 pr-4">
-      <Link href="/training" aria-label="Go to Training page" className="ml-4 flex w-14 justify-center">
+      <Link href="/welcome" aria-label="Go to Welcome page" className="ml-4 flex w-14 justify-center">
         <KommanderIcon />
       </Link>
       <div className="flex items-center gap-4">
