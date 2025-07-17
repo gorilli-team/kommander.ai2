@@ -103,7 +103,7 @@
     });
   }
 
-  function ChatbotWidget({ userId, organizationId, trialMode = false }) {
+  function ChatbotWidget({ userId, organizationId, trialMode = false, forceReset = false, preloadSettings = {} }) {
     const { useState, useRef, useEffect } = React;
     const [open, setOpen] = useState(trialMode ? true : false);
     const [messages, setMessages] = useState([]);
@@ -111,8 +111,8 @@
     const [handledBy, setHandledBy] = useState('bot');
     const [conversationId, setConversationId] = useState('');
     const [isTyping, setIsTyping] = useState(false);
-    const [botName, setBotName] = useState('Kommander.ai');
-    const [botColor, setBotColor] = useState('#1a1a1a');
+    const [botName, setBotName] = useState(preloadSettings.name || 'Kommander.ai');
+    const [botColor, setBotColor] = useState(preloadSettings.color || '#1a1a1a');
     const viewportRef = useRef(null);
     const conversationIdRef = useRef('');
     const lastTimestampRef = useRef('');
@@ -389,6 +389,24 @@ ${truncatedContent}
     }
 
     useEffect(() => {
+      // If we have preloaded settings, apply them immediately and skip fetching
+      if (preloadSettings.name || preloadSettings.color) {
+        console.log('[Chatbot] Using preloaded settings:', preloadSettings);
+        if (preloadSettings.name) {
+          setBotName(preloadSettings.name);
+        }
+        if (preloadSettings.color) {
+          setBotColor(preloadSettings.color);
+          document.documentElement.style.setProperty('--kommander-primary-color', preloadSettings.color);
+          document.documentElement.style.setProperty('--kommander-secondary-color', preloadSettings.color);
+          const contrastColor = getContrastTextColor(preloadSettings.color);
+          document.documentElement.style.setProperty('--kommander-header-text-color', contrastColor);
+        }
+        
+        // Don't fetch settings if we have preloaded ones and it's trial mode
+        if (trialMode) return;
+      }
+      
       const fetchSettings = () => {
         const contextId = organizationId || userId;
         console.log('[Chatbot] Fetching settings for contextId:', contextId, 'organizationId:', organizationId, 'userId:', userId);
@@ -441,7 +459,7 @@ ${truncatedContent}
       const interval = setInterval(fetchSettings, 10000);
       
       return () => clearInterval(interval);
-    }, [userId, organizationId]);
+    }, [userId, organizationId, preloadSettings, trialMode]);
 
     const currentDate = new Date().toLocaleDateString('it-IT', {
       day: '2-digit',
@@ -460,11 +478,27 @@ ${truncatedContent}
       // Only add welcome message if:
       // 1. Chat is open
       // 2. No messages exist
-      // 3. No existing conversation ID (means it's a fresh conversation)
-      if (open && messages.length === 0 && !conversationIdRef.current) {
-        addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi?`);
+      // 3. No existing conversation ID (means it's a fresh conversation) OR forceReset is true
+      if (open && messages.length === 0 && (!conversationIdRef.current || forceReset)) {
+        // Add welcome message with animation class for trial mode
+        const welcomeMessage = `Ciao, sono ${botName}! Come posso aiutarti oggi?`;
+        if (trialMode) {
+          // Add with animation class
+          setTimeout(() => {
+            addMessage('assistant', welcomeMessage);
+            // Add animation class to the message
+            setTimeout(() => {
+              const lastMessage = document.querySelector('.trial-chatbot-widget .kommander-row:last-child');
+              if (lastMessage) {
+                lastMessage.classList.add('kommander-welcome-message');
+              }
+            }, 100);
+          }, 500); // Slight delay for better UX
+        } else {
+          addMessage('assistant', welcomeMessage);
+        }
       }
-    }, [open, botName]);
+    }, [open, botName, forceReset, trialMode]);
 
     // Storage key using endUserId to separate conversations per browser
     const [storageKey, setStorageKey] = useState('');
@@ -476,16 +510,24 @@ ${truncatedContent}
         const key = `kommander_conversation_${userId}_${pageId}_${endUserId}`;
         setStorageKey(key);
         
-        const stored = localStorage.getItem(key);
-        if (stored) {
-          conversationIdRef.current = stored;
-          setConversationId(stored);
-          console.log('[Chatbot] Restored conversation ID for page:', stored, 'Page:', window.location.href);
+        // If forceReset is true, clear any existing conversation
+        if (forceReset) {
+          localStorage.removeItem(key);
+          conversationIdRef.current = '';
+          setConversationId('');
+          console.log('[Chatbot] Forced reset - cleared conversation for page:', window.location.href);
         } else {
-          console.log('[Chatbot] No existing conversation found for this page:', window.location.href);
+          const stored = localStorage.getItem(key);
+          if (stored) {
+            conversationIdRef.current = stored;
+            setConversationId(stored);
+            console.log('[Chatbot] Restored conversation ID for page:', stored, 'Page:', window.location.href);
+          } else {
+            console.log('[Chatbot] No existing conversation found for this page:', window.location.href);
+          }
         }
       }
-    }, [userId, endUserId]);
+    }, [userId, endUserId, forceReset]);
 
     const fetchInitial = async () => {
       const id = conversationIdRef.current;
@@ -1231,7 +1273,7 @@ ${truncatedContent}
     );
   }
 
-  window.initKommanderChatbot = async function ({ userId, organizationId, trialMode = false }) {
+  window.initKommanderChatbot = async function ({ userId, organizationId, trialMode = false, forceReset = false, preloadSettings = {} }) {
     await ensureReact();
     loadStyles();
     let container = document.getElementById('kommander-chatbot');
@@ -1241,9 +1283,9 @@ ${truncatedContent}
       document.body.appendChild(container);
     }
     if (ReactDOM.createRoot) {
-      ReactDOM.createRoot(container).render(React.createElement(ChatbotWidget, { userId, organizationId, trialMode }));
+      ReactDOM.createRoot(container).render(React.createElement(ChatbotWidget, { userId, organizationId, trialMode, forceReset, preloadSettings }));
     } else {
-      ReactDOM.render(React.createElement(ChatbotWidget, { userId, organizationId, trialMode }), container);
+      ReactDOM.render(React.createElement(ChatbotWidget, { userId, organizationId, trialMode, forceReset, preloadSettings }), container);
     }
   };
 })();

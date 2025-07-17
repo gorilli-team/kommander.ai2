@@ -112,7 +112,7 @@ export default function ChatbotClient({ userId, settings, baseUrl }: ChatbotClie
 
       {/* Chat Container */}
       <div className="flex-1 overflow-hidden">
-        <RealChatbotWidget userId={userId} />
+        <RealChatbotWidget userId={userId} settings={settings} />
       </div>
     </div>
   );

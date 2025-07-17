@@ -8,15 +8,16 @@ declare global {
   interface Window {
     React: any;
     ReactDOM: any;
-    initKommanderChatbot: (options: { userId?: string; organizationId?: string; trialMode?: boolean }) => void;
+    initKommanderChatbot: (options: { userId?: string; organizationId?: string; trialMode?: boolean; forceReset?: boolean; preloadSettings?: any }) => void;
   }
 }
 
 interface RealChatbotWidgetProps {
   userId: string;
+  settings?: any;
 }
 
-export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
+export default function RealChatbotWidget({ userId, settings }: RealChatbotWidgetProps) {
   const { currentContext, currentOrganization } = useOrganization();
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -30,6 +31,22 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
     link.href = `${baseUrl}/chatbot.css`;
     link.id = 'chatbot-css-trial';
     document.head.appendChild(link);
+    
+    // Apply settings immediately if available
+    if (settings?.color) {
+      document.documentElement.style.setProperty('--kommander-primary-color', settings.color);
+      document.documentElement.style.setProperty('--kommander-secondary-color', settings.color);
+      // Calculate contrasting text color
+      const getContrastTextColor = (hexColor) => {
+        const hex = hexColor.replace('#', '');
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        return luminance > 0.5 ? '#000000' : '#ffffff';
+      };
+      document.documentElement.style.setProperty('--kommander-header-text-color', getContrastTextColor(settings.color));
+    }
     
     // Custom styles to make the widget fit inline and always open
     const customStyles = document.createElement('style');
@@ -55,6 +72,22 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
       
       .trial-chatbot-widget .kommander-close {
         display: none !important;
+      }
+      
+      /* Welcome message animation */
+      .trial-chatbot-widget .kommander-welcome-message {
+        animation: slideInUp 0.6s ease-out;
+      }
+      
+      @keyframes slideInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
     `;
     document.head.appendChild(customStyles);
@@ -90,18 +123,24 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
             
             console.log('[Dashboard] Initializing chatbot widget for context:', currentContext, currentOrganization?.id || userId);
             
-            // Initialize the chatbot in the container with trialMode
+            // Initialize the chatbot in the container with trialMode and preloaded settings
             if (window.initKommanderChatbot) {
+              const initOptions = {
+                trialMode: true,
+                forceReset: true, // Force new conversation
+                preloadSettings: settings || {}
+              };
+              
               if (currentContext === 'organization' && currentOrganization?.id) {
-                window.initKommanderChatbot({ organizationId: currentOrganization.id, trialMode: true });
+                window.initKommanderChatbot({ organizationId: currentOrganization.id, ...initOptions });
               } else {
-                window.initKommanderChatbot({ userId, trialMode: true });
+                window.initKommanderChatbot({ userId, ...initOptions });
               }
               
               // Widget should be automatically open due to trialMode
               setTimeout(() => {
                 setIsLoaded(true);
-              }, 300);
+              }, 100); // Faster loading
             } else {
               console.error('[Dashboard] window.initKommanderChatbot not found');
             }
@@ -135,10 +174,16 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
         container.className = 'trial-chatbot-widget';
         
         // Reinitialize with new context and trialMode
+        const initOptions = {
+          trialMode: true,
+          forceReset: true, // Force new conversation
+          preloadSettings: settings || {}
+        };
+        
         if (currentContext === 'organization' && currentOrganization?.id) {
-          window.initKommanderChatbot({ organizationId: currentOrganization.id, trialMode: true });
+          window.initKommanderChatbot({ organizationId: currentOrganization.id, ...initOptions });
         } else {
-          window.initKommanderChatbot({ userId, trialMode: true });
+          window.initKommanderChatbot({ userId, ...initOptions });
         }
         
         // Widget should be automatically open due to trialMode
@@ -151,15 +196,7 @@ export default function RealChatbotWidget({ userId }: RealChatbotWidgetProps) {
 
   return (
     <div className="w-full">
-      {!isLoaded && (
-        <div className="flex items-center justify-center h-96 border border-gray-200 rounded-lg bg-gray-50">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <div className="text-sm text-gray-500">Caricamento widget reale...</div>
-          </div>
-        </div>
-      )}
-      <div id="trial-chatbot-widget" className={`${isLoaded ? 'block' : 'hidden'}`} />
+      <div id="trial-chatbot-widget" className="block" />
     </div>
   );
 }

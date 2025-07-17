@@ -63,7 +63,7 @@ export default function ChatbotTrialClient({ userId, settings, baseUrl }: Chatbo
             )}
           </div>
           
-          <RealChatbotWidget userId={userId} />
+          <RealChatbotWidget userId={userId} settings={settings} />
         </div>
       </div>
     </div>
