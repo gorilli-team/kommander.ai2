@@ -56,9 +56,10 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
         height: 100% !important;
         display: flex !important;
         flex-direction: column !important;
-        min-height: 600px !important;
+        min-height: 70vh !important;
         width: 100% !important;
         resize: none !important;
+        overflow: hidden !important;
       }
       
       /* Override ALL possible CSS rules with maximum specificity */
@@ -72,7 +73,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
         top: auto !important;
         width: 100% !important;
         height: 100% !important;
-        min-height: 600px !important;
+        min-height: 70vh !important;
         max-width: none !important;
         max-height: none !important;
         border-radius: 12px !important;
@@ -86,6 +87,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
         padding: 0 !important;
         margin: 0 !important;
         z-index: auto !important;
+        overflow: hidden !important;
       }
       
       /* Override ALL media queries */
@@ -99,6 +101,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
           top: auto !important;
           width: 100% !important;
           height: 100% !important;
+          min-height: 70vh !important;
           border-radius: 12px !important;
           padding: 0 !important;
           margin: 0 !important;
@@ -107,10 +110,14 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
       }
       
       @media (max-width: 639px) {
+        .trial-chatbot-widget {
+          min-height: 60vh !important;
+        }
         .trial-chatbot-widget .kommander-window,
         .trial-chatbot-widget .kommander-window[style] {
           width: 100% !important;
           height: 100% !important;
+          min-height: 60vh !important;
           inset: auto !important;
           position: relative !important;
           border-radius: 12px !important;
@@ -122,6 +129,8 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
         flex: 1 !important;
         overflow-y: auto !important;
         min-height: 0 !important;
+        max-height: none !important;
+        padding: 16px !important;
       }
       
       .trial-chatbot-widget .kommander-button {
@@ -130,6 +139,16 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
       
       .trial-chatbot-widget .kommander-close {
         display: none !important;
+      }
+      
+      /* Input area styling */
+      .trial-chatbot-widget .kommander-input-container {
+        padding: 16px !important;
+        border-top: 1px solid var(--kommander-border-color) !important;
+        background: var(--kommander-bg-light) !important;
+        position: relative !important;
+        bottom: auto !important;
+        flex-shrink: 0 !important;
       }
       
       /* Welcome message animation */
@@ -212,7 +231,13 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
                     (chatbotWindow as HTMLElement).style.setProperty('inset', 'auto', 'important');
                     (chatbotWindow as HTMLElement).style.setProperty('max-width', 'none', 'important');
                     (chatbotWindow as HTMLElement).style.setProperty('max-height', 'none', 'important');
+                    (chatbotWindow as HTMLElement).style.setProperty('overflow', 'hidden', 'important');
                   }
+                  
+                  // Also ensure container doesn't cause scroll issues
+                  container.style.setProperty('height', '100%', 'important');
+                  container.style.setProperty('width', '100%', 'important');
+                  container.style.setProperty('overflow', 'hidden', 'important');
                 };
                 
                 // Force resize immediately

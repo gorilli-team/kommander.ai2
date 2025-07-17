@@ -38,11 +38,11 @@ export default function ChatbotTrialClient({ userId, settings, baseUrl }: Chatbo
   }, [currentContext, currentOrganization?.id, userId, baseUrl]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 h-full">
-      <div className="lg:w-1/2">
+    <div className="flex flex-col lg:flex-row gap-8 h-full min-h-screen">
+      <div className="lg:w-1/2 flex flex-col">
         <InfoPanel snippet={htmlSnippet} shareUrl={shareUrl} />
       </div>
-      <div className="lg:w-1/2 flex flex-col">
+      <div className="lg:w-1/2 flex flex-col min-h-0">
         <RealChatbotWidget userId={userId} settings={settings} />
       </div>
     </div>
