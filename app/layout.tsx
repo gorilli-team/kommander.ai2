@@ -9,6 +9,7 @@ import { SessionProvider } from 'next-auth/react';
 import CookieConsent from '@/frontend/components/privacy/CookieConsent';
 import { OrganizationProvider } from '@/frontend/contexts/OrganizationContext';
 import { defaultMetadata } from '@/frontend/lib/metadata';
+import ChatbotProvider from '@/frontend/components/chatbot/ChatbotProvider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -32,9 +33,11 @@ export default function RootLayout({
         <SessionProvider> {/* SessionProvider MUST wrap the core content for NextAuth client features */}
           <ThemeProvider>
             <OrganizationProvider>
-              <AppLayout>{children}</AppLayout>
-              <Toaster />
-              <CookieConsent />
+              <ChatbotProvider>
+                <AppLayout>{children}</AppLayout>
+                <Toaster />
+                <CookieConsent />
+              </ChatbotProvider>
             </OrganizationProvider>
           </ThemeProvider>
         </SessionProvider>
