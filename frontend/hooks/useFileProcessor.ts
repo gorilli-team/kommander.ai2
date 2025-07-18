@@ -190,21 +190,15 @@ export function useFileProcessor() {
         ? file.content.substring(0, 3000) + '\n\n[...content truncated...]'
         : file.content;
 
-      return `=== FILE: ${file.name} ===
-Type: ${file.type}
-Size: ${(file.size / 1024).toFixed(1)}KB
-Uploaded: ${file.uploadedAt.toLocaleString('en-US')}
-
-${truncatedContent}
-
-=== END FILE ===
+      return '=== FILE: ' + file.name + ' ===\n' +
+             'Type: ' + file.type + '\n' +
+             'Size: ' + (file.size / 1024).toFixed(1) + 'KB\n' +
+             'Uploaded: ' + file.uploadedAt.toLocaleString('en-US') + '\n\n' +
+             truncatedContent + '\n\n' +
+             '=== END FILE ===';
     }).join('\n\n');
 
-    return `DOCUMENTS UPLOADED BY USER:
-
-${context}
-
-Respond taking into account these documents in addition to your basic knowledge.`;
+    return 'DOCUMENTS UPLOADED BY USER:\n\n' + context + '\n\nRespond taking into account these documents in addition to your basic knowledge.';
   }, [uploadedFiles]);
 
   return {
