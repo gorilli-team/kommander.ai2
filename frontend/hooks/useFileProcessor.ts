@@ -200,7 +200,11 @@ ${truncatedContent}
 === END FILE ===
     }).join('\n\n');
 
-    return `DOCUMENTS UPLOADED BY USER:\n\n${context}\n\nRespond taking into account these documents in addition to your basic knowledge.`;
+    return `DOCUMENTS UPLOADED BY USER:
+
+${context}
+
+Respond taking into account these documents in addition to your basic knowledge.`;
   }, [uploadedFiles]);
 
   return {
