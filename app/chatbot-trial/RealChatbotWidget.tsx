@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useOrganization } from '@/frontend/contexts/OrganizationContext';
+import { usePathname } from 'next/navigation';
 
 // Extend the Window interface to include globals
 declare global {
@@ -20,6 +21,76 @@ interface RealChatbotWidgetProps {
 export default function RealChatbotWidget({ userId, settings }: RealChatbotWidgetProps) {
   const { currentContext, currentOrganization } = useOrganization();
   const [isLoaded, setIsLoaded] = useState(false);
+  const pathname = usePathname();
+  
+  // Cleanup function to remove all chatbot elements
+  const performCleanup = () => {
+    console.log('[RealChatbotWidget] Performing cleanup...');
+    
+    // Remove CSS files
+    document.getElementById('chatbot-css-trial')?.remove();
+    document.getElementById('chatbot-trial-styles')?.remove();
+    document.getElementById('kommander-style')?.remove();
+    
+    // Clean up resize listener
+    if ((window as any).chatbotTrialCleanup) {
+      (window as any).chatbotTrialCleanup();
+      delete (window as any).chatbotTrialCleanup;
+    }
+    
+    // Remove all chatbot-related elements from DOM
+    const elementsToRemove = [
+      '#trial-chatbot-widget',
+      '#kommander-chatbot', 
+      '.kommander-window',
+      '.kommander-button',
+      '.trial-chatbot-widget'
+    ];
+    
+    elementsToRemove.forEach(selector => {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(el => {
+        console.log('[RealChatbotWidget] Removing element:', selector);
+        el.remove();
+      });
+    });
+    
+    // Clean up container specifically
+    const container = document.getElementById('trial-chatbot-widget');
+    if (container) {
+      container.innerHTML = '';
+      container.remove();
+    }
+    
+    // Remove any dynamically created chatbot scripts
+    const scripts = document.querySelectorAll('script[src*="chatbot.js"], script[src*="react.production.min.js"], script[src*="react-dom.production.min.js"]');
+    scripts.forEach(script => {
+      if (script.getAttribute('data-chatbot-widget')) {
+        script.remove();
+      }
+    });
+    
+    // Clean up global variables
+    if (window.initKommanderChatbot) {
+      delete window.initKommanderChatbot;
+    }
+    
+    // Reset CSS custom properties
+    if (document.documentElement.style.getPropertyValue('--kommander-primary-color')) {
+      document.documentElement.style.removeProperty('--kommander-primary-color');
+      document.documentElement.style.removeProperty('--kommander-secondary-color');
+      document.documentElement.style.removeProperty('--kommander-header-text-color');
+    }
+    
+    console.log('[RealChatbotWidget] Cleanup completed');
+  };
+  
+  // Effect to clean up when leaving the chatbot-trial page
+  useEffect(() => {
+    if (pathname && !pathname.startsWith('/chatbot-trial')) {
+      performCleanup();
+    }
+  }, [pathname]);
 
   // Initialize the chatbot once on component mount
   useEffect(() => {
@@ -175,6 +246,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
       if (!window.React) {
         const reactScript = document.createElement('script');
         reactScript.src = `${baseUrl}/react.production.min.js`;
+        reactScript.setAttribute('data-chatbot-widget', 'true');
         document.head.appendChild(reactScript);
         await new Promise(resolve => reactScript.onload = resolve);
       }
@@ -182,6 +254,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
       if (!window.ReactDOM) {
         const reactDOMScript = document.createElement('script');
         reactDOMScript.src = `${baseUrl}/react-dom.production.min.js`;
+        reactDOMScript.setAttribute('data-chatbot-widget', 'true');
         document.head.appendChild(reactDOMScript);
         await new Promise(resolve => reactDOMScript.onload = resolve);
       }
@@ -189,6 +262,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
       // Load the original chatbot script
       const script = document.createElement('script');
       script.src = `${baseUrl}/chatbot.js`;
+      script.setAttribute('data-chatbot-widget', 'true');
       document.body.appendChild(script);
       
       script.onload = () => {
@@ -263,16 +337,65 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
 
     // Clean up on component unmount
     return () => {
+      console.log('[RealChatbotWidget] Cleaning up chatbot...');
+      
+      // Remove CSS files
       document.getElementById('chatbot-css-trial')?.remove();
       document.getElementById('chatbot-trial-styles')?.remove();
-      const container = document.getElementById('trial-chatbot-widget');
-      if (container) {
-        container.innerHTML = '';
-      }
+      document.getElementById('kommander-style')?.remove();
+      
       // Clean up resize listener
       if ((window as any).chatbotTrialCleanup) {
         (window as any).chatbotTrialCleanup();
+        delete (window as any).chatbotTrialCleanup;
       }
+      
+      // Remove all chatbot-related elements from DOM
+      const elementsToRemove = [
+        '#trial-chatbot-widget',
+        '#kommander-chatbot', 
+        '.kommander-window',
+        '.kommander-button',
+        '.trial-chatbot-widget'
+      ];
+      
+      elementsToRemove.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+          console.log('[RealChatbotWidget] Removing element:', selector);
+          el.remove();
+        });
+      });
+      
+      // Clean up container specifically
+      const container = document.getElementById('trial-chatbot-widget');
+      if (container) {
+        container.innerHTML = '';
+        container.remove();
+      }
+      
+      // Remove any dynamically created chatbot scripts
+      const scripts = document.querySelectorAll('script[src*="chatbot.js"], script[src*="react.production.min.js"], script[src*="react-dom.production.min.js"]');
+      scripts.forEach(script => {
+        // Only remove if it was added by our widget
+        if (script.getAttribute('data-chatbot-widget')) {
+          script.remove();
+        }
+      });
+      
+      // Clean up global variables
+      if (window.initKommanderChatbot) {
+        delete window.initKommanderChatbot;
+      }
+      
+      // Reset CSS custom properties
+      if (document.documentElement.style.getPropertyValue('--kommander-primary-color')) {
+        document.documentElement.style.removeProperty('--kommander-primary-color');
+        document.documentElement.style.removeProperty('--kommander-secondary-color');
+        document.documentElement.style.removeProperty('--kommander-header-text-color');
+      }
+      
+      console.log('[RealChatbotWidget] Cleanup completed');
     };
   }, [userId]); // Only reinitialize if userId changes, not on context changes
 
