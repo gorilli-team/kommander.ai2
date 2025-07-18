@@ -38,8 +38,8 @@ export default function ChatbotTrialClient({ userId, settings, baseUrl }: Chatbo
   }, [currentContext, currentOrganization?.id, userId, baseUrl]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 h-full min-h-screen">
-      <div className="lg:w-1/2 flex flex-col">
+    <div className="flex flex-col lg:flex-row gap-8 h-full p-6">
+      <div className="lg:w-1/2 flex flex-col overflow-y-auto">
         <InfoPanel snippet={htmlSnippet} shareUrl={shareUrl} />
       </div>
       <div className="lg:w-1/2 flex flex-col min-h-0">

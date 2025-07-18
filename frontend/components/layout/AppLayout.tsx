@@ -11,9 +11,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const showAuthElements = !['/login', '/signup', '/reset-password'].includes(pathname);
+  const isChatbotTrial = pathname === '/chatbot-trial';
 
   return (
-    <div className="relative flex flex-col min-h-screen bg-background">
+    <div className={cn(
+      "relative flex flex-col bg-background",
+      isChatbotTrial ? "h-screen" : "min-h-screen"
+    )}>
       {showAuthElements && <Navbar />}
 
       {/* Mobile sidebar overlay */}
@@ -32,10 +36,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <main
         className={cn(
-          "flex-1 overflow-y-auto transition-all duration-300",
-          showAuthElements 
+          "flex-1 transition-all duration-300",
+          isChatbotTrial 
+            ? "overflow-hidden" 
+            : "overflow-y-auto",
+          isChatbotTrial && showAuthElements
+            ? "h-[calc(100vh-4rem)] lg:pl-[6rem] xl:pl-[6.25rem] 2xl:pl-[6.5rem] lg:pr-16"
+            : isChatbotTrial 
+            ? "h-screen"
+            : !isChatbotTrial && showAuthElements 
             ? "p-4 sm:p-6 lg:pl-[6rem] xl:pl-[6.25rem] 2xl:pl-[6.5rem] lg:pr-16" 
-            : "p-4 sm:p-6"
+            : !isChatbotTrial 
+            ? "p-4 sm:p-6" 
+            : ""
         )}
       >
         {children}

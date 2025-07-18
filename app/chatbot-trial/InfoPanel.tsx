@@ -4,7 +4,6 @@ import { useState } from "react";
 import { CheckCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/frontend/components/ui/button";
 import { Textarea } from "@/frontend/components/ui/textarea";
-import { Input } from "@/frontend/components/ui/input";
 
 interface InfoPanelProps {
   snippet: string;
@@ -13,13 +12,12 @@ interface InfoPanelProps {
 
 export default function InfoPanel({ snippet, shareUrl }: InfoPanelProps) {
   const [snippetCopied, setSnippetCopied] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
 
-  const handleCopy = async (text: string, setCopied: (v: boolean) => void) => {
+  const handleCopy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setSnippetCopied(true);
+      setTimeout(() => setSnippetCopied(false), 2000);
     } catch (err) {
       console.error("Copy failed", err);
     }
@@ -50,26 +48,14 @@ export default function InfoPanel({ snippet, shareUrl }: InfoPanelProps) {
             readOnly
             value={snippet}
             className="font-mono text-sm bg-muted pr-24"
-            rows={4}
+            rows={6}
           />
           <Button
             size="sm"
-            onClick={() => handleCopy(snippet, setSnippetCopied)}
+            onClick={() => handleCopy(snippet)}
             className="absolute top-2 right-2"
           >
             {snippetCopied ? "Copiato!" : "Copia"}
-          </Button>
-        </div>
-      </div>
-      <div className="space-y-2">
-        <h2 className="font-semibold">Condividi Chatbot</h2>
-        <div className="flex items-center gap-2">
-          <Input readOnly value={shareUrl} className="flex-1" />
-          <Button
-            size="sm"
-            onClick={() => handleCopy(shareUrl, setLinkCopied)}
-          >
-            {linkCopied ? "Copiato!" : "Copia"}
           </Button>
         </div>
       </div>
