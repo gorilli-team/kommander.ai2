@@ -3,7 +3,6 @@
 import { connectToDatabase } from '@/backend/lib/mongodb';
 import { auth } from '@/frontend/auth';
 import type { ConversationDocument } from '@/backend/schemas/conversation';
-import { getContextInfo } from '@/backend/lib/contextHelpers';
 
 export interface ConversationMessageDisplay {
   role: 'user' | 'assistant' | 'agent';
@@ -17,7 +16,6 @@ export interface ConversationDisplayItem {
   site?: string;
   createdAt?: string;
   updatedAt?: string;
-  handledBy?: 'bot' | 'agent';
 }
 
 export async function getConversations(): Promise<ConversationDisplayItem[]> {
@@ -27,18 +25,11 @@ export async function getConversations(): Promise<ConversationDisplayItem[]> {
   }
 
   const userId = session.user.id;
-  const { context, organizationId } = await getContextInfo();
   const { db } = await connectToDatabase();
 
-  // Determine the context ID (organization ID or user ID)
-  const contextId = context === 'organization' && organizationId ? organizationId : userId;
-  
-  console.log('[getConversations] Context:', context, 'ContextId:', contextId, 'OrganizationId:', organizationId);
-
-  // Load all conversations without limit
   const docs = await db
     .collection<ConversationDocument>('conversations')
-    .find({ userId: contextId })
+    .find({ userId })
     .sort({ updatedAt: -1 })
     .toArray();
 
@@ -47,7 +38,7 @@ export async function getConversations(): Promise<ConversationDisplayItem[]> {
     handledBy: doc.handledBy ?? 'bot',
     messages: doc.messages.map((m) => ({
       role: m.role,
-      text: m.text || m.content, // Support both fields
+      text: m.text,
       timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
     })),
     site: doc.site,
@@ -61,31 +52,20 @@ export async function appendMessages(
   conversationId: string,
   messages: ConversationMessageDisplay[],
   site?: string,
-  endUserId?: string,
 ): Promise<void> {
   const { db } = await connectToDatabase();
   const now = new Date();
-  
-  const insertData: any = { createdAt: now, site };
-  if (endUserId) {
-    insertData.endUserId = endUserId;
-    console.log('[appendMessages] Saving with endUserId:', endUserId);
-  }
 
   await db.collection<ConversationDocument>('conversations').updateOne(
     { userId, conversationId },
     {
-      $setOnInsert: insertData,
+      $setOnInsert: { createdAt: now, site },
       $set: { updatedAt: now },
       $push: {
         messages: {
           $each: messages.map((m) => ({
-            id: `${conversationId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            role: m.role,
-            content: m.text, // Map text to content per schema
+            ...m,
             timestamp: new Date(m.timestamp),
-            // Keep legacy field for backward compatibility
-            text: m.text,
           })),
         },
       },
@@ -125,7 +105,7 @@ export async function getConversation(
     handledBy: doc.handledBy ?? 'bot',
     messages: doc.messages.map((m) => ({
       role: m.role,
-      text: m.text || m.content, // Support both fields
+      text: m.text,
       timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
     })),
     site: doc.site,
