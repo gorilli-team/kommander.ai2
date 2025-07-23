@@ -16,6 +16,53 @@ import { handleFAQQuery } from '@/backend/lib/faqHandler';
 
 import mammoth from 'mammoth';
 
+// 🔄 FUNCTION: Gestisce saluti di base comuni senza chiamare OpenAI
+function handleBasicGreetings(userMessage: string): string | null {
+  const message = userMessage.toLowerCase().trim();
+  
+  // Array di pattern comuni per saluti
+  const greetingPatterns = [
+    // Saluti semplici
+    { pattern: /^(ciao|salve|buongiorno|buonasera|buonanotte|hey|ehi)$/i, response: "Ciao! Come posso aiutarti oggi?" },
+    { pattern: /^(ciao|salve|buongiorno|buonasera|buonanotte|hey|ehi)[.!]*$/i, response: "Ciao! Come posso aiutarti oggi?" },
+    
+    // Saluti con punteggiatura
+    { pattern: /^(ciao|salve|buongiorno|buonasera|buonanotte|hey|ehi)[.!?]*\s*$/i, response: "Ciao! Come posso aiutarti oggi?" },
+    
+    // Come stai?
+    { pattern: /^come\s+(stai|va|state)\?*$/i, response: "Ciao! Sto bene, grazie! Come posso aiutarti oggi?" },
+    { pattern: /^come\s+(stai|va|state)[.!?]*$/i, response: "Ciao! Sto bene, grazie! Come posso aiutarti oggi?" },
+    
+    // Chi sei?
+    { pattern: /^chi\s+sei\?*$/i, response: "Sono Kommander.ai, il tuo assistente virtuale! Come posso aiutarti?" },
+    { pattern: /^cosa\s+sei\?*$/i, response: "Sono Kommander.ai, il tuo assistente virtuale! Come posso aiutarti?" },
+    
+    // Pronto/presente
+    { pattern: /^(pronto|presente)\?*$/i, response: "Ciao! Sono qui per aiutarti. Di cosa hai bisogno?" },
+    
+    // Hello in inglese
+    { pattern: /^(hello|hi|good\s+morning|good\s+evening)$/i, response: "Hello! How can I help you today?" },
+    
+    // Grazie
+    { pattern: /^(grazie|thanks|thank\s+you)$/i, response: "Prego! È stato un piacere aiutarti. C'è altro che posso fare per te?" },
+    
+    // Arrivederci
+    { pattern: /^(arrivederci|ciao\s+ciao|addio|bye|goodbye)$/i, response: "Arrivederci! Se hai bisogno di aiuto in futuro, sarò qui per te!" },
+  ];
+  
+  // Controlla se il messaggio matcha uno dei pattern
+  for (const { pattern, response } of greetingPatterns) {
+    if (pattern.test(message)) {
+      console.log(`[handleBasicGreetings] ✅ Pattern matched: ${pattern} for message: ${message}`);
+      return response;
+    }
+  }
+  
+  // Nessun saluto riconosciuto
+  console.log(`[handleBasicGreetings] ❌ No greeting pattern matched for: ${message}`);
+  return null;
+}
+
 // Funzione per creare il prompt di immedesimazione nella personalità
 async function buildPersonalityImmersionPrompt(
   userMessage: string, 
@@ -506,23 +553,24 @@ export async function generateStreamingChatResponse(
       userSettings || undefined
     );
 
-    let temperature = 0.5; // Ridotto per velocità
-    let maxTokens = 1000; // Ridotto per velocità
+    // 🔧 TEMPERATURE RIDOTTE per consistenza delle risposte (streaming)
+    let temperature = 0.2; // Ridotto per massima consistenza
+    let maxTokens = 600; // Ridotto per velocità e concisione
 
     if (userSettings?.personality) {
       switch (userSettings.personality) {
         case 'casual':
-          temperature = 0.7; // Ridotto ma mantiene creatività
-          maxTokens = 1200; // Ridotto per velocità
+          temperature = 0.3; // Ridotto da 0.7 - consistente ma un po' di creatività
+          maxTokens = 700; // Ridotto per velocità
           break;
         case 'formal':
-          temperature = 0.3; // Più preciso e veloce
-          maxTokens = 1000; // Ottimizzato per velocità
+          temperature = 0.1; // Ridotto da 0.3 - massima precisione
+          maxTokens = 600; // Ottimizzato per velocità
           break;
         case 'neutral':
         default:
-          temperature = 0.5; // Equilibrato ma veloce
-          maxTokens = 1000;
+          temperature = 0.2; // Ridotto da 0.5 - equilibrato ma consistente
+          maxTokens = 600;
           break;
       }
     }
@@ -603,6 +651,28 @@ export async function generateChatResponse(
   }
 
   try {
+    // 🔄 **BASIC GREETINGS HANDLING**: Handle common greetings BEFORE FAQ matching
+    const greetingResponse = handleBasicGreetings(userMessage);
+    if (greetingResponse) {
+      console.log(`[generateChatResponse] ✅ Basic greeting detected: ${userMessage}`);
+      
+      const greetingSource: MessageSource = {
+        type: 'greeting',
+        title: 'Basic Greeting Response',
+        relevance: 1.0,
+        content: greetingResponse,
+        metadata: {
+          isGreeting: true
+        }
+      };
+      
+      return {
+        response: greetingResponse,
+        sources: [greetingSource],
+        conversationId: conversationId
+      };
+    }
+    
     // 🔍 **SEMANTIC FAQ MATCHING**: Check for FAQ match BEFORE OpenAI call
     console.log('[generateChatResponse] Checking for semantic FAQ match...');
     
@@ -731,23 +801,24 @@ export async function generateChatResponse(
     );
 
     // Configura i parametri del modello in base alla personalità
-    let temperature = 0.7; // Default
-    let maxTokens = 1500; // Aumentato per risposte più approfondite
+    // 🔧 TEMPERATURE RIDOTTE per consistenza delle risposte
+    let temperature = 0.2; // Default molto basso per consistenza
+    let maxTokens = 800; // Ridotto per risposte più concise e veloci
     
     if (userSettings?.personality) {
       switch (userSettings.personality) {
         case 'casual':
-          temperature = 0.9; // Più creativo e spontaneo
-          maxTokens = 1800; // Risposte più lunghe per essere più colloquiale
+          temperature = 0.3; // Ridotto da 0.9 - mantiene un po' di creatività ma consistente
+          maxTokens = 900; // Ridotto da 1800 per velocità
           break;
         case 'formal':
-          temperature = 0.5; // Più preciso e strutturato
-          maxTokens = 1600; // Risposte ben strutturate e professionali
+          temperature = 0.1; // Ridotto da 0.5 - massima precisione e consistenza
+          maxTokens = 800; // Ridotto da 1600 per concisione professionale
           break;
         case 'neutral':
         default:
-          temperature = 0.7; // Equilibrato
-          maxTokens = 1500;
+          temperature = 0.2; // Ridotto da 0.7 - equilibrato ma consistente
+          maxTokens = 800; // Ridotto da 1500
           break;
       }
     }

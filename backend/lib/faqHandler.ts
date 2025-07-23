@@ -282,7 +282,7 @@ function correctSpelling(input: string, faqQuestions: string[]): string {
 }
 
 /**
- * Main FAQ query handler that implements the required logic
+ * Main FAQ query handler with REAL FAQ matching using embeddings
  * @param userInput - User's question
  * @param userId - Optional user ID for scoped FAQs
  * @param organizationId - Optional organization ID for scoped FAQs
@@ -294,172 +294,140 @@ export async function handleFAQQuery(
   organizationId?: string
 ): Promise<{ isFaqMatch: boolean; answer: string; similarity?: number; faqId?: string }> {
   try {
-// Build an extended context using FAQs and documents with enhanced query analysis
-async function buildExtendedContext(userInput: string, enhancedQuery: EnhancedQuery, faqs: Faq[], userId?: string, organizationId?: string): Promise<string> {
-  let context = `ORIGINAL USER QUERY: ${userInput}\n`;
-  context += `NORMALIZED QUERY: ${enhancedQuery.normalized}\n`;
-  context += `USER INTENT: ${enhancedQuery.intent}\n`;
-  context += `KEY CONCEPTS: ${enhancedQuery.concepts.join(', ')}\n`;
-  context += `KEYWORDS: ${enhancedQuery.keywords.join(', ')}\n\n`;
-  
-  // Add query variants for better matching
-  if (enhancedQuery.variants.length > 1) {
-    context += `ALTERNATIVE PHRASINGS:\n`;
-    enhancedQuery.variants.forEach(variant => {
-      context += `- ${variant}\n`;
-    });
-    context += `\n`;
-  }
-  
-  // Add FAQs
-  if (faqs.length > 0) {
-    context += `AVAILABLE FAQs:\n`;
-    faqs.forEach(faq => {
-      context += `- Q: ${faq.question}\n  A: ${faq.answer}\n\n`;
-    });
-  }
-  
-  // Add documents if available
-  try {
-    const { db } = await connectToDatabase();
+    console.log(`[handleFAQQuery] 🔍 Starting FAQ matching for: "${userInput}"`);
     
-    // Build query for documents
-    let docQuery: any = {};
-    if (userId) {
-      docQuery.userId = userId;
-    } else if (organizationId) {
-      docQuery.organizationId = organizationId;
-    }
-    
-    // Get recent documents
-    const documents = await db.collection('raw_files_meta')
-      .find(docQuery)
-      .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
-      .sort({ uploadedAt: -1 })
-      .limit(5) // Limit to 5 most recent documents
-      .toArray();
-    
-    if (documents.length > 0) {
-      context += `\nAvailable Documents:\n`;
-      documents.forEach(doc => {
-        context += `- File: ${doc.fileName} (${doc.originalFileType})\n`;
-      });
-      context += `\n`;
-    }
-    
-    console.log(`[faqHandler.ts] Context includes ${faqs.length} FAQs and ${documents.length} documents`);
-    
-  } catch (error) {
-    console.error('[faqHandler.ts] Error loading documents for context:', error);
-  }
-  
-  return context;
-}
-
-// 🚀 STEP 1: Enhance the user query
-    const enhancedQuery = await enhanceUserQuery(userInput);
-    console.log(`[faqHandler.ts] Enhanced query:`, {
-      original: enhancedQuery.original,
-      normalized: enhancedQuery.normalized,
-      intent: enhancedQuery.intent,
-      keywords: enhancedQuery.keywords.slice(0, 3)
-    });
-
-// Fetch data
+    // Load FAQs from database
     const faqs = await loadFAQsFromDatabase(userId, organizationId);
     
     if (!faqs || faqs.length === 0) {
+      console.log(`[handleFAQQuery] ❌ No FAQs found in database`);
       return { isFaqMatch: false, answer: '' };
     }
     
-// Function to get a response from LLM using OpenAI's API
-async function getLLMResponse(context: string): Promise<string> {
-  try {
-    const { createTrackedChatCompletion } = await import('./openai');
+    console.log(`[handleFAQQuery] 📊 Found ${faqs.length} FAQs, checking for matches...`);
     
-    console.log(`[faqHandler.ts] Sending context to LLM: ${context.substring(0, 100)}...`);
-    
-    const messages = [
-      {
-        role: 'system' as const,
-        content: `Tu sei un assistente AI specializzato che deve rispondere basandosi ESCLUSIVAMENTE sulle informazioni fornite. 
-
-ISTRUZIONI AVANZATE PER RICONOSCIMENTO DOMANDE:
-- Analizza ATTENTAMENTE la domanda originale, normalizzata e le varianti fornite
-- Usa le parole chiave e i concetti per identificare FAQ correlate
-- Anche se la domanda è mal formulata, cerca di capire l'INTENTO dell'utente
-- Confronta la domanda con TUTTE le FAQ disponibili per trovare corrispondenze semantiche
-- Se una FAQ risponde all'intento, anche se con parole diverse, USALA
-- Considera sinonimi, abbreviazioni e varianti linguistiche
-
-ISTRUZIONI DI RISPOSTA RIGOROSE:
-- Usa SOLO le informazioni dalle FAQ e documenti forniti
-- Se trovi informazioni rilevanti, rispondi in modo completo e dettagliato
-- Includi SEMPRE i link esatti quando presenti nelle FAQ
-- Se NON trovi informazioni sufficienti o pertinenti, rispondi ESATTAMENTE: "Non ho informazioni sufficienti nei documenti caricati per rispondere a questa domanda specifica."
-- NON inventare informazioni o dare consigli generici
-- NON rispondere a domande completamente non correlate al contenuto disponibile
-- Mantieni un tono professionale ma amichevole
-- Struttura la risposta in modo chiaro e leggibile
-- Spiega brevemente perché una FAQ è rilevante per la domanda dell'utente`
-      },
-      {
-        role: 'user' as const,
-        content: context
-      }
-    ];
-    
-    const completion = await createTrackedChatCompletion(
-      {
-        model: 'gpt-3.5-turbo',
-        messages: messages,
-        temperature: 0.7,
-        max_tokens: 1500,
-      },
-      {
-        userId: 'system',
-        endpoint: 'faq-context-response',
-        userMessage: context.substring(0, 100),
-        metadata: {
-          source: 'faq-handler',
-          contextLength: context.length
-        }
-      }
-    );
-    
-    const response = completion.choices[0]?.message?.content;
-    
-    if (!response) {
-      return 'Mi dispiace, non sono riuscito a elaborare una risposta in questo momento.';
+    // 🔍 STEP 1: Try exact/fuzzy text matching FIRST (faster)
+    const textMatch = findBestTextMatch(userInput, faqs);
+    if (textMatch && textMatch.similarity >= FAQ_SIMILARITY_THRESHOLD) {
+      console.log(`[handleFAQQuery] ✅ EXACT/FUZZY MATCH found! Similarity: ${textMatch.similarity.toFixed(3)}`);
+      console.log(`[handleFAQQuery] ✅ Question: "${textMatch.faq.question}"`);
+      console.log(`[handleFAQQuery] ✅ Answer: "${textMatch.faq.answer.substring(0, 100)}..."`);
+      
+      return {
+        isFaqMatch: true,
+        answer: textMatch.faq.answer,
+        similarity: textMatch.similarity,
+        faqId: textMatch.faq.id
+      };
     }
     
-    console.log(`[faqHandler.ts] LLM response generated successfully`);
-    return response.trim();
+    // 🔍 STEP 2: Try semantic embedding matching (slower but more accurate)
+    console.log(`[handleFAQQuery] 🤖 No text match found, trying semantic embeddings...`);
+    try {
+      const embeddingMatch = await findBestFaqMatch(userInput, faqs);
+      
+      if (embeddingMatch && embeddingMatch.similarity >= FAQ_SIMILARITY_THRESHOLD) {
+        console.log(`[handleFAQQuery] ✅ SEMANTIC MATCH found! Similarity: ${embeddingMatch.similarity.toFixed(3)}`);
+        console.log(`[handleFAQQuery] ✅ Question: "${embeddingMatch.faq.question}"`);
+        console.log(`[handleFAQQuery] ✅ Answer: "${embeddingMatch.faq.answer.substring(0, 100)}..."`);
+        
+        return {
+          isFaqMatch: true,
+          answer: embeddingMatch.faq.answer,
+          similarity: embeddingMatch.similarity,
+          faqId: embeddingMatch.faq.id
+        };
+      }
+    } catch (embeddingError) {
+      console.error(`[handleFAQQuery] ⚠️ Embedding matching failed:`, embeddingError);
+      // Continue to fallback - don't break the entire system
+    }
     
-  } catch (error: any) {
-    console.error(`[faqHandler.ts] Error getting LLM response:`, error);
-    return 'Mi dispiace, si è verificato un errore durante l\'elaborazione della tua richiesta.';
+    // 🔍 STEP 3: Fallback - no direct FAQ match found
+    console.log(`[handleFAQQuery] ❌ No direct FAQ matches found (threshold: ${FAQ_SIMILARITY_THRESHOLD})`);
+    console.log(`[handleFAQQuery] ❌ Best text similarity: ${textMatch?.similarity?.toFixed(3) || 'N/A'}`);
+    
+    return {
+      isFaqMatch: false,
+      answer: '',
+      similarity: textMatch?.similarity || 0
+    };
+    
+  } catch (error) {
+    console.error('[handleFAQQuery] ❌ Error in FAQ matching:', error);
+    return { isFaqMatch: false, answer: '' };
   }
 }
 
-// 🚀 STEP 2: Create a detailed context assembly with all FAQ and document data
-    const context = await buildExtendedContext(userInput, enhancedQuery, faqs, userId, organizationId);
-    // Log context information
-    console.log(`[faqHandler.ts] Context assembled for query: ${userInput}`);
+/**
+ * Fast text-based FAQ matching using fuzzy string comparison
+ * @param userInput - User's question
+ * @param faqs - Array of FAQs to search
+ * @returns Best match or null
+ */
+function findBestTextMatch(userInput: string, faqs: Faq[]): { faq: Faq; similarity: number } | null {
+  let bestMatch: { faq: Faq; similarity: number } | null = null;
+  let bestSimilarity = 0;
+  
+  const userInputLower = userInput.toLowerCase().trim();
+  const userWords = userInputLower.split(/\s+/).filter(word => word.length > 2);
+  
+  console.log(`[findBestTextMatch] 🔍 Checking ${faqs.length} FAQs for text matches...`);
+  
+  for (const faq of faqs) {
+    const questionLower = faq.question.toLowerCase();
+    const answerLower = faq.answer.toLowerCase();
     
-    // 🚀 STEP 3: Pass the context to the LLM and get the response
-    const llmResponse = await getLLMResponse(context);
-
-    return {
-      isFaqMatch: true,
-      answer: llmResponse,
-      similarity: 1.0, // Assuming full context gives high relevance
-      faqId: undefined
-    };
-  } catch (error) {
-    console.error('[faqHandler.ts] Error in handleFAQQuery:', error);
-    return { isFaqMatch: false, answer: '' };
+    // 🔍 Check for exact question match
+    if (questionLower === userInputLower) {
+      console.log(`[findBestTextMatch] ✅ EXACT match found: "${faq.question}"`);
+      return { faq, similarity: 1.0 };
+    }
+    
+    // 🔍 Check for substring matches
+    if (questionLower.includes(userInputLower) || userInputLower.includes(questionLower)) {
+      const similarity = 0.9;
+      if (similarity > bestSimilarity) {
+        bestSimilarity = similarity;
+        bestMatch = { faq, similarity };
+      }
+      continue;
+    }
+    
+    // 🔍 Calculate word overlap similarity
+    const questionWords = questionLower.split(/\s+/);
+    const answerWords = answerLower.split(/\s+/);
+    const allFaqWords = [...questionWords, ...answerWords];
+    
+    let matchingWords = 0;
+    let totalUserWords = userWords.length;
+    
+    if (totalUserWords === 0) continue;
+    
+    for (const userWord of userWords) {
+      for (const faqWord of allFaqWords) {
+        if (faqWord.includes(userWord) || userWord.includes(faqWord)) {
+          matchingWords++;
+          break; // Count each user word only once
+        }
+      }
+    }
+    
+    const similarity = matchingWords / totalUserWords;
+    
+    if (similarity > bestSimilarity) {
+      bestSimilarity = similarity;
+      bestMatch = { faq, similarity };
+    }
   }
+  
+  if (bestMatch) {
+    console.log(`[findBestTextMatch] 🏆 Best text match: "${bestMatch.faq.question}" (similarity: ${bestMatch.similarity.toFixed(3)})`);
+  } else {
+    console.log(`[findBestTextMatch] ❌ No good text matches found`);
+  }
+  
+  return bestMatch;
 }
 
 /**
