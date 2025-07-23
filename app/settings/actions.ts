@@ -6,37 +6,17 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/frontend/auth';
 import { ObjectId } from 'mongodb';
 
-// **CACHE OTTIMIZZAZIONE**: Cache in-memory per settings utente
-const settingsCache = new Map<string, { data: ChatbotSettingsDocument | null; timestamp: number }>();
-const CACHE_DURATION = 30000; // 30 secondi
-
-export async function getSettings(userId?: string): Promise<ChatbotSettingsDocument | null> {
-  let userIdToUse = userId;
-  
-  if (!userIdToUse) {
-    const session = await auth();
-    if (!session?.user?.id) return null;
-    userIdToUse = session.user.id;
-  }
-  
-  // **CACHE CHECK**: Verifica se abbiamo i dati in cache
-  const cached = settingsCache.get(userIdToUse);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.data;
-  }
-  
+export async function getSettings(): Promise<ChatbotSettingsDocument | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
   const { db } = await connectToDatabase();
   const doc = await db
     .collection<ChatbotSettingsDocument>('chatbot_settings')
-    .findOne({ userId: userIdToUse });
-  
-  // **CACHE SAVE**: Salva in cache per future richieste
-  settingsCache.set(userIdToUse, { data: doc || null, timestamp: Date.now() });
-  
+    .findOne({ userId: session.user.id });
   return doc || null;
 }
 
-export async function saveSettings(data: Partial<ChatbotSettingsDocument>, contextId?: string) {
+export async function saveSettings(data: Partial<ChatbotSettingsDocument>) {
   const session = await auth();
   if (!session?.user?.id) return { error: 'Not authenticated' };
   const userId = session.user.id;
@@ -47,18 +27,13 @@ export async function saveSettings(data: Partial<ChatbotSettingsDocument>, conte
     return { error: 'Invalid data' };
   }
 
-  const targetId = contextId || userId;
-
   const update = {
     $set: { ...parsed.data, updatedAt: new Date() },
-    $setOnInsert: { userId: targetId, createdAt: new Date() },
+    $setOnInsert: { userId, createdAt: new Date() },
   };
   await db
     .collection<ChatbotSettingsDocument>('chatbot_settings')
-    .updateOne({ userId: targetId }, update, { upsert: true });
-
-  // **CACHE INVALIDATION**: Rimuovi dalla cache quando vengono aggiornati
-  settingsCache.delete(targetId);
+    .updateOne({ userId }, update, { upsert: true });
 
   revalidatePath('/settings');
   return { success: true };
