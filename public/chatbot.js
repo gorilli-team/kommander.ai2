@@ -862,13 +862,9 @@ ${truncatedContent}
         console.error("Failed to send message:", err);
       } finally {
         setIsTyping(false); // Hide typing indicator
-
         isSendingRef.current = false;
-
-        // Manual poll with delay to get the response from database
-        setTimeout(() => {
-          if (pollFnRef.current) pollFnRef.current(true);
-        }, 1000); // 1 second delay to ensure server has saved the message
+        // Rimuovo il polling manuale che causava messaggi duplicati
+        // La risposta viene già ricevuta completamente via streaming
       }
     };
 
