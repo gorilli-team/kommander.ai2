@@ -714,6 +714,65 @@ ${truncatedContent}
       loadConversationsList();
     };
 
+    // IMPLEMENTA ESATTAMENTE LA STESSA LOGICA DI generateChatResponse da actions.ts
+    const generateChatResponseWidget = async (userMessage, history, userId) => {
+      console.log('[Chatbot] generateChatResponseWidget: Inizio generazione risposta per userId:', userId);
+      
+      if (!userMessage.trim()) {
+        throw new Error('Il messaggio non può essere vuoto.');
+      }
+
+      try {
+        // 1. Recupera FAQ - ESATTAMENTE come actions.ts linea 77-85
+        console.log('[Chatbot] Recupero FAQ...');
+        const faqsRes = await fetch(`${ORIGIN}/api/widget-faqs?userId=${encodeURIComponent(userId)}`);
+        const faqsData = await faqsRes.json();
+        if (!faqsRes.ok) {
+          throw new Error(faqsData.error || 'Errore recupero FAQ');
+        }
+        const faqs = faqsData.faqs || [];
+        console.log('[Chatbot] FAQ recuperate:', faqs.length);
+
+        // 2. Recupera file e contenuto - ESATTAMENTE come actions.ts linea 87-132
+        console.log('[Chatbot] Recupero file...');
+        const filesRes = await fetch(`${ORIGIN}/api/widget-files?userId=${encodeURIComponent(userId)}`);
+        const filesData = await filesRes.json();
+        if (!filesRes.ok) {
+          throw new Error(filesData.error || 'Errore recupero file');
+        }
+        const filesMeta = filesData.filesMeta || [];
+        const extractedTextSnippets = filesData.extractedTextSnippets || [];
+        console.log('[Chatbot] File recuperati:', filesMeta.length, 'Snippets:', extractedTextSnippets.length);
+
+        // 3. Chiama generazione OpenAI - ESATTAMENTE come actions.ts linea 134-159
+        console.log('[Chatbot] Chiamata OpenAI...');
+        const generateRes = await fetch(`${ORIGIN}/api/widget-generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userMessage,
+            faqs,
+            filesMeta,
+            extractedTextSnippets,
+            history,
+            userId
+          })
+        });
+        
+        const generateData = await generateRes.json();
+        if (!generateRes.ok) {
+          throw new Error(generateData.error || 'Errore generazione risposta');
+        }
+
+        console.log('[Chatbot] Risposta generata con successo');
+        return { response: generateData.response };
+
+      } catch (error) {
+        console.error('[Chatbot] Errore in generateChatResponseWidget:', error);
+        return { error: `Impossibile generare la risposta della chat a causa di un errore del server. ${error.message}` };
+      }
+    };
+
     const sendMessage = async () => {
       const text = input.trim();
       if (!text || isSendingRef.current) return;
@@ -744,14 +803,13 @@ ${truncatedContent}
 
       try {
         if (!conversationIdRef.current) {
-          const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; // More robust ID
+          const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
           conversationIdRef.current = newId;
           setConversationId(newId);
           localStorage.setItem(storageKey, newId);
         }
 
-        // Usa la stessa logica di generateChatResponse della pagina /chatbot
-        // Costruisci la history per l'AI (solo user e assistant)
+        // Costruisci la history ESATTAMENTE come useChat in actions.ts linea 34-36
         const historyForAI = messages
           .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
           .map((msg) => ({ role: msg.role, content: msg.text }));
@@ -768,107 +826,47 @@ ${truncatedContent}
           addMessage('system', `📎 File caricato: ${fileNames}\n\nOra puoi farmi domande sul contenuto di questo file o chiedere un riassunto.`);
         }
 
-        const requestBody = {
-          userId: organizationId || userId,
-          message: messageWithContext,
-          history: historyForAI,
-          conversationId: conversationIdRef.current,
-          site: window.location.hostname,
-          endUserId: endUserIdRef.current,
-        };
+        console.log('[Chatbot] Chiamata generateChatResponseWidget con history:', historyForAI.length, 'messaggi');
+        
+        // USA LA STESSA IDENTICA LOGICA DI actions.ts
+        const result = await generateChatResponseWidget(messageWithContext, historyForAI, organizationId || userId);
+        
+        if (result.error) {
+          addMessage('system', `Error: ${result.error}`);
+        } else if (result.response) {
+          addMessage('assistant', result.response);
           
-        console.log('[Chatbot] Sending message with data:', requestBody);
-        
-        const res = await fetch(`${ORIGIN}/api/kommander-direct-chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody),
-        });
-
-        if (!res.ok) {
-          throw new Error('Network response was not ok');
-        }
-
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let fullResponse = '';
-        let currentMessageId = Date.now().toString();
-        
-        // Add initial empty message that will be updated
-        addMessage('assistant', '', false);
-        
-        // Get the last message to update it
-        const updateLastMessage = (content) => {
-          setMessages(prev => {
-            const newMessages = [...prev];
-            if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'assistant') {
-              newMessages[newMessages.length - 1] = {
-                ...newMessages[newMessages.length - 1],
-                text: content
-              };
-            }
-            return newMessages;
-          });
-        };
-        
-        // Nascondi typing loader appena inizia lo streaming
-        let hasStartedStreaming = false;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.trim() && line.startsWith('data: ')) {
-              try {
-                const event = JSON.parse(line.replace(/^data: /, ''));
-
-                if (event.type === 'chunk') {
-                  // Nascondi typing loader non appena inizia il primo chunk.
-                  setIsTyping(false);
-                  
-                  fullResponse += event.content;
-                  updateLastMessage(fullResponse);
-                  
-                  if (event.conversationId) {
-                    conversationIdRef.current = event.conversationId;
-                    setConversationId(event.conversationId);
-                    localStorage.setItem(storageKey, event.conversationId);
-                  }
-                } else if (event.type === 'complete') {
-                  if (event.conversationId) {
-                    conversationIdRef.current = event.conversationId;
-                    setConversationId(event.conversationId);
-                    localStorage.setItem(storageKey, event.conversationId);
-                  }
-                  
-                  if (event.handledBy) {
-                    setHandledBy(event.handledBy);
-                  }
-                } else if (event.type === 'error') {
-                  addMessage('system', 'Si è verificato un errore: ' + event.error);
-                }
-              } catch (parseError) {
-                console.error('Error parsing SSE data:', parseError);
-              }
-            }
+          // Salva conversazione nel database tramite API
+          try {
+            await fetch(`${ORIGIN}/api/conversations/append`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: organizationId || userId,
+                conversationId: conversationIdRef.current,
+                messages: [
+                  { role: 'user', text: messageWithContext, timestamp: new Date().toISOString() },
+                  { role: 'assistant', text: result.response, timestamp: new Date().toISOString() },
+                ],
+                site: window.location.hostname
+              })
+            });
+          } catch (err) {
+            console.error('Errore salvataggio conversazione:', err);
           }
         }
+        
       } catch (err) {
         addMessage('system', 'Ops! Non riusciamo a connetterci. Riprova più tardi.');
         console.error("Failed to send message:", err);
       } finally {
-        setIsTyping(false); // Hide typing indicator
-
+        setIsTyping(false);
         isSendingRef.current = false;
 
         // Manual poll with delay to get the response from database
         setTimeout(() => {
           if (pollFnRef.current) pollFnRef.current(true);
-        }, 1000); // 1 second delay to ensure server has saved the message
+        }, 1000);
       }
     };
 
