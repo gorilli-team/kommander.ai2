@@ -25,9 +25,9 @@ async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileN
       const result = await mammoth.extractRawText({ buffer });
       rawText = result.value;
       console.log(`[app/training/actions.ts] DOCX text extraction complete for ${fileName}. Length: ${rawText.length}`);
-    } else if (fileType === 'text/plain') {
+    } else if (fileType === 'text/plain' || fileType === 'text/csv') {
       rawText = buffer.toString('utf-8');
-      console.log(`[app/training/actions.ts] TXT text extraction complete for ${fileName}. Length: ${rawText.length}`);
+      console.log(`[app/training/actions.ts] ${fileType === 'text/csv' ? 'CSV' : 'TXT'} text extraction complete for ${fileName}. Length: ${rawText.length}`);
     } else {
       console.warn(`[app/training/actions.ts] Unsupported file type for extraction: ${fileType} for ${fileName}`);
       return '';
@@ -282,7 +282,7 @@ export async function deleteFaq(id: string) {
 
 // Document Actions - GridFS based
 const MaxFileSize = 5 * 1024 * 1024; // 5MB
-const AcceptedFileTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+const AcceptedFileTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'text/csv'];
 
 export async function uploadFileAndProcess(formData: FormData, context?: { type: 'personal' | 'organization', organizationId?: string }): Promise<{ success?: string; error?: string; fileId?: string }> {
   console.log('[app/training/actions.ts] uploadFileAndProcess (GridFS): BEGIN.', 'context:', context);
@@ -312,7 +312,7 @@ export async function uploadFileAndProcess(formData: FormData, context?: { type:
 
   if (!AcceptedFileTypes.includes(file.type)) {
     console.error(`[app/training/actions.ts] uploadFileAndProcess (GridFS): Invalid file type for user ${userId}: ${file.type}`);
-    return { error: 'Invalid file type. Only PDF, DOCX, TXT are allowed.' };
+    return { error: 'Invalid file type. Only PDF, DOCX, TXT, CSV are allowed.' };
   }
   
   try {
