@@ -714,7 +714,7 @@ ${truncatedContent}
       loadConversationsList();
     };
 
-    // IMPLEMENTA ESATTAMENTE LA STESSA LOGICA DI generateChatResponse da actions.ts
+    // LOGICA SERVER COMPLETA: Usa generateChatResponse tramite endpoint dedicato
     const generateChatResponseWidget = async (userMessage, history, userId) => {
       console.log('[Chatbot] generateChatResponseWidget: Inizio generazione risposta per userId:', userId);
       
@@ -723,50 +723,28 @@ ${truncatedContent}
       }
 
       try {
-        // 1. Recupera FAQ - ESATTAMENTE come actions.ts linea 77-85
-        console.log('[Chatbot] Recupero FAQ...');
-        const faqsRes = await fetch(`${ORIGIN}/api/widget-faqs?userId=${encodeURIComponent(userId)}`);
-        const faqsData = await faqsRes.json();
-        if (!faqsRes.ok) {
-          throw new Error(faqsData.error || 'Errore recupero FAQ');
-        }
-        const faqs = faqsData.faqs || [];
-        console.log('[Chatbot] FAQ recuperate:', faqs.length);
-
-        // 2. Recupera file e contenuto - ESATTAMENTE come actions.ts linea 87-132
-        console.log('[Chatbot] Recupero file...');
-        const filesRes = await fetch(`${ORIGIN}/api/widget-files?userId=${encodeURIComponent(userId)}`);
-        const filesData = await filesRes.json();
-        if (!filesRes.ok) {
-          throw new Error(filesData.error || 'Errore recupero file');
-        }
-        const filesMeta = filesData.filesMeta || [];
-        const extractedTextSnippets = filesData.extractedTextSnippets || [];
-        console.log('[Chatbot] File recuperati:', filesMeta.length, 'Snippets:', extractedTextSnippets.length);
-
-        // 3. Chiama generazione OpenAI - ESATTAMENTE come actions.ts linea 134-159
-        console.log('[Chatbot] Chiamata OpenAI...');
-        const generateRes = await fetch(`${ORIGIN}/api/widget-generate`, {
+        console.log('[Chatbot] Chiamata endpoint server completo...');
+        
+        // Chiama il nuovo endpoint che replica la logica server
+        const response = await fetch(`${ORIGIN}/api/widget-generate-complete`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userMessage,
-            faqs,
-            filesMeta,
-            extractedTextSnippets,
             history,
-            userId
+            userId,
+            uploadedFiles: uploadedFiles // Include file del widget
           })
         });
         
-        const generateData = await generateRes.json();
-        if (!generateRes.ok) {
-          throw new Error(generateData.error || 'Errore generazione risposta');
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Errore generazione risposta');
         }
-
-        console.log('[Chatbot] Risposta generata con successo');
-        return { response: generateData.response };
-
+        
+        console.log('[Chatbot] Risposta generata con successo tramite logica server');
+        return { response: data.response };
+        
       } catch (error) {
         console.error('[Chatbot] Errore in generateChatResponseWidget:', error);
         return { error: `Impossibile generare la risposta della chat a causa di un errore del server. ${error.message}` };
