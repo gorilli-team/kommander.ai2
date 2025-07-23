@@ -750,29 +750,36 @@ ${truncatedContent}
           localStorage.setItem(storageKey, newId);
         }
 
-      // Ottieni il context dei file se presenti
-      const filesContext = getFilesContext();
-      const messageWithContext = filesContext 
-        ? `${filesContext}\n\n--- MESSAGGIO UTENTE ---\n${text}`
-        : text;
-        
-      // Aggiungi messaggio di sistema per i file caricati
-      if (uploadedFiles.length > 0 && !lastSentTextRef.current.includes('File caricato:')) {
-        const fileNames = uploadedFiles.map(f => f.name).join(', ');
-        addMessage('system', `📎 File caricato: ${fileNames}\n\nOra puoi farmi domande sul contenuto di questo file o chiedere un riassunto.`);
-      }
+        // Usa la stessa logica di generateChatResponse della pagina /chatbot
+        // Costruisci la history per l'AI (solo user e assistant)
+        const historyForAI = messages
+          .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+          .map((msg) => ({ role: msg.role, content: msg.text }));
 
-      const requestBody = {
-        userId: organizationId || userId,
-        message: messageWithContext,
-        conversationId: conversationIdRef.current,
-        site: window.location.hostname,
-        endUserId: endUserIdRef.current,
-      };
-        
+        // Ottieni il context dei file se presenti
+        const filesContext = getFilesContext();
+        const messageWithContext = filesContext 
+          ? `${filesContext}\n\n--- MESSAGGIO UTENTE ---\n${text}`
+          : text;
+          
+        // Aggiungi messaggio di sistema per i file caricati
+        if (uploadedFiles.length > 0 && !lastSentTextRef.current.includes('File caricato:')) {
+          const fileNames = uploadedFiles.map(f => f.name).join(', ');
+          addMessage('system', `📎 File caricato: ${fileNames}\n\nOra puoi farmi domande sul contenuto di questo file o chiedere un riassunto.`);
+        }
+
+        const requestBody = {
+          userId: organizationId || userId,
+          message: messageWithContext,
+          history: historyForAI,
+          conversationId: conversationIdRef.current,
+          site: window.location.hostname,
+          endUserId: endUserIdRef.current,
+        };
+          
         console.log('[Chatbot] Sending message with data:', requestBody);
         
-        const res = await fetch(`${ORIGIN}/api/kommander-query-stream`, {
+        const res = await fetch(`${ORIGIN}/api/kommander-direct-chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
