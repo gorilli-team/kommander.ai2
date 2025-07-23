@@ -410,6 +410,34 @@ export async function generateStreamingChatResponse(
   }
 
   try {
+    // 🔄 **BASIC GREETINGS HANDLING**: Handle common greetings BEFORE FAQ matching (streaming)
+    const greetingResponse = handleBasicGreetings(userMessage);
+    if (greetingResponse) {
+      console.log(`[generateStreamingChatResponse] ✅ Basic greeting detected: ${userMessage}`);
+      
+      // Stream the greeting response word by word
+      const words = greetingResponse.split(' ');
+      for (let i = 0; i < words.length; i++) {
+        const chunk = i === 0 ? words[i] : ' ' + words[i];
+        onChunk(chunk);
+        // Small delay to simulate natural streaming
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      
+      const greetingSource: MessageSource = {
+        type: 'greeting',
+        title: 'Basic Greeting Response (Streaming)',
+        relevance: 1.0,
+        content: greetingResponse,
+        metadata: {
+          isGreeting: true,
+          isStreaming: true
+        }
+      };
+      
+      return { sources: [greetingSource] };
+    }
+    
     // 🔍 **SEMANTIC FAQ MATCHING**: Check for FAQ match BEFORE OpenAI call
     console.log('[generateStreamingChatResponse] 🔍 STARTING FAQ CHECK for message:', userMessage);
     console.log('[generateStreamingChatResponse] 🔍 User ID:', userIdToUse);
