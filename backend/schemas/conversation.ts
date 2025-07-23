@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ObjectId } from 'mongodb';
 
 export const MessageSourceSchema = z.object({
-  type: z.enum(['faq', 'document']),
+  type: z.enum(['faq', 'document', 'greeting', 'contextual']),
   title: z.string(),
   relevance: z.number().min(0).max(1),
   content: z.string().optional(),
@@ -11,6 +11,10 @@ export const MessageSourceSchema = z.object({
     pageNumber: z.number().optional(),
     section: z.string().optional(),
     faqId: z.string().optional(),
+    // New metadata fields for greeting and contextual types
+    isGreeting: z.boolean().optional(),
+    isStreaming: z.boolean().optional(),
+    hasLinks: z.boolean().optional(),
   }).optional(),
 });
 
