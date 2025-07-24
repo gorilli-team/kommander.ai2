@@ -28,7 +28,8 @@ export default function ContextSwitcher() {
   } = useOrganization();
 
   // Don't show on login page or if user is not authenticated
-  if (pathname === '/login' || !session?.user) {
+  // TEMPORARY: Force visibility for debugging
+  if (pathname === '/login') {
     console.log('[ContextSwitcher] Hidden - pathname:', pathname, 'session:', session?.user?.email);
     return null;
   }
