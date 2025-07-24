@@ -367,7 +367,7 @@ ${truncatedContent}
       return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    function addMessage(role, text, updateTimestamp = true) {
+    function addMessage(role, text, updateTimestamp = true, isWelcome = false) {
       setMessages((prev) => {
         const currentTime = new Date().toISOString();
         
@@ -391,11 +391,25 @@ ${truncatedContent}
         }
         
         console.log('Adding new message:', role, text.substring(0, 50));
-        return [...prev, { role, text, time: formatTime(), timestamp: currentTime }];
+        const newMessage = { role, text, time: formatTime(), timestamp: currentTime };
+        if (isWelcome) {
+          newMessage.isWelcome = true;
+        }
+        return [...prev, newMessage];
       });
       
       if (updateTimestamp) {
         lastTimestampRef.current = new Date().toISOString();
+      }
+      
+      // Add welcome animation after a short delay
+      if (isWelcome) {
+        setTimeout(() => {
+          const lastMessage = document.querySelector('.kommander-messages .kommander-row:last-child');
+          if (lastMessage) {
+            lastMessage.classList.add('kommander-welcome-message');
+          }
+        }, 100);
       }
     }
 
@@ -496,17 +510,10 @@ ${truncatedContent}
         if (trialMode) {
           // Add with animation class
           setTimeout(() => {
-            addMessage('assistant', welcomeMessage);
-            // Add animation class to the message
-            setTimeout(() => {
-              const lastMessage = document.querySelector('.trial-chatbot-widget .kommander-row:last-child');
-              if (lastMessage) {
-                lastMessage.classList.add('kommander-welcome-message');
-              }
-            }, 100);
+            addMessage('assistant', welcomeMessage, true, true);
           }, 500); // Slight delay for better UX
         } else {
-          addMessage('assistant', welcomeMessage);
+          addMessage('assistant', welcomeMessage, true, true);
         }
       }
     }, [open, botName, forceReset, trialMode]);
@@ -706,7 +713,7 @@ ${truncatedContent}
         console.log('[Chatbot] Saved conversation ID to localStorage:', convId);
       }
       setMessages([]); // Clear current messages and then add welcome message
-      addMessage('system', 'Benvenuto! Come posso aiutarti oggi?');
+      addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi?`, true, true);
       lastTimestampRef.current = '';
       setShowConversationsList(false); // Torna alla chat
       // fetchInitial sarà chiamato automaticamente dal useEffect
@@ -723,7 +730,7 @@ ${truncatedContent}
         console.log('[Chatbot] Saved new conversation ID to localStorage:', newId);
       }
       setMessages([]); // Clear messages and then add welcome message
-      addMessage('system', 'Benvenuto! Come posso aiutarti oggi?');
+      addMessage('assistant', `Ciao, sono ${botName}! Come posso aiutarti oggi?`, true, true);
       lastTimestampRef.current = '';
       setShowConversationsList(false);
     };

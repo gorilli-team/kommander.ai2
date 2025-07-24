@@ -258,6 +258,75 @@ export default function SettingsClient({ initialSettings }: Props) {
                     </CardContent>
                   </Card>
 
+                  {/* Personality & Traits Card */}
+                  <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                    <CardHeader className="space-y-2 pb-4">
+                      <CardTitle className="flex items-center gap-3 text-xl font-semibold text-gray-900 dark:text-white">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center">
+                          <MessageSquare className="w-4 h-4 text-white" />
+                        </div>
+                        Carattere e Personalità
+                      </CardTitle>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Definisci il carattere e i tratti della personalità del tuo chatbot</p>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* Personality */}
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                          <span className="text-gray-500">🎭</span>
+                          Carattere Generale
+                        </label>
+                        <RadioGroup value={personality} onValueChange={setPersonality} className="grid grid-cols-1 gap-3">
+                          <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                            <RadioGroupItem value="casual" id="casual" />
+                            <label htmlFor="casual" className="text-sm font-medium cursor-pointer flex-1">😊 Casual - Amichevole e informale</label>
+                          </div>
+                          <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                            <RadioGroupItem value="neutral" id="neutral" />
+                            <label htmlFor="neutral" className="text-sm font-medium cursor-pointer flex-1">🤖 Neutrale - Equilibrato e professionale</label>
+                          </div>
+                          <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                            <RadioGroupItem value="formal" id="formal" />
+                            <label htmlFor="formal" className="text-sm font-medium cursor-pointer flex-1">🎩 Formale - Cortese e riservato</label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      {/* Personality Traits */}
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                          <span className="text-gray-500">✨</span>
+                          Tratti della Personalità (max 3)
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {traitOptions.map((trait) => (
+                            <div key={trait.value} className="flex items-center space-x-3">
+                              <Checkbox
+                                id={trait.value}
+                                checked={traits.includes(trait.value)}
+                                onCheckedChange={() => toggleTrait(trait.value)}
+                                disabled={!traits.includes(trait.value) && traits.length >= 3}
+                                className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                              />
+                              <label 
+                                htmlFor={trait.value} 
+                                className={cn(
+                                  "text-sm font-medium cursor-pointer transition-opacity",
+                                  !traits.includes(trait.value) && traits.length >= 3 ? "opacity-50" : "opacity-100"
+                                )}
+                              >
+                                {trait.label}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          {traits.length}/3 tratti selezionati
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                 </div>
 
 
