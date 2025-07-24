@@ -25,6 +25,8 @@ const navItems: NavItem[] = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  
+  console.log('[Sidebar] Rendering - pathname:', pathname, 'navItems:', navItems.length);
 
   return (
     <div className="flex w-14 flex-col items-center justify-start"> 

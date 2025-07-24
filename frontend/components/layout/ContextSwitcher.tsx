@@ -29,8 +29,11 @@ export default function ContextSwitcher() {
 
   // Don't show on login page or if user is not authenticated
   if (pathname === '/login' || !session?.user) {
+    console.log('[ContextSwitcher] Hidden - pathname:', pathname, 'session:', session?.user?.email);
     return null;
   }
+  
+  console.log('[ContextSwitcher] Rendering - organizations:', organizations.length, 'current:', currentContext);
 
   const currentName = getCurrentContextName();
   const isPersonal = currentContext === 'personal';
