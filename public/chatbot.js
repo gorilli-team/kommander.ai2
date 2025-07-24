@@ -121,6 +121,7 @@
     const lastSentTextRef = useRef('');
 
     const isSendingRef = useRef(false);
+    const isStreamingRef = useRef(false);
     const [showRestartConfirm, setShowRestartConfirm] = useState(false);
     const [showConversationsList, setShowConversationsList] = useState(false);
     const [conversationsList, setConversationsList] = useState([]);
@@ -572,7 +573,10 @@ ${truncatedContent}
 
     const poll = async (skipUserDup = false) => {
       const id = conversationIdRef.current;
-      if (!id) return;
+      if (!id || isStreamingRef.current) {
+        console.log('[Chatbot] Skipping poll - streaming active or no conversation ID');
+        return;
+      }
       try {
         const params = new URLSearchParams({ userId });
         if (lastTimestampRef.current) params.set('since', lastTimestampRef.current);
@@ -795,7 +799,7 @@ ${truncatedContent}
           
         console.log('[Chatbot] Sending message with data:', requestBody);
         
-        const res = await fetch(`${ORIGIN}/api/kommander-direct-chat`, {
+        const res = await fetch(`${ORIGIN}/api/kommander-query-stream`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
@@ -812,6 +816,9 @@ ${truncatedContent}
         
         // Create unique message ID for streaming to prevent duplicates with polling
         const streamingMessageId = `streaming-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Disable polling during streaming
+        isStreamingRef.current = true;
         
         // Add initial empty message that will be updated
         addMessage('assistant', '', false);
@@ -896,8 +903,9 @@ ${truncatedContent}
         setIsTyping(false); // Hide typing indicator
         isSendingRef.current = false;
         
-        // Add a small delay before next poll to avoid conflicts with just completed streaming
+        // Re-enable polling after streaming completes
         setTimeout(() => {
+          isStreamingRef.current = false;
           if (pollFnRef.current) {
             pollFnRef.current();
           }
