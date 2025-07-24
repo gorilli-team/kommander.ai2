@@ -799,7 +799,7 @@ ${truncatedContent}
           
         console.log('[Chatbot] Sending message with data:', requestBody);
         
-        const res = await fetch(`${ORIGIN}/api/kommander-query-stream`, {
+        const res = await fetch(`${ORIGIN}/api/kommander-direct-chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
@@ -845,8 +845,16 @@ ${truncatedContent}
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
+          // Convert ArrayBuffer to text properly
+          let textValue;
+          if (value instanceof Uint8Array) {
+            textValue = decoder.decode(value, { stream: true });
+          } else {
+            // If it's already text, use it directly
+            textValue = value;
+          }
+          
+          const lines = textValue.split('\n');
 
           for (const line of lines) {
             if (line.trim() && line.startsWith('data: ')) {
@@ -891,7 +899,7 @@ ${truncatedContent}
                   addMessage('system', 'Si è verificato un errore: ' + event.error);
                 }
               } catch (parseError) {
-                console.error('Error parsing SSE data:', parseError);
+                console.error('Error parsing SSE data:', parseError, 'Line:', line);
               }
             }
           }

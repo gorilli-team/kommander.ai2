@@ -89,13 +89,12 @@ export async function POST(request: Request) {
       });
     }
 
-    // Salva i messaggi nel database come fa il widget originale
+    // Salva solo il messaggio utente all'inizio
     await appendMessages(
       userId,
       convId,
       [
         { role: 'user', text: message, timestamp: new Date().toISOString() },
-        { role: 'assistant', text: result.response as string, timestamp: new Date().toISOString() },
       ],
       site
     );
@@ -109,7 +108,7 @@ export async function POST(request: Request) {
         const chunkSize = 10; // Caratteri per chunk per simulare streaming
         let currentIndex = 0;
         
-        const sendChunk = () => {
+        const sendChunk = async () => {
           if (currentIndex < response.length) {
             const chunk = response.substring(currentIndex, currentIndex + chunkSize);
             currentIndex += chunkSize;
@@ -124,6 +123,20 @@ export async function POST(request: Request) {
             // Continua con il prossimo chunk dopo un piccolo delay
             setTimeout(sendChunk, 20); // 20ms delay tra chunks
           } else {
+            // Salva il messaggio assistant solo alla fine dello streaming
+            try {
+              await appendMessages(
+                userId,
+                convId,
+                [
+                  { role: 'assistant', text: response, timestamp: new Date().toISOString() },
+                ],
+                site
+              );
+            } catch (saveError) {
+              console.error('Error saving assistant message:', saveError);
+            }
+            
             // Invia evento di completamento
             const completeData = JSON.stringify({
               type: 'complete',
