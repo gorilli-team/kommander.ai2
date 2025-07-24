@@ -654,7 +654,7 @@ ${truncatedContent}
           poll();
         }
       });
-      interval = setInterval(poll, 3600); // rallenta del 20% per tempo reale e performance
+      interval = setInterval(poll, 5000); // Polling ogni 5 secondi per ridurre conflitti
       return () => interval && clearInterval(interval);
     }, [conversationId, userId, open]); // Added 'open' to dependency array
 
@@ -859,6 +859,18 @@ ${truncatedContent}
                     localStorage.setItem(storageKey, event.conversationId);
                   }
                 } else if (event.type === 'complete') {
+                  // Remove streamingId when streaming is complete to allow normal deduplication
+                  setMessages(prev => {
+                    const newMessages = [...prev];
+                    if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'assistant' && newMessages[newMessages.length - 1].streamingId) {
+                      // Remove streamingId from completed message
+                      const lastMessage = { ...newMessages[newMessages.length - 1] };
+                      delete lastMessage.streamingId;
+                      newMessages[newMessages.length - 1] = lastMessage;
+                    }
+                    return newMessages;
+                  });
+                  
                   if (event.conversationId) {
                     conversationIdRef.current = event.conversationId;
                     setConversationId(event.conversationId);
@@ -883,8 +895,13 @@ ${truncatedContent}
       } finally {
         setIsTyping(false); // Hide typing indicator
         isSendingRef.current = false;
-        // Rimuovo il polling manuale che causava messaggi duplicati
-        // La risposta viene già ricevuta completamente via streaming
+        
+        // Add a small delay before next poll to avoid conflicts with just completed streaming
+        setTimeout(() => {
+          if (pollFnRef.current) {
+            pollFnRef.current();
+          }
+        }, 1000); // Wait 1 second before polling after streaming completes
       }
     };
 
