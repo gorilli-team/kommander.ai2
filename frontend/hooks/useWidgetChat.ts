@@ -71,41 +71,54 @@ const fetchInitial = async () => {
   };
 
 
-// const poll = async () =	> {
-//     try {
-//       const params = new URLSearchParams({ userId });
-//       if (lastTimestampRef.current) {
-//         params.set('since', lastTimestampRef.current);
-//       }
-//       const res = await fetch(
-//         `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai'}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
-// 
-//       );
-// 
-//       if (res.ok) {
-//         const data = await res.json();
-//         setHandledBy(data.handledBy || 'bot');
-//         const newMsgs = (data.messages || []).map((m: any) =	> ({
-//           id: m.timestamp + m.role,
-//           role: m.role,
-//           content: m.text,
-//           timestamp: new Date(m.timestamp),
-//         }));
-//         if (newMsgs.length) {
-//           lastTimestampRef.current = newMsgs[newMsgs.length - 1].timestamp.toISOString();
-//           setMessages((prev) =	> {
-//             const existing = new Set(prev.map((msg: Message) =	> msg.id));
-//             const unique = newMsgs.filter((msg: Message) =	> !existing.has(msg.id));
-//             return unique.length ? [...prev, ...unique] : prev;
-//           });
-//         }
-//       }
-//     } catch {
-//       // ignore
-//     }
-//   };
+const poll = async () => {
+    try {
+      const params = new URLSearchParams({ userId: contextId });
+      if (lastTimestampRef.current) {
+        params.set('since', lastTimestampRef.current);
+      }
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai'}/api/widget-conversations/${conversationId}/updates?${params.toString()}`,
+      );
 
-fetchInitial();
+      if (res.ok) {
+        const data = await res.json();
+        setHandledBy(data.handledBy || 'bot');
+        let newMsgs = (data.messages || []).map((m: any) => ({
+          id: m.timestamp + m.role,
+          role: m.role,
+          content: m.text,
+          timestamp: new Date(m.timestamp),
+        }));
+        
+        // Filter out user messages from polling - they should only come from local addMessage
+        newMsgs = newMsgs.filter(msg => msg.role !== 'user');
+        
+        if (newMsgs.length) {
+          lastTimestampRef.current = newMsgs[newMsgs.length - 1].timestamp.toISOString();
+          setMessages((prev) => {
+            const existing = new Set(prev.map((msg: Message) => msg.id));
+            const unique = newMsgs.filter((msg: Message) => !existing.has(msg.id));
+            return unique.length ? [...prev, ...unique] : prev;
+          });
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+fetchInitial().then(() => {
+      // Start polling for updates
+      pollFnRef.current = poll;
+      interval = setInterval(poll, 2000); // Poll every 2 seconds
+    });
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [conversationId, contextId]);
 
   const addMessage = (role: Message['role'], content: string) => {

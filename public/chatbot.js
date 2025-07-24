@@ -368,11 +368,21 @@ ${truncatedContent}
 
     function addMessage(role, text, updateTimestamp = true) {
       setMessages((prev) => {
-        // Global deduplication: check if this exact message already exists
-        const isDuplicate = prev.some(msg => 
-          msg.role === role && 
-          msg.text === text
-        );
+        const currentTime = new Date().toISOString();
+        
+        // Enhanced deduplication: check if this exact message already exists recently (within 5 seconds)
+        const isDuplicate = prev.some(msg => {
+          if (msg.role === role && msg.text === text) {
+            // Check if it's a recent duplicate (within 5 seconds)
+            const msgTime = msg.timestamp || msg.time;
+            if (msgTime) {
+              const timeDiff = Math.abs(new Date(currentTime) - new Date(msgTime));
+              return timeDiff < 5000; // 5 seconds
+            }
+            return true; // No timestamp, consider duplicate
+          }
+          return false;
+        });
         
         if (isDuplicate) {
           console.log('Preventing duplicate message:', role, text.substring(0, 50));
@@ -380,7 +390,7 @@ ${truncatedContent}
         }
         
         console.log('Adding new message:', role, text.substring(0, 50));
-        return [...prev, { role, text, time: formatTime() }];
+        return [...prev, { role, text, time: formatTime(), timestamp: currentTime }];
       });
       
       if (updateTimestamp) {
