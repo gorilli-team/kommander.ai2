@@ -66,33 +66,45 @@ export default function ContextSwitcher() {
         </DropdownMenuItem>
 
         {/* Organizations */}
-        {organizations.length > 0 && (
-          <>
-            <DropdownMenuSeparator />
-            <div className="px-3 py-2">
-              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <Users className="h-3 w-3" />
-                Organizations
+        <DropdownMenuSeparator />
+        <div className="px-3 py-2">
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <Users className="h-3 w-3" />
+            Organizations
+          </div>
+        </div>
+        
+        {organizations.length > 0 ? (
+          organizations.map((org) => (
+            <DropdownMenuItem
+              key={org.id}
+              onClick={() => switchToOrganization(org.id)}
+              className={`flex items-center gap-2 p-3 cursor-pointer ${
+                currentOrganization?.id === org.id ? 'bg-accent' : ''
+              }`}
+            >
+              <Building className="h-4 w-4" />
+              <div className="flex flex-col">
+                <span className="font-medium">{org.name}</span>
+                <span className="text-xs text-muted-foreground capitalize">
+                  {org.userRole}
+                </span>
               </div>
+            </DropdownMenuItem>
+          ))
+        ) : (
+          <DropdownMenuItem
+            onClick={() => window.location.href = '/team'}
+            className="flex items-center gap-2 p-3 cursor-pointer text-muted-foreground"
+          >
+            <Building className="h-4 w-4" />
+            <div className="flex flex-col">
+              <span className="font-medium">Gestisci Team</span>
+              <span className="text-xs text-muted-foreground">
+                Crea o unisciti a un'organizzazione
+              </span>
             </div>
-            {organizations.map((org) => (
-              <DropdownMenuItem
-                key={org.id}
-                onClick={() => switchToOrganization(org.id)}
-                className={`flex items-center gap-2 p-3 cursor-pointer ${
-                  currentOrganization?.id === org.id ? 'bg-accent' : ''
-                }`}
-              >
-                <Building className="h-4 w-4" />
-                <div className="flex flex-col">
-                  <span className="font-medium">{org.name}</span>
-                  <span className="text-xs text-muted-foreground capitalize">
-                    {org.userRole}
-                  </span>
-                </div>
-              </DropdownMenuItem>
-            ))}
-          </>
+          </DropdownMenuItem>
         )}
 
         {/* Loading state */}
