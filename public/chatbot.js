@@ -607,6 +607,12 @@ ${truncatedContent}
               newMsgs.forEach(newMsg => {
                 // Check if this message already exists (prevent assistant duplicates)
                 const isDuplicate = combinedMessages.some(existingMsg => {
+                  // Skip messages that are currently being streamed
+                  if (existingMsg.streamingId) {
+                    console.log('Skipping streaming message during polling duplicate check');
+                    return false;
+                  }
+                  
                   // Exact text match for same role
                   if (existingMsg.role === newMsg.role && existingMsg.text === newMsg.text) {
                     // If both have timestamps, check they're within 30 seconds
@@ -804,6 +810,9 @@ ${truncatedContent}
         let fullResponse = '';
         let currentMessageId = Date.now().toString();
         
+        // Create unique message ID for streaming to prevent duplicates with polling
+        const streamingMessageId = `streaming-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
         // Add initial empty message that will be updated
         addMessage('assistant', '', false);
         
@@ -814,7 +823,8 @@ ${truncatedContent}
             if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'assistant') {
               newMessages[newMessages.length - 1] = {
                 ...newMessages[newMessages.length - 1],
-                text: content
+                text: content,
+                streamingId: streamingMessageId // Mark as streaming message
               };
             }
             return newMessages;
