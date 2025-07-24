@@ -407,7 +407,7 @@ export default function TeamPage() {
         <div>
           <h1 className="text-3xl font-bold">Gestione Team</h1>
           <p className="text-muted-foreground mt-2">
-            Gestisci i membri dell'organizzazione, i ruoli e gli inviti
+            Gestisci i membri dell'organizzazione, i ruoli e gli inviti. A breve completamente operativo!
           </p>
         </div>
         <div className="flex gap-3">
