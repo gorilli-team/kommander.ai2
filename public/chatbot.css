@@ -774,6 +774,78 @@ body {
   }
 }
 
+/* Welcome message animations */
+@keyframes kommander-welcome-bubble {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.05);
+  }
+  80% {
+    transform: translateY(2px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes kommander-welcome-text {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes kommander-welcome-pulse {
+  0% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 0 0 4px rgba(var(--kommander-primary-color-rgb, 26, 26, 26), 0.1);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* Welcome message specific styles */
+.kommander-welcome-message {
+  animation: kommander-welcome-bubble 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.kommander-welcome-message .kommander-msg {
+  animation: kommander-welcome-pulse 2s ease-in-out 0.8s;
+  border: 2px solid transparent;
+  background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.kommander-welcome-message .kommander-markdown {
+  animation: kommander-welcome-text 1.2s ease-out forwards;
+}
+
+/* Gentle bounce for welcome message */
+@keyframes kommander-welcome-bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-4px);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
+}
+
 /* Styles for the back button */
 .kommander-back-btn {
   background: rgba(255, 255, 255, 0.2);
