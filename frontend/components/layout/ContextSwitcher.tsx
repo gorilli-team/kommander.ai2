@@ -28,13 +28,9 @@ export default function ContextSwitcher() {
   } = useOrganization();
 
   // Don't show on login page or if user is not authenticated
-  // TEMPORARY: Force visibility for debugging
-  if (pathname === '/login') {
-    console.log('[ContextSwitcher] Hidden - pathname:', pathname, 'session:', session?.user?.email);
+  if (pathname === '/login' || !session?.user) {
     return null;
   }
-  
-  console.log('[ContextSwitcher] Rendering - organizations:', organizations.length, 'current:', currentContext);
 
   const currentName = getCurrentContextName();
   const isPersonal = currentContext === 'personal';
