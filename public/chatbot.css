@@ -339,37 +339,138 @@ body {
 /* Markdown rendering styles for chatbot messages */
 .kommander-markdown {
   font-family: inherit;
-  line-height: 1.5;
+  line-height: 1.6; /* Improved line height for better readability */
 }
 
-
+/* Headers with better spacing and weight */
 .kommander-markdown h1 {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 8px 0 6px 0;
+  color: inherit;
 }
 
 .kommander-markdown h2 {
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 6px 0 4px 0;
+  color: inherit;
 }
 
 .kommander-markdown h3 {
-  font-size: 12px;
-}
-
-.kommander-markdown p {
-  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 4px 0 2px 0;
   color: inherit;
-  font-size: 12px;
-  line-height: 1.4;
 }
 
+/* Improved paragraph spacing */
+.kommander-markdown p {
+  margin: 0 0 8px 0;
+  color: inherit;
+  font-size: 13px; /* Slightly larger for better readability */
+  line-height: 1.5;
+}
+
+.kommander-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+/* Better list styling */
+.kommander-markdown ul,
+.kommander-markdown ol {
+  margin: 6px 0 10px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.kommander-markdown ol {
+  counter-reset: list-counter;
+}
 
 .kommander-markdown li {
-  margin: 0;
+  margin: 4px 0;
   color: inherit;
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 13px;
+  line-height: 1.5;
+  position: relative;
+  padding-left: 24px;
 }
 
+.kommander-markdown li p {
+  margin: 0; /* Remove extra margin in list items */
+}
+
+/* Custom bullet points for unordered lists */
+.kommander-markdown ul > li::before {
+  content: '•';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  color: var(--kommander-primary-color);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Custom numbering for ordered lists */
+.kommander-markdown ol > li {
+  counter-increment: list-counter;
+}
+
+.kommander-markdown ol > li::before {
+  content: counter(list-counter) '.';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--kommander-primary-color);
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.5;
+  min-width: 20px;
+}
+
+/* Nested list styling */
+.kommander-markdown ul ul,
+.kommander-markdown ol ul,
+.kommander-markdown ul ol,
+.kommander-markdown ol ol {
+  margin: 2px 0;
+  padding-left: 16px;
+}
+
+/* Different bullet styles for nested lists */
+.kommander-markdown ul ul > li::before {
+  content: '◦';
+  font-size: 12px;
+}
+
+.kommander-markdown ul ul ul > li::before {
+  content: '▪';
+  font-size: 10px;
+}
+
+/* User message list styling (lighter bullets) */
+.kommander-user .kommander-markdown ul > li::before,
+.kommander-user .kommander-markdown ol > li::before {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Hover effect for interactive feel */
+.kommander-markdown li {
+  transition: all 0.15s ease;
+}
+
+.kommander-markdown li:hover {
+  padding-left: 26px;
+}
+
+.kommander-markdown li:hover::before {
+  transform: scale(1.1);
+  transition: transform 0.15s ease;
+}
+
+/* Enhanced emphasis */
 .kommander-markdown strong {
   font-weight: 600;
   color: inherit;
@@ -380,81 +481,129 @@ body {
   color: inherit;
 }
 
+/* Improved inline code */
 .kommander-markdown code {
-  background: rgba(0, 0, 0, 0.1);
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-family: 'Monaco', 'Consolas', monospace;
-  font-size: 11px;
+  background: rgba(0, 0, 0, 0.08);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+  font-size: 11.5px;
   color: inherit;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .kommander-user .kommander-markdown code {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Enhanced code blocks */
 .kommander-markdown pre {
-  background: rgba(0, 0, 0, 0.1);
-  padding: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 10px 12px;
   border-radius: 6px;
   overflow-x: auto;
-  margin: 6px 0;
+  margin: 8px 0;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .kommander-user .kommander-markdown pre {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .kommander-markdown pre code {
   background: none;
   padding: 0;
-  font-size: 11px;
+  font-size: 11.5px;
+  border: none;
 }
 
+/* Better blockquotes */
 .kommander-markdown blockquote {
-  border-left: 3px solid currentColor;
-  padding-left: 8px;
-  margin: 6px 0;
-  opacity: 0.8;
+  border-left: 3px solid var(--kommander-primary-color);
+  padding-left: 12px;
+  margin: 8px 0;
+  opacity: 0.85;
   font-style: italic;
+  background: rgba(0, 0, 0, 0.02);
+  padding: 8px 12px;
+  border-radius: 0 4px 4px 0;
 }
 
+.kommander-user .kommander-markdown blockquote {
+  border-left-color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Enhanced links */
 .kommander-markdown a {
-  color: #2563eb;
-  text-decoration: underline;
+  color: var(--kommander-primary-color);
+  text-decoration: none;
   font-weight: 500;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid transparent;
 }
 
 .kommander-markdown a:hover {
-  color: #1d4ed8;
+  color: var(--kommander-secondary-color);
+  border-bottom-color: currentColor;
 }
 
 .kommander-user .kommander-markdown a {
   color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .kommander-user .kommander-markdown a:hover {
   color: rgba(255, 255, 255, 1);
+  border-bottom-color: rgba(255, 255, 255, 0.8);
 }
 
 
+
+/* Enhanced table styling */
+.kommander-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 12px;
+}
 
 .kommander-markdown th,
 .kommander-markdown td {
-  border: 1px solid currentColor;
-  padding: 4px 6px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 6px 8px;
   text-align: left;
-  opacity: 0.8;
 }
 
 .kommander-markdown th {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.08);
   font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .kommander-user .kommander-markdown th {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.kommander-user .kommander-markdown td {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Horizontal rules */
+.kommander-markdown hr {
+  border: none;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+  margin: 12px 0;
+}
+
+.kommander-user .kommander-markdown hr {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .kommander-time {
@@ -774,18 +923,11 @@ body {
   }
 }
 
-/* Welcome message animations */
-@keyframes kommander-welcome-bubble {
+/* Welcome message animations - Elegant and smooth */
+@keyframes kommander-welcome-fade-up {
   0% {
     opacity: 0;
-    transform: translateY(20px) scale(0.8);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(-5px) scale(1.05);
-  }
-  80% {
-    transform: translateY(2px) scale(0.98);
+    transform: translateY(15px) scale(0.95);
   }
   100% {
     opacity: 1;
@@ -793,57 +935,87 @@ body {
   }
 }
 
-@keyframes kommander-welcome-text {
+@keyframes kommander-welcome-text-reveal {
   0% {
     opacity: 0;
-  }
-  40% {
-    opacity: 0;
+    transform: translateY(5px);
   }
   100% {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@keyframes kommander-welcome-pulse {
+@keyframes kommander-welcome-glow {
   0% {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   }
   50% {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 0 0 4px rgba(var(--kommander-primary-color-rgb, 26, 26, 26), 0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(var(--kommander-primary-color-rgb, 26, 26, 26), 0.05);
   }
   100% {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(var(--kommander-primary-color-rgb, 26, 26, 26), 0.03);
+  }
+}
+
+@keyframes kommander-welcome-shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
   }
 }
 
 /* Welcome message specific styles */
 .kommander-welcome-message {
-  animation: kommander-welcome-bubble 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
+  animation: kommander-welcome-fade-up 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 .kommander-welcome-message .kommander-msg {
-  animation: kommander-welcome-pulse 2s ease-in-out 0.8s;
-  border: 2px solid transparent;
-  background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(var(--kommander-primary-color-rgb, 26, 26, 26), 0.08);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #ffffff 100%);
+  animation: kommander-welcome-glow 2.5s ease-in-out 0.6s;
+}
+
+.kommander-welcome-message .kommander-msg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -200px;
+  width: 200px;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: kommander-welcome-shimmer 1.5s ease-in-out 0.8s;
 }
 
 .kommander-welcome-message .kommander-markdown {
-  animation: kommander-welcome-text 1.2s ease-out forwards;
+  opacity: 0;
+  animation: kommander-welcome-text-reveal 0.8s ease-out 0.4s both;
 }
 
-/* Gentle bounce for welcome message */
-@keyframes kommander-welcome-bounce {
-  0%, 20%, 50%, 80%, 100% {
-    transform: translateY(0);
+/* Gentle floating effect for welcome message */
+@keyframes kommander-welcome-float {
+  0%, 100% {
+    transform: translateY(0px);
   }
-  40% {
-    transform: translateY(-4px);
-  }
-  60% {
+  50% {
     transform: translateY(-2px);
   }
+}
+
+.kommander-welcome-message .kommander-msg {
+  animation: 
+    kommander-welcome-glow 2.5s ease-in-out 0.6s,
+    kommander-welcome-float 4s ease-in-out 3s infinite;
 }
 
 /* Styles for the back button */
