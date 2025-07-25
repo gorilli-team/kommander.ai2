@@ -10,6 +10,7 @@ import type { Faq } from '@/backend/schemas/faq';
 import { getFileContent } from '@/app/training/actions';
 import { getSettings } from '@/app/settings/actions';
 import mammoth from 'mammoth';
+import { getSemanticFaqs } from '@/backend/lib/semanticFaqSearch';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -79,15 +80,8 @@ async function generateChatResponseStream(
   try {
     const { db } = await connectToDatabase();
     
-    const faqsCursor = await db.collection('faqs').find({ userId: userId }).limit(10).toArray();
-    const faqs: Faq[] = faqsCursor.map(doc => ({
-        id: doc._id.toString(),
-        userId: doc.userId,
-        question: doc.question,
-        answer: doc.answer,
-        createdAt: doc.createdAt ? new Date(doc.createdAt) : undefined,
-        updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : undefined,
-    }));
+    // Usa il sistema di ricerca semantica
+    const faqs: Faq[] = await getSemanticFaqs(userId, userMessage, 10);
 
     const allUploadedFilesMeta = await db.collection('raw_files_meta')
       .find({ userId: userId })
