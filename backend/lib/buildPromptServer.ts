@@ -28,28 +28,33 @@ export function buildPromptServer(
   extractedTextSnippets: DocumentSnippet[] = [],
   history: ChatMessage[] = [],
   fileSummaries: FileSummaryForPrompt[] = [],
-  settings?: { name?: string; personality?: string; traits?: string[] }
+  settings?: { name?: string; personality?: string; traits?: string[] },
+  smartFileContext?: string // Nuovo parametro per il contesto dei file intelligenti
 ): ChatMessage[] {
   
   const botName = settings?.name || 'Kommander.ai';
-  let context = `Sei ${botName}, un assistente AI utile.`;
+  let context = `Sei ${botName}, un assistente AI utile e preciso.`;
   if (settings?.personality) {
     context += ` Stile comunicativo: ${settings.personality}.`;
   }
   if (settings?.traits && settings.traits.length) {
     context += ` Carattere: ${settings.traits.join(', ')}.`;
   }
-  context += " Usa le seguenti informazioni per rispondere alla query dell'utente.\n\n";
+  context += " Usa le seguenti informazioni per rispondere alla query dell'utente in modo accurato e dettagliato.\n\n";
 
+  // Priorità alle FAQ
   if (faqs.length > 0) {
-    context += "FAQ Rilevanti:\n";
-    faqs.forEach(faq => {
-      context += `- D: ${faq.question}\n  R: ${faq.answer}\n`;
+    context += "FAQ RILEVANTI:\n";
+    faqs.forEach((faq, index) => {
+      context += `${index + 1}. D: ${faq.question}\n   R: ${faq.answer}\n\n`;
     });
-    context += "\n";
   }
 
-  if (uploadedFilesInfo.length > 0) {
+  // Usa il nuovo sistema di file intelligenti se disponibile
+  if (smartFileContext) {
+    context += smartFileContext;
+  } else if (uploadedFilesInfo.length > 0) {
+    // Fallback al sistema vecchio
     context += "L'utente ha caricato i seguenti file a cui puoi fare riferimento per nome, se pertinente:\n";
     uploadedFilesInfo.forEach(file => {
       context += `- Nome File: "${file.fileName}", Tipo: ${file.originalFileType}\n`;
