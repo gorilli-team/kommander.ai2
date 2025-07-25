@@ -1,0 +1,73 @@
+{
+  "uploadFlow": {
+    "immediateAvailability": {
+      "chatbotUI": "Immediata (in memoria)",
+      "trainingPage": "Immediata (dopo salvataggio DB)"
+    },
+    "dependencies": [
+      "GridFS write",
+      "Metadata insert",
+      "Summary generation"
+    ]
+  },
+  "retrievalFlow": {
+    "querySteps": [
+      "Fetch file metadata (sorted by uploadedAt)",
+      "Select top 3 files",
+      "Download file content from GridFS",
+      "Extract text content",
+      "Fetch file summaries",
+      "Build prompt with combined data"
+    ],
+    "bottlenecks": [
+      "GridFS download speed",
+      "Text extraction (PDF/DOCX)",
+      "Database query latency"
+    ]
+  },
+  "timings": {
+    "fileUpload": {
+      "Ricezione file": "1-10ms",
+      "Salvataggio GridFS": "10-100ms",
+      "Insert metadati": "1-5ms",
+      "Generazione riassunto OpenAI": "500-2000ms",
+      "Insert riassunto": "1-5ms",
+      "TOTALE UPLOAD": "520-2120ms"
+    },
+    "fileRetrieval": {
+      "Query metadati": "1-10ms",
+      "Download GridFS (per file)": "5-50ms",
+      "Estrazione testo": "10-100ms",
+      "Query riassunti": "1-10ms",
+      "Build prompt": "1-5ms",
+      "TOTALE RETRIEVAL (3 files)": "50-500ms"
+    }
+  },
+  "availability": {
+    "chatUI": "0ms (in memoria)",
+    "trainingPage": "520-2120ms (dopo commit DB)",
+    "postUpload": "0ms (lettura immediata da DB)"
+  },
+  "simulation": {
+    "uploadTime": 1057,
+    "retrievalTime": 60,
+    "simulationTime": 0
+  },
+  "recommendations": {
+    "immediate": [
+      "Remove file limit",
+      "Add caching",
+      "Parallel processing"
+    ],
+    "advanced": [
+      "Pre-process text",
+      "Full-text search",
+      "Semantic embeddings"
+    ],
+    "limitations": [
+      "3-file limit",
+      "No semantic matching",
+      "Limited summary usage"
+    ]
+  }
+}

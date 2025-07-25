@@ -9,6 +9,7 @@ import { getFileContent } from '@/app/training/actions';
 import { auth } from '@/frontend/auth'; // Import auth for session
 import { getSettings } from '@/app/settings/actions';
 import { getSemanticFaqs } from '@/backend/lib/semanticFaqSearch';
+import { getSmartFiles, buildFileContext } from '@/backend/lib/smartFileManager';
 
 import mammoth from 'mammoth';
 
@@ -73,67 +74,38 @@ export async function generateChatResponse(
   }
 
   try {
-    const { db } = await connectToDatabase();
+    console.log(`[generateChatResponse] Elaborazione query per utente ${userIdToUse}`);
     
-    // Usa il sistema di ricerca semantica
+    // Usa il sistema di ricerca semantica per le FAQ
     const faqs: Faq[] = await getSemanticFaqs(userIdToUse, userMessage, 10);
+    console.log(`[generateChatResponse] Recuperate ${faqs.length} FAQ rilevanti`);
 
-  const allUploadedFilesMeta = await db.collection('raw_files_meta')
-      .find({ userId: userIdToUse })
-      .project({ fileName: 1, originalFileType: 1, gridFsFileId: 1, uploadedAt: 1 })
-      .sort({ uploadedAt: -1 })
-      .toArray();
-
-    const maxFilesEnv = parseInt(process.env.MAX_PROMPT_FILES || '3', 10);
-    const filesToProcess = allUploadedFilesMeta.slice(0, isNaN(maxFilesEnv) ? 3 : maxFilesEnv);
-
-    const filesForPromptContext: UploadedFileInfoForPrompt[] = filesToProcess.map(doc => ({
-        fileName: doc.fileName,
-        originalFileType: doc.originalFileType,
-    }));
-
-    const fileNameMap = new Map<string, string>();
-    filesToProcess.forEach(doc => {
-        fileNameMap.set(doc.gridFsFileId.toString(), doc.fileName);
+    // Usa il nuovo SmartFileManager per file intelligenti
+    const maxFiles = parseInt(process.env.MAX_PROMPT_FILES || '8', 10);
+    const smartFiles = await getSmartFiles(userIdToUse, {
+      maxFiles: isNaN(maxFiles) ? 8 : maxFiles,
+      includeContent: true,
+      includeSummaries: true,
+      semanticMatching: true,
+      prioritizeRecent: true,
+      userQuery: userMessage
     });
-
-    const selectedIds = filesToProcess.map(f => f.gridFsFileId);
-    const summariesFromDb = await db.collection('file_summaries')
-        .find({ userId: userIdToUse, gridFsFileId: { $in: selectedIds } })
-        .project({ gridFsFileId: 1, summary: 1 })
-        .toArray();
-
-    const summariesForPrompt = summariesFromDb.map(doc => ({
-        fileName: fileNameMap.get(doc.gridFsFileId.toString()) || 'Documento',
-        summary: doc.summary as string,
-    }));
-
-    const extractedTextSnippets: DocumentSnippet[] = [];
-
-    for (const fileMeta of filesToProcess) {
-      const fileBufferResult = await getFileContent(fileMeta.gridFsFileId.toString(), userIdToUse);
-
-      if ('error' in fileBufferResult) {
-        extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: `Impossibile recuperare il contenuto: ${fileBufferResult.error}` });
-      } else {
-        let text = await extractTextFromFileBuffer(fileBufferResult, fileMeta.originalFileType, fileMeta.fileName);
-        const MAX_TEXT_LENGTH = 10000;
-        if (text.length > MAX_TEXT_LENGTH) {
-          text = text.substring(0, MAX_TEXT_LENGTH) + "\\n[...contenuto troncato a causa della lunghezza...]";
-        }
-        extractedTextSnippets.push({ fileName: fileMeta.fileName, snippet: text });
-      }
-    }
-
+    
+    console.log(`[generateChatResponse] Recuperati ${smartFiles.length} file intelligenti`);
+    
+    // Genera contesto dai file
+    const smartFileContext = buildFileContext(smartFiles);
+    
     const userSettings = await getSettings();
     const messages = buildPromptServer(
       userMessage,
       faqs,
-      filesForPromptContext,
-      extractedTextSnippets,
+      [], // uploadedFilesInfo vuoto (usiamo smartFileContext)
+      [], // extractedTextSnippets vuoto (usiamo smartFileContext)
       history,
-      summariesForPrompt,
+      [], // fileSummaries vuoto (incluso in smartFileContext)
       userSettings || undefined,
+      smartFileContext // Nuovo parametro con contesto intelligente
     );
 
     const openai = getOpenAI();
