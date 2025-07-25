@@ -89,6 +89,26 @@ async function extractTextFromBuffer(buffer: Buffer, fileType: string, fileName:
           stack: pdfError.stack?.split('\n')[0]
         });
         
+        // Gestisci errore specifico ENOENT di pdf-parse
+        if (pdfError.message.includes('ENOENT') && pdfError.message.includes('test/data')) {
+          console.warn(`[SmartFileManager] Bug pdf-parse con file di test per ${fileName}, tentativo workaround...`);
+          
+          // Prova reinstanziare pdf-parse
+          try {
+            const freshPdfParse = require('pdf-parse');
+            const workaroundData = await freshPdfParse(buffer, { 
+              max: 0,
+              version: undefined // Rimuovi versione forzata
+            });
+            if (workaroundData.text?.trim()) {
+              console.log(`[SmartFileManager] Workaround riuscito per ${fileName}`);
+              return workaroundData.text.trim();
+            }
+          } catch (workaroundError) {
+            console.warn(`[SmartFileManager] Workaround fallito per ${fileName}:`, workaroundError.message);
+          }
+        }
+        
         // Tentativo di fallback con opzioni diverse
         try {
           console.log(`[SmartFileManager] Tentativo fallback per ${fileName}...`);
@@ -101,7 +121,7 @@ async function extractTextFromBuffer(buffer: Buffer, fileType: string, fileName:
           console.warn(`[SmartFileManager] Tutti i tentativi falliti per ${fileName}`);
         }
         
-        return `[${fileName}] Errore estrazione PDF: ${pdfError.message}\nSuggerimenti:\n1. Verifica che il PDF non sia corrotto\n2. Prova a ri-salvare il PDF in formato standard\n3. Se possibile, converti in formato .txt`;
+        return `[${fileName}] Errore estrazione PDF: ${pdfError.message}\nDettagli: Possibile problema con libreria pdf-parse\nSuggerimenti:\n1. Prova a ri-salvare il PDF in formato standard\n2. Converti in formato .txt per uso immediato\n3. Verifica che il file non sia corrotto`;
       }
       
     } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {

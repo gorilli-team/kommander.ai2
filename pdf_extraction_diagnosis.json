@@ -1,0 +1,80 @@
+{
+  "timestamp": "2025-07-25T13:50:25.304Z",
+  "issues": [
+    {
+      "problem": "📄 PDF Scansionato (solo immagini)",
+      "symptoms": "Testo estratto vuoto o molto poco",
+      "solution": "Serve OCR (Optical Character Recognition)",
+      "code": "if (!rawText.trim()) return \"PDF senza testo selezionabile\""
+    },
+    {
+      "problem": "🔒 PDF Protetto/Criptato",
+      "symptoms": "Errore durante parsing o accesso negato",
+      "solution": "Rimuovere protezioni o usare password",
+      "code": "Error: Password required"
+    },
+    {
+      "problem": "💥 PDF Corrotto",
+      "symptoms": "Eccezione durante pdf-parse",
+      "solution": "Riparare file o usare backup",
+      "code": "Error: Invalid PDF structure"
+    },
+    {
+      "problem": "🎨 PDF con Layout Complesso",
+      "symptoms": "Testo estratto disordinato",
+      "solution": "Post-processing del testo estratto",
+      "code": "Text order might be scrambled"
+    },
+    {
+      "problem": "📏 PDF con Font Embedded",
+      "symptoms": "Caratteri strani o mancanti",
+      "solution": "Verificare encoding del testo",
+      "code": "Character encoding issues"
+    }
+  ],
+  "errorAnalysis": {
+    "fileFound": true,
+    "extractionFailed": true,
+    "mostLikelyIssue": "PDF scansionato o protetto"
+  },
+  "solutions": [
+    {
+      "solution": "🔧 SOLUZIONE IMMEDIATA",
+      "steps": [
+        "1. Apri il PDF e verifica se il testo è selezionabile",
+        "2. Se non è selezionabile → è una scansione",
+        "3. Converti in testo usando OCR online",
+        "4. Salva come nuovo file .txt o .pdf con testo"
+      ]
+    },
+    {
+      "solution": "🛠️ SOLUZIONE TECNICA",
+      "steps": [
+        "1. Implementare fallback OCR nel sistema",
+        "2. Usare librerie come Tesseract.js",
+        "3. Aggiungere supporto per PDF protetti",
+        "4. Migliorare error handling"
+      ]
+    },
+    {
+      "solution": "🎯 SOLUZIONE ALTERNATIVA",
+      "steps": [
+        "1. Estrarre manualmente il contenuto importante",
+        "2. Creare FAQ con le info principali",
+        "3. Caricare come file .txt",
+        "4. Il sistema userà il contenuto nelle risposte"
+      ]
+    }
+  ],
+  "improvements": {
+    "errorHandling": "Migliorato con messaggi chiari",
+    "fallback": "Continua funzionamento anche con file problematici",
+    "userGuidance": "Suggerimenti per risolvere il problema"
+  },
+  "recommendations": [
+    "Implement OCR fallback",
+    "Improve error messages",
+    "Add user guidance for problematic files",
+    "Test with various PDF types"
+  ]
+}
