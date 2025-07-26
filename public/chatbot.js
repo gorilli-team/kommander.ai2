@@ -73,7 +73,19 @@
         mangle: false // Don't mangle autolinked emails
       });
       
-      return marked.parse(text);
+      // Parse markdown to HTML
+      let html = marked.parse(text);
+      
+      // Add target="_blank" and rel="noopener noreferrer" to all links
+      html = html.replace(/<a([^>]*?)href="([^"]+)"([^>]*?)>/gi, (match, before, href, after) => {
+        // Check if target is already specified
+        if (!/target\s*=/i.test(before + after)) {
+          return `<a${before}href="${href}"${after} target="_blank" rel="noopener noreferrer">`;
+        }
+        return match;
+      });
+      
+      return html;
     } catch (error) {
       console.error('Error parsing markdown:', error);
       return text; // Fallback to plain text on error
