@@ -1,6 +1,7 @@
 import { connectToDatabase, getGridFSBucket } from '@/backend/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import mammoth from 'mammoth';
+import { extractPdfTextAlternative, extractPdfMetadata } from './alternativePdfParser';
 
 export interface FileMetadata {
   id: string;
@@ -38,7 +39,31 @@ async function extractTextFromBuffer(buffer: Buffer, fileType: string, fileName:
   
   try {
     if (fileType === 'application/pdf') {
-      const pdfParse = (await import('pdf-parse')).default;
+      console.log(`[SmartFileManager] Inizio parsing PDF: ${fileName}`);
+      const startTime = Date.now();
+      
+      // Prima prova pdftotext come metodo principale per evitare il bug di pdf-parse
+      console.log(`[SmartFileManager] Tentativo con pdftotext per ${fileName}...`);
+      try {
+        const alternativeResult = await extractPdfTextAlternative(buffer, fileName);
+        if (alternativeResult && !alternativeResult.includes('extraction failed') && !alternativeResult.includes('Alternative methods:')) {
+          console.log(`[SmartFileManager] pdftotext riuscito per ${fileName}: ${alternativeResult.length} caratteri`);
+          return alternativeResult;
+        }
+      } catch (altError) {
+        console.warn(`[SmartFileManager] pdftotext fallito per ${fileName}:`, altError.message);
+      }
+      
+      // Solo se pdftotext fallisce, prova pdf-parse con workaround
+      console.log(`[SmartFileManager] Fallback a pdf-parse per ${fileName}...`);
+      
+      // Fix per bug ENOENT di pdf-parse - importa in modo pulito
+      let pdfParse;
+      try {
+        pdfParse = require('pdf-parse');
+      } catch {
+        pdfParse = (await import('pdf-parse')).default;
+      }
       
       // Opzioni ottimizzate per il parsing
       const options = {
@@ -46,9 +71,6 @@ async function extractTextFromBuffer(buffer: Buffer, fileType: string, fileName:
         normalizeWhitespace: false,
         disableCombineTextItems: false
       };
-      
-      console.log(`[SmartFileManager] Inizio parsing PDF: ${fileName}`);
-      const startTime = Date.now();
       
       try {
         const data = await pdfParse(buffer, options);
@@ -118,10 +140,25 @@ async function extractTextFromBuffer(buffer: Buffer, fileType: string, fileName:
             return fallbackData.text.trim();
           }
         } catch (fallbackError) {
-          console.warn(`[SmartFileManager] Tutti i tentativi falliti per ${fileName}`);
+          console.warn(`[SmartFileManager] Fallback pdf-parse fallito per ${fileName}`);
         }
         
-        return `[${fileName}] Errore estrazione PDF: ${pdfError.message}\nDettagli: Possibile problema con libreria pdf-parse\nSuggerimenti:\n1. Prova a ri-salvare il PDF in formato standard\n2. Converti in formato .txt per uso immediato\n3. Verifica che il file non sia corrotto`;
+        // Ultimo tentativo: parser alternativo
+        console.log(`[SmartFileManager] Tentativo parser alternativo per ${fileName}...`);
+        try {
+          const alternativeResult = await extractPdfTextAlternative(buffer, fileName);
+          if (alternativeResult && !alternativeResult.includes('extraction failed')) {
+            console.log(`[SmartFileManager] Parser alternativo riuscito per ${fileName}`);
+            return alternativeResult;
+          }
+        } catch (altError) {
+          console.warn(`[SmartFileManager] Parser alternativo fallito per ${fileName}:`, altError.message);
+        }
+        
+        // Fallback finale: analisi metadati
+        console.log(`[SmartFileManager] Estrazione metadati di base per ${fileName}...`);
+        const metadataInfo = extractPdfMetadata(buffer, fileName);
+        return metadataInfo;
       }
       
     } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
@@ -251,7 +288,8 @@ export async function getSmartFiles(
     
     // Processa i file
     const processedFiles: ProcessedFileContent[] = [];
-    const bucket = await getGridFSBucket();
+    // Use the correct bucket name - files are stored in 'file_uploads' not 'rawFiles'
+    const bucket = new (await import('mongodb')).GridFSBucket(db, { bucketName: 'file_uploads' });
     
     for (const fileMeta of allFiles) {
       const fileStartTime = Date.now();
