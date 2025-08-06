@@ -46,6 +46,7 @@ export default function SettingsClient({ initialSettings }: Props) {
   const [color, setColor] = useState(initialSettings?.color || '#6366f1');
   const [personality, setPersonality] = useState(initialSettings?.personality || 'neutral');
   const [traits, setTraits] = useState<Trait[]>(initialSettings?.traits || []);
+  const [notificationEmail, setNotificationEmail] = useState(initialSettings?.notificationEmail || '');
   const [saving, setSaving] = useState(false);
   const [showTemplateGallery, setShowTemplateGallery] = useState(false);
   const [activeSection, setActiveSection] = useState('customization');
@@ -74,12 +75,14 @@ export default function SettingsClient({ initialSettings }: Props) {
           setColor(data?.color || '#6366f1');
           setPersonality(data?.personality || 'neutral');
           setTraits(data?.traits || []);
+          setNotificationEmail(data?.notificationEmail || '');
           
           console.log('[SettingsClient] Settings applied:', {
             name: data?.name || 'Kommander.ai',
             color: data?.color || '#6366f1',
             personality: data?.personality || 'neutral',
-            traits: data?.traits || []
+            traits: data?.traits || [],
+            notificationEmail: data?.notificationEmail || ''
           });
         } else {
           console.log('[SettingsClient] API response not ok:', response.status);
@@ -108,7 +111,7 @@ export default function SettingsClient({ initialSettings }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    await saveSettings({ name, color, personality, traits }, contextId);
+    await saveSettings({ name, color, personality, traits, notificationEmail }, contextId);
     setSaving(false);
   };
 
@@ -329,6 +332,59 @@ export default function SettingsClient({ initialSettings }: Props) {
 
                 </div>
 
+                {/* Email Notifications Card */}
+                <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                  <CardHeader className="space-y-2 pb-4">
+                    <CardTitle className="flex items-center gap-3 text-xl font-semibold text-gray-900 dark:text-white">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      Notifiche Email
+                    </CardTitle>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Ricevi notifiche via email quando viene avviata una nuova conversazione</p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Email Notification Input */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <span className="text-gray-500">📧</span>
+                        Email di Notifica
+                      </label>
+                      <Input 
+                        type="email"
+                        value={notificationEmail} 
+                        onChange={(e) => setNotificationEmail(e.target.value)} 
+                        className="h-12 px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                        placeholder="inserisci@tuaemail.com"
+                      />
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        💡 Inserisci l'email dove vuoi ricevere notifiche quando un utente inizia una nuova conversazione sul chatbot widget
+                      </div>
+                    </div>
+                    
+                    {/* Info Box */}
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-start gap-3">
+                        <div className="text-blue-500 mt-0.5">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div className="text-sm text-blue-700 dark:text-blue-300">
+                          <p className="font-medium mb-1">Come funziona:</p>
+                          <ul className="space-y-1 text-xs">
+                            <li>• Riceverai un'email ogni volta che un utente avvia una nuova conversazione</li>
+                            <li>• L'email includerà il primo messaggio dell'utente e i dettagli della conversazione</li>
+                            <li>• Potrai cliccare sul link nell'email per visualizzare la conversazione completa</li>
+                            <li>• Lascia vuoto questo campo per disabilitare le notifiche</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6">
