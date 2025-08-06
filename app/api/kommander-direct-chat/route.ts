@@ -3,6 +3,9 @@ import { generateChatResponse } from '@/app/chatbot/actions';
 import type { ChatMessage } from '@/backend/lib/buildPromptServer';
 import { appendMessages, getConversation } from '@/app/conversations/actions';
 import { ObjectId } from 'mongodb';
+import { connectToDatabase } from '@/backend/lib/mongodb';
+import { sendConversationNotificationEmail } from '@/backend/lib/email';
+import type { ChatbotSettingsDocument } from '@/backend/schemas/settings';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -89,6 +92,9 @@ export async function POST(request: Request) {
       });
     }
 
+    // Controllo se è una nuova conversazione (non esisteva prima)
+    const isNewConversation = !existing;
+    
     // Salva solo il messaggio utente all'inizio
     await appendMessages(
       userId,
@@ -98,6 +104,52 @@ export async function POST(request: Request) {
       ],
       site
     );
+    
+    // Invia notifica email per nuova conversazione
+    if (isNewConversation) {
+      console.log(`[kommander-direct-chat] Nuova conversazione rilevata, invio notifica email per userId: ${userId}`);
+      
+      // Recupera le impostazioni del chatbot per ottenere l'email di notifica
+      try {
+        const { db } = await connectToDatabase();
+        const settings = await db
+          .collection<ChatbotSettingsDocument>('chatbot_settings')
+          .findOne({ userId });
+        
+        if (settings?.notificationEmail) {
+          console.log(`[kommander-direct-chat] Invio email di notifica a: ${settings.notificationEmail}`);
+          
+          // Prepara i dati per l'email
+          const chatbotName = settings.name || 'Kommander.ai';
+          const siteDomain = site || 'sito web sconosciuto';
+          
+          // Invia l'email di notifica in modo asincrono (non bloccare la risposta)
+          setImmediate(async () => {
+            try {
+              const emailResult = await sendConversationNotificationEmail(
+                settings.notificationEmail!,
+                chatbotName,
+                message,
+                siteDomain,
+                convId
+              );
+              
+              if (emailResult.success) {
+                console.log(`[kommander-direct-chat] Email di notifica inviata con successo per conversazione: ${convId}`);
+              } else {
+                console.error(`[kommander-direct-chat] Errore nell'invio email di notifica:`, emailResult.error);
+              }
+            } catch (emailError) {
+              console.error(`[kommander-direct-chat] Eccezione durante l'invio email:`, emailError);
+            }
+          });
+        } else {
+          console.log(`[kommander-direct-chat] Nessun email di notifica configurata per userId: ${userId}`);
+        }
+      } catch (settingsError) {
+        console.error(`[kommander-direct-chat] Errore nel recupero impostazioni per notifica email:`, settingsError);
+      }
+    }
 
     // Simula lo streaming della risposta completa per compatibilità con il widget
     const stream = new ReadableStream({
