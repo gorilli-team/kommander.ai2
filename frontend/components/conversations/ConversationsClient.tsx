@@ -60,7 +60,20 @@ interface Props {
 
 export default function ConversationsClient({ conversations: initial }: Props) {
   const [conversations, setConversations] = useState(() => initial || []);
-  const [selectedId, setSelectedId] = useState(() => initial?.[0]?.id || '');
+  // Check URL parameter for conversation ID
+  const [selectedId, setSelectedId] = useState(() => {
+    // Server-side rendering safe URL parameter extraction
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const conversationIdFromUrl = urlParams.get('id');
+      // Verify that the conversation ID exists in initial data
+      if (conversationIdFromUrl && initial?.some(c => c.id === conversationIdFromUrl)) {
+        console.log('[ConversationsClient] Found conversation ID in URL:', conversationIdFromUrl);
+        return conversationIdFromUrl;
+      }
+    }
+    return initial?.[0]?.id || '';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBy, setFilterBy] = useState<'all' | 'bot' | 'agent'>('all');
   const [siteFilter, setSiteFilter] = useState<'all' | string>('all');
@@ -106,6 +119,62 @@ export default function ConversationsClient({ conversations: initial }: Props) {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+  
+  // Effect to handle URL parameters after mount
+  useEffect(() => {
+    if (!isMounted || typeof window === 'undefined') return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const conversationIdFromUrl = urlParams.get('id');
+    
+    if (conversationIdFromUrl && conversationIdFromUrl !== selectedId) {
+      console.log('[ConversationsClient] URL conversation ID changed:', conversationIdFromUrl);
+      
+      // Check if conversation exists in current data
+      const existsInCurrent = conversations.some(c => c.id === conversationIdFromUrl);
+      
+      if (existsInCurrent) {
+        console.log('[ConversationsClient] Conversation found in current data, selecting it');
+        setSelectedId(conversationIdFromUrl);
+      } else {
+        console.log('[ConversationsClient] Conversation not found in current data, fetching specific conversation');
+        
+        // Try to fetch the specific conversation
+        const fetchSpecificConversation = async () => {
+          try {
+            const response = await fetch(`/api/conversations/${conversationIdFromUrl}`);
+            if (response.ok) {
+              const conversationData = await response.json();
+              console.log('[ConversationsClient] Fetched specific conversation:', conversationData);
+              
+              // Add the conversation to our list if it doesn't exist
+              setConversations(prev => {
+                const exists = prev.some(c => c.id === conversationIdFromUrl);
+                if (!exists) {
+                  return [conversationData, ...prev];
+                }
+                return prev;
+              });
+              
+              setSelectedId(conversationIdFromUrl);
+            } else if (response.status === 404) {
+              console.warn('[ConversationsClient] Conversation not found (404):', conversationIdFromUrl);
+              // Remove the invalid ID from URL
+              const newUrl = new URL(window.location.href);
+              newUrl.searchParams.delete('id');
+              window.history.replaceState({}, '', newUrl.toString());
+            } else {
+              console.error('[ConversationsClient] Error fetching specific conversation:', response.status);
+            }
+          } catch (error) {
+            console.error('[ConversationsClient] Error fetching specific conversation:', error);
+          }
+        };
+        
+        fetchSpecificConversation();
+      }
+    }
+  }, [isMounted, selectedId, conversations]);
   
   // Effect to reload conversations when context changes
   useEffect(() => {

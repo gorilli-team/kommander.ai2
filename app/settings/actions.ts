@@ -16,14 +16,17 @@ export async function getSettings(): Promise<ChatbotSettingsDocument | null> {
   return doc || null;
 }
 
-export async function saveSettings(data: Partial<ChatbotSettingsDocument>) {
+export async function saveSettings(data: Partial<ChatbotSettingsDocument>, contextId?: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: 'Not authenticated' };
-  const userId = session.user.id;
+  
+  // Use contextId if provided, otherwise use session user id
+  const userId = contextId || session.user.id;
   const { db } = await connectToDatabase();
 
   const parsed = ChatbotSettingsSchema.omit({ _id: true, userId: true, createdAt: true, updatedAt: true }).partial().safeParse(data);
   if (!parsed.success) {
+    console.error('[settings/actions.ts] Validation error:', parsed.error);
     return { error: 'Invalid data' };
   }
 
@@ -31,6 +34,9 @@ export async function saveSettings(data: Partial<ChatbotSettingsDocument>) {
     $set: { ...parsed.data, updatedAt: new Date() },
     $setOnInsert: { userId, createdAt: new Date() },
   };
+  
+  console.log('[settings/actions.ts] Saving settings for userId:', userId, 'data:', parsed.data);
+  
   await db
     .collection<ChatbotSettingsDocument>('chatbot_settings')
     .updateOne({ userId }, update, { upsert: true });

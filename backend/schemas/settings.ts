@@ -17,6 +17,7 @@ export const ChatbotSettingsSchema = z.object({
     'ironico',
     'professionista',
   ])).max(3).default([]),
+  notificationEmail: z.string().email().optional(), // Email per notifiche nuove conversazioni
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
