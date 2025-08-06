@@ -584,9 +584,15 @@ ${truncatedContent}
           if (msgs.length) {
             lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
           }
+        } else if (res.status !== 404) {
+          // Solo logga errori che non sono 404 (conversazione non trovata è normale per nuove conv)
+          console.error(`Error fetching initial conversation (${res.status}):`, res.statusText);
         }
       } catch (err) {
-        console.error("Error fetching initial conversation:", err);
+        // Solo logga errori che non sono di rete 404
+        if (!err.message?.includes('404') && !err.message?.includes('Not Found')) {
+          console.error("Error fetching initial conversation:", err);
+        }
       }
     };
 
@@ -661,9 +667,15 @@ ${truncatedContent}
             
             setIsTyping(false); // Stop typing indicator if new messages arrive
           }
+        } else if (res.status !== 404) {
+          // Solo logga errori che non sono 404 (conversazione non trovata è normale per nuove conv)
+          console.error(`Error polling for updates (${res.status}):`, res.statusText);
         }
       } catch (err) {
-        console.error("Error polling for updates:", err);
+        // Solo logga errori che non sono di rete 404
+        if (!err.message?.includes('404') && !err.message?.includes('Not Found')) {
+          console.error("Error polling for updates:", err);
+        }
       }
     };
 
