@@ -98,8 +98,15 @@ export async function createFaq(data: unknown, context?: { type: 'personal' | 'o
     return { error: 'User not authenticated. Please log in.' };
   }
 
-  const userId = organizationContext === 'personal' ? session?.user?.id : undefined;
+  // SECURITY FIX: Always ensure FAQs have a valid userId, even in organization context
+  const userId = session?.user?.id; // Always get userId from session
   const organizationId = organizationContext === 'organization' ? context?.organizationId : undefined;
+
+  // SECURITY CHECK: Ensure we always have a valid userId
+  if (!userId) {
+    console.error('[app/training/actions.ts] createFaq: No valid userId available.');
+    return { error: 'User authentication required.' };
+  }
 
   // We don't expect userId from the client, so we parse without it first
   const clientDataSchema = FaqSchema.omit({ userId: true });
@@ -120,7 +127,7 @@ export async function createFaq(data: unknown, context?: { type: 'personal' | 'o
     // Embedding functionality removed - not available in this version
     
     const result = await db.collection<Omit<Faq, 'id'>>('faqs').insertOne({
-      ...userId ? { userId } : {},
+      userId, // SECURITY FIX: Always include userId (we validated it exists above)
       ...organizationId ? { organizationId } : {},
       question,
       answer,
@@ -152,9 +159,21 @@ export async function getFaqs(context?: { type: 'personal' | 'organization', org
 
   try {
     const { db } = await connectToDatabase();
-    const query = organizationContext === 'personal' ? { userId: userId } : { organizationId: context?.organizationId };
+    
+    // SECURITY FIX: Always ensure proper user isolation
+    let query: any;
+    if (organizationContext === 'personal') {
+      query = { userId: userId };
+    } else {
+      // For organization context, ensure FAQ has valid userId AND belongs to organization
+      query = {
+        organizationId: context?.organizationId,
+        userId: { $exists: true, $ne: null, $ne: '' } // Prevent corrupted FAQs from being included
+      };
+    }
+    
     const faqsFromDb = await db.collection('faqs').find(query).sort({ createdAt: -1 }).toArray();
-    console.log(`[app/training/actions.ts] getFaqs: Fetched ${faqsFromDb.length} FAQs for user: ${userId}.`);
+    console.log(`[app/training/actions.ts] getFaqs: Fetched ${faqsFromDb.length} FAQs for user: ${userId} with secure query.`);
     
     return faqsFromDb.map(faqDbObject => {
       const plainFaq: FaqDisplayItem = {
@@ -208,12 +227,13 @@ export async function updateFaq(id: string, data: unknown, context?: { type: 'pe
   try {
     const { db } = await connectToDatabase();
     
-    // Build query based on context
+    // Build query based on context - SECURITY FIX: Always ensure proper user isolation
     let query: any = { _id: new ObjectId(id) };
     if (organizationContext === 'personal') {
       query.userId = userId;
     } else if (organizationContext === 'organization') {
       query.organizationId = context?.organizationId;
+      query.userId = { $exists: true, $ne: null, $ne: '' }; // Prevent corrupted FAQs from being accessed
     }
     
     // Check if question has changed to decide whether to regenerate embedding
