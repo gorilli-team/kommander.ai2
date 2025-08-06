@@ -22,7 +22,14 @@ export async function connectToDatabase(): Promise<{ client: MongoClient, db: Db
   const uri = process.env.MONGODB_URI;
   if (!uri) {
     console.error('[backend/lib/mongodb.ts] CRITICAL: MONGODB_URI environment variable is not defined.');
+    console.error('[backend/lib/mongodb.ts] Available env vars:', Object.keys(process.env).filter(key => key.includes('MONGO')));
     throw new Error('Please define the MONGODB_URI environment variable inside .env');
+  }
+  
+  // Validate URI format
+  if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
+    console.error('[backend/lib/mongodb.ts] CRITICAL: Invalid MONGODB_URI format. URI value:', uri);
+    throw new Error('MONGODB_URI must start with mongodb:// or mongodb+srv://');
   }
   console.log(`[backend/lib/mongodb.ts] Attempting to connect to MongoDB. URI starts with: ${uri.substring(0, uri.indexOf('@') > 0 ? uri.indexOf('@') : 30)}...`);
 
