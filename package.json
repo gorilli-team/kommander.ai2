@@ -81,6 +81,7 @@
     "remark-gfm": "^4.0.1",
     "resend": "^3.5.0",
     "sentiment": "^5.0.2",
+    "snappy": "^7.3.1",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "stripe": "^18.3.0",
