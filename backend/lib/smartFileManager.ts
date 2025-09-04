@@ -327,9 +327,15 @@ export async function getSmartFiles(
         
         const fileProcessTime = Date.now() - fileStartTime;
         
+        // Per i CSV usiamo il contenuto completo senza troncamenti
+        const isCsv = fileMeta.originalFileType === 'text/csv';
+        const finalContent = isCsv
+          ? content
+          : (content.length > 8000 ? content.substring(0, 8000) + '\n[...contenuto troncato...]' : content);
+
         processedFiles.push({
           fileName: fileMeta.fileName,
-          content: content.length > 8000 ? content.substring(0, 8000) + '\n[...contenuto troncato...]' : content,
+          content: finalContent,
           summary: summaries.get(fileMeta.gridFsFileId.toString()),
           relevanceScore,
           processingTime: fileProcessTime
