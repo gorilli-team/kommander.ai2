@@ -104,6 +104,34 @@ export async function getDatasetByFileName(userId: string, fileName: string): Pr
   return db.collection<CsvDatasetDocument>('csv_datasets').findOne({ userId, fileName });
 }
 
+export async function getLatestCsvDataset(userId: string): Promise<CsvDatasetDocument | null> {
+  const { db } = await connectToDatabase();
+  return db.collection<CsvDatasetDocument>('csv_datasets').find({ userId }).sort({ createdAt: -1 }).limit(1).next();
+}
+
+export async function findCsvDatasetForQuery(userId: string, query: string): Promise<CsvDatasetDocument | null> {
+  const { db } = await connectToDatabase();
+  const lower = query.toLowerCase();
+  // Very simple heuristics: prioritize explicit keywords
+  const keywords: string[] = [];
+  if (lower.includes('nolok')) keywords.push('nolok');
+  // fallback: extract alphanumeric words with len>=3
+  if (keywords.length === 0) {
+    const words = (lower.match(/[a-z0-9]{3,}/gi) || []).slice(0, 5);
+    keywords.push(...words);
+  }
+  if (keywords.length > 0) {
+    const pattern = new RegExp(keywords.join('|'), 'i');
+    const byName = await db.collection<CsvDatasetDocument>('csv_datasets')
+      .find({ userId, $or: [{ fileName: { $regex: pattern } }, { alias: { $regex: pattern } }] })
+      .sort({ createdAt: -1 })
+      .limit(1)
+      .next();
+    if (byName) return byName;
+  }
+  return getLatestCsvDataset(userId);
+}
+
 export async function countRows(datasetId: ObjectId): Promise<number> {
   const { db } = await connectToDatabase();
   const ds = await db.collection<CsvDatasetDocument>('csv_datasets').findOne({ _id: datasetId });
