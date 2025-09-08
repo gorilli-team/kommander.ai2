@@ -12,9 +12,8 @@ import {
   PieChart, Pie, Cell, LineChart, Line, Area, AreaChart
 } from 'recharts';
 import { 
-  MessageSquare, FileText, Clock, TrendingUp, Users, 
-  Star, Search, Download, RefreshCw, Calendar,
-  HelpCircle, BookOpen, Zap, Target
+  MessageSquare, FileText, Clock,
+  Star, RefreshCw
 } from 'lucide-react';
 
 interface AnalyticsData {
@@ -61,32 +60,62 @@ export default function AnalyticsPage() {
   const [sentimentData, setSentimentData] = useState<any>(null);
   const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month'>('week');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [unauthorized, setUnauthorized] = useState<boolean>(false);
 
   useEffect(() => {
-    fetchAnalytics();
-    fetchSentimentAnalytics();
+    let isCancelled = false;
+    const doFetch = async () => {
+      await Promise.all([fetchAnalytics(), fetchSentimentAnalytics()]);
+      if (!isCancelled) setLoading(false);
+    };
+    setLoading(true);
+    setError(null);
+    setUnauthorized(false);
+    doFetch();
+    return () => {
+      isCancelled = true;
+    };
   }, [timeframe]);
 
   const fetchAnalytics = async () => {
-    setLoading(true);
     try {
-      const response = await fetch(`/api/analytics?timeframe=${timeframe}`);
+      const response = await fetch(`/api/analytics?timeframe=${timeframe}`, { cache: 'no-store' });
+      if (!response.ok) {
+        if (response.status === 401) {
+          setUnauthorized(true);
+        } else {
+          setError(`Errore caricamento analytics (${response.status})`);
+        }
+        setData(null);
+        return;
+      }
       const analyticsData = await response.json();
       setData(analyticsData);
     } catch (error) {
       console.error('Error fetching analytics:', error);
-    } finally {
-      setLoading(false);
+      setError('Errore di rete durante il caricamento degli analytics');
+      setData(null);
     }
   };
 
   const fetchSentimentAnalytics = async () => {
     try {
-      const response = await fetch(`/api/analytics/sentiment?timeframe=${timeframe}`);
+      const response = await fetch(`/api/analytics/sentiment?timeframe=${timeframe}`, { cache: 'no-store' });
+      if (!response.ok) {
+        if (response.status === 401) {
+          setUnauthorized(true);
+        } else {
+          console.warn('Errore caricamento sentiment:', response.status);
+        }
+        setSentimentData(null);
+        return;
+      }
       const sentimentData = await response.json();
       setSentimentData(sentimentData);
     } catch (error) {
       console.error('Error fetching sentiment analytics:', error);
+      setSentimentData(null);
     }
   };
 
@@ -101,14 +130,39 @@ export default function AnalyticsPage() {
     );
   }
 
+  if (unauthorized) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center space-y-3">
+              <p className="font-medium">Devi effettuare l’accesso per visualizzare gli analytics.</p>
+              <div className="flex items-center justify-center gap-2">
+                <Button onClick={fetchAnalytics} variant="outline">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Riprova
+                </Button>
+                <a href="/login" className="underline text-primary">Vai al login</a>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!data) {
     return (
       <div className="container mx-auto p-6">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-center">
-              <p>Nessun dato di analytics disponibile</p>
-              <Button onClick={fetchAnalytics} className="mt-4">
+            <div className="text-center space-y-2">
+              {error ? (
+                <p className="text-red-600">{error}</p>
+              ) : (
+                <p>Nessun dato di analytics disponibile</p>
+              )}
+              <Button onClick={fetchAnalytics} className="mt-2">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Riprova
               </Button>
