@@ -198,15 +198,26 @@ export default function AnalyticsPage() {
             <RefreshCw className="w-4 h-4" />
           </Button>
           {process.env.NODE_ENV !== 'production' && (
-            <Button
-              onClick={async () => {
-                await fetch(`/api/analytics/seed?days=7&perDay=25`, { method: 'POST' });
-                await Promise.all([fetchAnalytics(), fetchSentimentAnalytics()]);
-              }}
-              variant="outline"
-            >
-              Dati demo
-            </Button>
+            <>
+              <Button
+                onClick={async () => {
+                  await fetch(`/api/analytics/seed?days=7&perDay=25`, { method: 'POST' });
+                  await Promise.all([fetchAnalytics(), fetchSentimentAnalytics()]);
+                }}
+                variant="outline"
+              >
+                Dati demo
+              </Button>
+              <Button
+                onClick={async () => {
+                  await fetch(`/api/analytics/backfill?days=90&force=true`, { method: 'POST' });
+                  await Promise.all([fetchAnalytics(), fetchSentimentAnalytics()]);
+                }}
+                variant="outline"
+              >
+                Backfill
+              </Button>
+            </>
           )}
         </div>
       </div>

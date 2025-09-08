@@ -34,7 +34,11 @@ export async function GET(request: NextRequest) {
       conversations.map(conv => ({
         id: conv._id.toString(),
         userId: conv.userId,
-        messages: conv.messages || []
+        messages: (conv.messages || []).map((m: any) => ({
+          content: (m.content ?? m.text ?? ''),
+          role: m.role,
+          timestamp: new Date(m.timestamp)
+        }))
       }))
     );
 
@@ -142,7 +146,11 @@ export async function POST(request: NextRequest) {
     const analysis = await sentimentAnalysisService.analyzeFullConversation(
       conversation._id.toString(),
       conversation.userId,
-      conversation.messages || []
+      (conversation.messages || []).map((m: any) => ({
+        content: (m.content ?? m.text ?? ''),
+        role: m.role,
+        timestamp: new Date(m.timestamp)
+      }))
     );
 
     // Store analysis result
