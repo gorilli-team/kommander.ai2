@@ -42,7 +42,7 @@ export async function POST(request: Request) {
           traits: specificTraits,
           response: result.response,
           error: result.error,
-          sources: result.sources
+          sources: 0
         },
         { headers: corsHeaders }
       );
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
           error: result.error,
           hasLinks: result.response ? result.response.includes('http') : false,
           wordCount: result.response ? result.response.split(' ').length : 0,
-          sources: result.sources?.length || 0
+          sources: 0
         });
         
         // Pausa per evitare rate limiting

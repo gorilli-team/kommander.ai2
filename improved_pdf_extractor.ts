@@ -38,7 +38,7 @@ async function extractTextFromBuffer(buffer: Buffer, fileType: string, fileName:
             console.log(`[SmartFileManager] Fallback riuscito per ${fileName}`);
             return fallbackData.text.trim();
           }
-        } catch (fallbackError) {
+        } catch (fallbackError: any) {
           console.warn(`[SmartFileManager] Fallback fallito: ${fallbackError.message}`);
         }
         

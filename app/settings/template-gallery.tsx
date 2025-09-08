@@ -36,7 +36,22 @@ export function TemplateGallery({ onApplyTemplate, currentSettings }: TemplateGa
   const handleApplyTemplate = (template: PersonalityTemplate) => {
     const settings = convertTemplateToSettings(template);
     onApplyTemplate(settings);
-    saveSettings(settings);
+    // Map traits to backend expected Italian values before saving
+    const traitMap: Record<string, string> = {
+      adventurous: 'avventuroso',
+      confident: 'fiducioso',
+      convincing: 'convincente',
+      energetic: 'energetico',
+      friendly: 'amichevole',
+      fun: 'divertente',
+      ironic: 'ironico',
+      professional: 'professionista',
+    };
+    const mapped = {
+      ...settings,
+      traits: Array.isArray(settings.traits) ? settings.traits.map((t: string) => traitMap[t] || t).slice(0, 3) : [],
+    } as any;
+    saveSettings(mapped as any);
   };
 
   const handleWizardAnswer = (questionId: string, answer: string) => {
@@ -189,8 +204,8 @@ export function TemplateGallery({ onApplyTemplate, currentSettings }: TemplateGa
                 <Card 
                   key={template.id} 
                   className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 dark:hover:border-blue-800 cursor-pointer"
-                  onClick={() => setSelectedTemplate(template)}
                 >
+                  <div onClick={() => setSelectedTemplate(template)} role="button" tabIndex={0} className="outline-none">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3">
@@ -240,6 +255,7 @@ export function TemplateGallery({ onApplyTemplate, currentSettings }: TemplateGa
                       Apply Template
                     </Button>
                   </CardContent>
+                  </div>
                 </Card>
               ))}
             </div>

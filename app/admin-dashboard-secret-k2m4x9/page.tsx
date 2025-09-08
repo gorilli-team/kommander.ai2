@@ -347,7 +347,7 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {clientAnalysis?.detailedAnalyses.slice(0, 10).map((client, index) => (
+                  {clientAnalysis?.detailedAnalyses.slice(0, 10).map((client: any, index: number) => (
                     <div key={client.clientId} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center font-bold text-blue-600">

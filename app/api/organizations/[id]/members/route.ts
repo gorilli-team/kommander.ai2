@@ -7,7 +7,17 @@ import { z } from 'zod';
 const UpdateMemberSchema = z.object({
   role: z.enum(['admin', 'manager', 'user', 'viewer', 'guest']).optional(),
   status: z.enum(['active', 'inactive', 'suspended']).optional(),
-  permissions: z.array(z.string()).optional()
+  permissions: z.array(z.enum([
+    'read_organization',
+    'manage_members',
+    'invite_users',
+    'remove_users',
+    'manage_invitations',
+    'manage_organization',
+    'manage_billing',
+    'access_analytics',
+    'admin_access',
+  ])).optional()
 });
 
 export async function GET(

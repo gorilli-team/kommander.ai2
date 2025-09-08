@@ -52,7 +52,7 @@ export async function GET(
     // Mappa le conversazioni per includere informazioni utili
     const formattedConversations = conversations.map(conv => {
       // Trova il primo messaggio dell'utente per usarlo come preview
-      const firstUserMessage = conv.messages?.find((msg: any) => msg.role === 'user');
+      const firstUserMessage: any = (conv.messages as any)?.find((msg: any) => msg.role === 'user');
       const lastMessage = conv.messages?.[conv.messages.length - 1];
       
       // Support both 'text' and 'content' fields for backward compatibility

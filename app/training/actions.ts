@@ -168,7 +168,7 @@ export async function getFaqs(context?: { type: 'personal' | 'organization', org
       // For organization context, ensure FAQ has valid userId AND belongs to organization
       query = {
         organizationId: context?.organizationId,
-        userId: { $exists: true, $ne: null, $ne: '' } // Prevent corrupted FAQs from being included
+        userId: { $exists: true, $nin: [null, ''] } // Prevent corrupted FAQs from being included
       };
     }
     
@@ -233,7 +233,7 @@ export async function updateFaq(id: string, data: unknown, context?: { type: 'pe
       query.userId = userId;
     } else if (organizationContext === 'organization') {
       query.organizationId = context?.organizationId;
-      query.userId = { $exists: true, $ne: null, $ne: '' }; // Prevent corrupted FAQs from being accessed
+      query.userId = { $exists: true, $nin: [null, ''] }; // Prevent corrupted FAQs from being accessed
     }
     
     // Check if question has changed to decide whether to regenerate embedding

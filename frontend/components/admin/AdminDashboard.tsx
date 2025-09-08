@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
-import { fetcher } from '@/frontend/lib/utils';
 
 const AdminDashboard = () => {
-  const [costSummary, setCostSummary] = useState(null);
-  const [clientAnalysis, setClientAnalysis] = useState(null);
-  const [error, setError] = useState(null);
+  type CostSummary = { totalCost: number; totalTokens: number; averageCostPerRequest: number };
+  type ClientAnalysis = { summary: { totalClients: number; highRiskClients: number; mediumRiskClients: number; lowRiskClients: number } };
+  const [costSummary, setCostSummary] = useState<CostSummary | null>(null);
+  const [clientAnalysis, setClientAnalysis] = useState<ClientAnalysis | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCostSummary = async () => {
       try {
-        const response = await fetcher('/api/admin/cost-summary', {
+        const response = await fetch('/api/admin/cost-summary', {
           headers: { 'x-admin-secret': 'admin-k2m4x9-secret' }
         });
-        setCostSummary(response.data);
+        const data = await response.json();
+        setCostSummary(data);
       } catch (err) {
         setError('Failed to fetch cost summary');
       }
@@ -20,10 +22,11 @@ const AdminDashboard = () => {
 
     const fetchClientAnalysis = async () => {
       try {
-        const response = await fetcher('/api/admin/client-analysis', {
+        const response = await fetch('/api/admin/client-analysis', {
           headers: { 'x-admin-secret': 'admin-k2m4x9-secret' }
         });
-        setClientAnalysis(response.data);
+        const data = await response.json();
+        setClientAnalysis(data);
       } catch (err) {
         setError('Failed to fetch client analysis');
       }

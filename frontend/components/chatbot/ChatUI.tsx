@@ -25,7 +25,7 @@ function ChatMessage({ message }: { message: Message }) {
   const isAssistant = message.role === 'assistant';
   const isAgent = message.role === 'agent';
   const isSystem = message.role === 'system';
-  const hasSources = message.sources && message.sources.length > 0;
+  const hasSources = Array.isArray((message as any).sources) && (message as any).sources.length > 0;
 
   return (
     <div
@@ -66,13 +66,13 @@ function ChatMessage({ message }: { message: Message }) {
               className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
             >
               <FileText className="w-3 h-3 mr-1" />
-              Sources ({message.sources?.length})
+              Sources ({(message as any).sources?.length})
               {showSources ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
             </Button>
             
             {showSources && (
               <div className="mt-1 space-y-1">
-                {message.sources?.map((source, index) => (
+                {(message as any).sources?.map((source: any, index: number) => (
                   <Badge key={index} variant="secondary" className="text-xs mr-1 mb-1">
                     {source.type === 'faq' ? (
                       <><HelpCircle className="w-3 h-3 mr-1" />FAQ: {source.title}</>

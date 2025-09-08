@@ -92,14 +92,11 @@ export default function AdvancedWidget({ config, onConfigChange }: AdvancedWidge
     <div className={`fixed z-50 ${getPositionClasses()}`}>
       {/* Chat Widget */}
       {isOpen ? (
+        <div style={{ backgroundColor: config.theme === 'dark' ? '#1f2937' : '#ffffff', borderColor: config.primaryColor }}>
         <Card 
           className={`w-80 h-96 shadow-2xl transition-all duration-300 ${
             isMinimized ? 'h-12' : 'h-96'
           }`}
-          style={{ 
-            backgroundColor: config.theme === 'dark' ? '#1f2937' : '#ffffff',
-            borderColor: config.primaryColor 
-          }}
         >
           {/* Header */}
           <div 
@@ -221,6 +218,7 @@ export default function AdvancedWidget({ config, onConfigChange }: AdvancedWidge
             </>
           )}
         </Card>
+        </div>
       ) : (
         /* Chat Button */
         <Button

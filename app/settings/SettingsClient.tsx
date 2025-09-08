@@ -35,12 +35,12 @@ interface Props {
 export default function SettingsClient({ initialSettings }: Props) {
   const { data: session } = useSession();
   const { currentContext, currentOrganization, getCurrentContextId } = useOrganization();
-  const contextId = getCurrentContextId() || session?.user.id;
+  const contextId = getCurrentContextId() || session?.user?.id;
   
   console.log('[SettingsClient] Current context:', currentContext);
   console.log('[SettingsClient] Current organization:', currentOrganization);
   console.log('[SettingsClient] Context ID:', contextId);
-  console.log('[SettingsClient] Session user ID:', session?.user.id);
+  console.log('[SettingsClient] Session user ID:', session?.user?.id);
 
   const [name, setName] = useState(initialSettings?.name || 'Kommander.ai');
   const [color, setColor] = useState(initialSettings?.color || '#6366f1');
@@ -111,7 +111,19 @@ export default function SettingsClient({ initialSettings }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    await saveSettings({ name, color, personality, traits, notificationEmail }, contextId);
+    // Map English traits to Italian expected by backend schema
+    const traitMap: Record<string, string> = {
+      adventurous: 'avventuroso',
+      confident: 'fiducioso',
+      convincing: 'convincente',
+      energetic: 'energetico',
+      friendly: 'amichevole',
+      fun: 'divertente',
+      ironic: 'ironico',
+      professional: 'professionista',
+    };
+    const mappedTraits = (traits as string[]).map(t => traitMap[t] || t).slice(0, 3);
+    await saveSettings({ name, color, personality, traits: mappedTraits as any, notificationEmail }, contextId);
     setSaving(false);
   };
 
@@ -123,12 +135,13 @@ export default function SettingsClient({ initialSettings }: Props) {
       setColor(templateSettings.appearance.primaryColor);
     }
     if (templateSettings.behavior?.formality) {
-      const formalityMap = {
+      const formalityMap: Record<'casual' | 'professional' | 'formal', string> = {
         casual: 'casual',
         professional: 'neutral', 
         formal: 'formal'
       };
-      setPersonality(formalityMap[templateSettings.behavior.formality] || 'neutral');
+      const key = templateSettings.behavior.formality as 'casual' | 'professional' | 'formal';
+      setPersonality(formalityMap[key] || 'neutral');
     }
     if (templateSettings.personality?.traits) {
       const availableTraits = traitOptions.map(t => t.value);

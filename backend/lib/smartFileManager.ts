@@ -50,7 +50,7 @@ async function extractTextFromBuffer(buffer: Buffer, fileType: string, fileName:
           console.log(`[SmartFileManager] pdftotext riuscito per ${fileName}: ${alternativeResult.length} caratteri`);
           return alternativeResult;
         }
-      } catch (altError) {
+      } catch (altError: any) {
         console.warn(`[SmartFileManager] pdftotext fallito per ${fileName}:`, altError.message);
       }
       
@@ -95,7 +95,7 @@ async function extractTextFromBuffer(buffer: Buffer, fileType: string, fileName:
               console.log(`[SmartFileManager] Fallback riuscito per ${fileName}`);
               return fallbackData.text.trim();
             }
-          } catch (fallbackError) {
+          } catch (fallbackError: any) {
             console.warn(`[SmartFileManager] Fallback fallito: ${fallbackError.message}`);
           }
           
@@ -126,7 +126,7 @@ async function extractTextFromBuffer(buffer: Buffer, fileType: string, fileName:
               console.log(`[SmartFileManager] Workaround riuscito per ${fileName}`);
               return workaroundData.text.trim();
             }
-          } catch (workaroundError) {
+          } catch (workaroundError: any) {
             console.warn(`[SmartFileManager] Workaround fallito per ${fileName}:`, workaroundError.message);
           }
         }
@@ -151,7 +151,7 @@ async function extractTextFromBuffer(buffer: Buffer, fileType: string, fileName:
             console.log(`[SmartFileManager] Parser alternativo riuscito per ${fileName}`);
             return alternativeResult;
           }
-        } catch (altError) {
+        } catch (altError: any) {
           console.warn(`[SmartFileManager] Parser alternativo fallito per ${fileName}:`, altError.message);
         }
         

@@ -53,10 +53,10 @@ class GdprComplianceService {
   async getUserConsent(userId: string): Promise<ConsentRecord[]> {
     const { db } = await connectToDatabase();
     
-    return await db.collection('user_consents')
+    return (await db.collection('user_consents')
       .find({ userId })
       .sort({ timestamp: -1 })
-      .toArray();
+      .toArray()) as unknown as ConsentRecord[];
   }
 
   /**
@@ -194,7 +194,7 @@ class GdprComplianceService {
   private async collectUserData(userId: string): Promise<any> {
     const { db } = await connectToDatabase();
 
-    const userData = {
+    const userData: any = {
       personalInfo: {},
       conversations: [],
       settings: {},
@@ -356,12 +356,12 @@ class GdprComplianceService {
   async getGdprRequests(limit: number = 50, offset: number = 0): Promise<GdprRequest[]> {
     const { db } = await connectToDatabase();
     
-    return await db.collection('gdpr_requests')
+    return (await db.collection('gdpr_requests')
       .find({})
       .sort({ requestDate: -1 })
       .skip(offset)
       .limit(limit)
-      .toArray();
+      .toArray()) as unknown as GdprRequest[];
   }
 
   /**
@@ -424,7 +424,7 @@ class GdprComplianceService {
     
     // Check if data retention is being enforced properly
     const policies = await db.collection('data_retention_policies').find({}).toArray();
-    const compliance = {};
+    const compliance: Record<string, any> = {};
 
     for (const policy of policies) {
       const cutoffDate = new Date();

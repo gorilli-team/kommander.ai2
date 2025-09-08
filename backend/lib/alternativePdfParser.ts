@@ -35,7 +35,7 @@ export async function extractPdfTextAlternative(buffer: Buffer, fileName: string
         console.log(`[AlternativePdfParser] Successo con pdftotext: ${text.length} caratteri`);
         return text.trim();
       }
-    } catch (pdftotextError) {
+    } catch (pdftotextError: any) {
       console.warn(`[AlternativePdfParser] pdftotext non disponibile:`, pdftotextError.message);
     }
     

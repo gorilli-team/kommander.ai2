@@ -13,7 +13,7 @@ export interface Message {
   timestamp: Date;
 }
 
-export function useChat() {
+export function useChat(_organizationId?: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();

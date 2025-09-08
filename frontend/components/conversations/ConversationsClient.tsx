@@ -491,7 +491,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                           {uniqueSites.map((site) => (
                             <DropdownMenuItem 
                               key={site} 
-                              onClick={() => setSiteFilter(site)}
+                              onClick={() => setSiteFilter(site || 'all')}
                             >
                               {site === 'all' ? 'All sites' : site}
                             </DropdownMenuItem>

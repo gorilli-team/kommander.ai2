@@ -71,8 +71,8 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
     });
     
     // Clean up global variables
-    if (window.initKommanderChatbot) {
-      delete window.initKommanderChatbot;
+      if ((window as any).initKommanderChatbot) {
+      delete (window as any).initKommanderChatbot;
     }
     
     // Reset CSS custom properties
@@ -108,7 +108,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
       document.documentElement.style.setProperty('--kommander-primary-color', settings.color);
       document.documentElement.style.setProperty('--kommander-secondary-color', settings.color);
       // Calculate contrasting text color
-      const getContrastTextColor = (hexColor) => {
+      const getContrastTextColor = (hexColor: string) => {
         const hex = hexColor.replace('#', '');
         const r = parseInt(hex.substr(0, 2), 16);
         const g = parseInt(hex.substr(2, 2), 16);
@@ -384,8 +384,8 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
       });
       
       // Clean up global variables
-      if (window.initKommanderChatbot) {
-        delete window.initKommanderChatbot;
+      if ((window as any).initKommanderChatbot) {
+        delete (window as any).initKommanderChatbot;
       }
       
       // Reset CSS custom properties

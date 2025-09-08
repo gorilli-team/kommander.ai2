@@ -55,6 +55,26 @@ async function testOrganizationService() {
     const org = await organizationService.getOrganization(testOrgId);
     console.log('✅ Organization retrieved:', org?.name);
     
+    // Add another member (mock)
+    console.log('Adding a test member...');
+    const secondUserId = '507f1f77bcf86cd799439012';
+    await organizationService.addMember({
+      organizationId: testOrgId,
+      userId: secondUserId,
+      role: 'manager',
+      status: 'active',
+      invitedBy: '507f1f77bcf86cd799439011'
+    });
+    console.log('✅ Test member added');
+
+    // Test update organization
+    console.log('Updating organization name/description...');
+    const updatedOrg = await organizationService.updateOrganization(testOrgId, '507f1f77bcf86cd799439011', {
+      name: 'Test Organization Updated',
+      description: 'Updated description'
+    });
+    console.log('✅ Organization updated:', updatedOrg?.name);
+
     // Test creazione invito
     console.log('Creating test invitation...');
     const token = await organizationService.createInvitation({
@@ -70,7 +90,7 @@ async function testOrganizationService() {
     // Test lettura invito
     const invitation = await organizationService.getInvitationByToken(token);
     console.log('✅ Invitation retrieved for email:', invitation?.email);
-    
+
     console.log('\n✅ All Organization Service tests passed!');
     return true;
     

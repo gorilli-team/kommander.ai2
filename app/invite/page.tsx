@@ -110,8 +110,8 @@ function InviteContent() {
         // Redirect to success page with organization info
         setTimeout(() => {
           const orgName = invitation?.organization?.name || 'Unknown Organization';
-          const roleDisplay = roleDisplayNames[invitation?.role as keyof typeof roleDisplayNames] || invitation?.role;
-          router.push(`/invite/success?orgName=${encodeURIComponent(orgName)}&role=${encodeURIComponent(roleDisplay)}`);
+          const roleDisplay = roleDisplayNames[invitation?.role as keyof typeof roleDisplayNames] || invitation?.role || 'member';
+          router.push(`/invite/success?orgName=${encodeURIComponent(orgName)}&role=${encodeURIComponent(String(roleDisplay))}`);
         }, 2000);
         
       } catch (err) {

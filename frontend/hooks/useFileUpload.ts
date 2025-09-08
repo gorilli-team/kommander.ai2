@@ -53,11 +53,6 @@ export function useFileUpload({ onUploadComplete }: UseFileUploadOptions = {}) {
           title: isRetry ? "Retry Failed" : "Upload Error", 
           description: response.error, 
           variant: "destructive",
-          action: {
-            altText: "Try Again",
-            label: "Retry",
-            onClick: () => retryUpload()
-          }
         });
       } else if (response.success) {
         setSuccessMessage(response.success);
@@ -77,11 +72,6 @@ export function useFileUpload({ onUploadComplete }: UseFileUploadOptions = {}) {
         title: isRetry ? "Retry Failed" : "Upload Failed", 
         description: errorMessage, 
         variant: "destructive",
-        action: {
-          altText: "Try Again",
-          label: "Retry",
-          onClick: () => retryUpload()
-        }
       });
     } finally {
       setIsUploading(false);

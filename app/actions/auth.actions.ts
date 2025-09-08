@@ -88,26 +88,26 @@ export async function resetPassword(values: unknown): Promise<{ success?: string
 
   try {
     const { db } = await connectToDatabase();
-    const user = await db.collection<UserDocument>('users').findOne({ email });
+    const user = await db.collection<UserDocument>('users').findOne({ email }) as any;
 
     if (!user) {
       console.warn('[app/actions/auth.actions.ts] User not found for email:', email);
       return { error: 'User not found. Please request a password reset again.' };
     }
 
-    if (!user.resetToken || user.resetToken !== token) {
+    if (!user?.resetToken || user.resetToken !== token) {
       console.warn('[app/actions/auth.actions.ts] Invalid reset token for user:', email);
       return { error: 'Invalid or expired reset token. Please request a new password reset.' };
     }
 
-    if (new Date() > user.resetTokenExpiresAt) {
+    if (new Date() > (user as any).resetTokenExpiresAt) {
       console.warn('[app/actions/auth.actions.ts] Expired reset token for user:', email);
       return { error: 'Reset token has expired. Please request a new password reset.' };
     }
 
     // Controlla se la nuova password è già stata utilizzata
-    if (user.previousPasswords && user.previousPasswords.length > 0) {
-      for (const prevPassword of user.previousPasswords) {
+    if ((user as any).previousPasswords && (user as any).previousPasswords.length > 0) {
+      for (const prevPassword of (user as any).previousPasswords) {
         const isPasswordReused = await bcrypt.compare(password, prevPassword);
         if (isPasswordReused) {
           console.warn('[app/actions/auth.actions.ts] Password reuse attempt for user:', email);
@@ -118,7 +118,7 @@ export async function resetPassword(values: unknown): Promise<{ success?: string
 
     const newPasswordHash = await bcrypt.hash(password, 10);
 
-    const updateResult = await db.collection('users').updateOne(
+    const updateResult = await (db as any).collection('users').updateOne(
       { _id: user._id },
       {
         $set: {
@@ -136,7 +136,7 @@ export async function resetPassword(values: unknown): Promise<{ success?: string
             $slice: -5 // Keep only the latest 5 passwords
           }
         }
-      }
+      } as any
     );
 
     if (!updateResult.modifiedCount) {

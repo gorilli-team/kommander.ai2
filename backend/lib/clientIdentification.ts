@@ -1,4 +1,4 @@
-import { getMongoClient } from './mongodb';
+import { connectToDatabase } from './mongodb';
 import { ObjectId } from 'mongodb';
 
 export interface ClientInfo {
@@ -15,7 +15,7 @@ export interface ClientInfo {
  */
 export async function getClientInfo(identifier: string): Promise<ClientInfo> {
   try {
-    const { db } = await getMongoClient();
+    const { db } = await connectToDatabase();
     
     // Prima cerca per userId diretto
     let user = null;
@@ -107,7 +107,7 @@ function extractCompanyFromEmail(email?: string): string | undefined {
  */
 export async function updateClientInfo(userId: string, updates: Partial<ClientInfo>): Promise<void> {
   try {
-    const { db } = await getMongoClient();
+    const { db } = await connectToDatabase();
     
     const updateDoc: any = {};
     if (updates.companyName) updateDoc.companyName = updates.companyName;

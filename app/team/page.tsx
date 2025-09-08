@@ -62,7 +62,7 @@ import {
 } from 'lucide-react';
 import { ClientOrganization, ClientOrganizationMember, ClientInvitation } from '@/backend/schemas/organization';
 
-type UserRoleType = 'admin' | 'manager' | 'user' | 'viewer' | 'guest';
+type UserRoleType = 'owner' | 'admin' | 'manager' | 'user' | 'viewer' | 'guest';
 
 interface InviteMemberForm {
   email: string;
@@ -97,6 +97,14 @@ export default function TeamPage() {
     slug: '',
     description: ''
   });
+
+  // Settings form state
+  const [orgSettingsForm, setOrgSettingsForm] = useState<{ name: string; description: string }>({
+    name: '',
+    description: ''
+  });
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [newOwnerUserId, setNewOwnerUserId] = useState('');
   
   // Transition states
   const [isInviting, startInviteTransition] = useTransition();
@@ -105,6 +113,10 @@ export default function TeamPage() {
   const [isRemovingMember, startRemoveMemberTransition] = useTransition();
   const [isDeletingOrg, startDeleteOrgTransition] = useTransition();
   const [isRevokingInvitation, startRevokeInvitationTransition] = useTransition();
+  const [isUpdatingOrgSettings, startUpdateOrgSettingsTransition] = useTransition();
+  const [isTransferringOwner, startTransferOwnerTransition] = useTransition();
+  const [isLeavingOrg, startLeaveOrgTransition] = useTransition();
+  const [isResendingInvitation, startResendInvitationTransition] = useTransition();
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -118,6 +130,15 @@ export default function TeamPage() {
       fetchInvitations();
     }
   }, [selectedOrg]);
+
+  // Sync settings form when opening settings modal
+  useEffect(() => {
+    if (settingsModalOpen && selectedOrg) {
+      setOrgSettingsForm({ name: selectedOrg.name, description: selectedOrg.description || '' });
+      setDeleteConfirmName('');
+      setNewOwnerUserId('');
+    }
+  }, [settingsModalOpen, selectedOrg]);
 
   const fetchOrganizations = async () => {
     try {
@@ -334,6 +355,98 @@ export default function TeamPage() {
     });
   };
 
+  const handleResendInvitation = async (invitationId: string, email: string) => {
+    startResendInvitationTransition(async () => {
+      try {
+        const response = await fetch('/api/invitations/resend', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: invitationId })
+        });
+        const data = await response.json();
+        if (!response.ok || data.success === false) {
+          throw new Error(data.error || 'Failed to resend invitation');
+        }
+        setSuccess(`Invitation for ${email} has been resent`);
+      } catch (err: any) {
+        setError(err.message || 'Failed to resend invitation');
+      }
+    });
+  };
+
+  const handleUpdateOrganization = () => {
+    if (!selectedOrg) return;
+    startUpdateOrgSettingsTransition(async () => {
+      try {
+        const response = await fetch(`/api/organizations/${selectedOrg.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: orgSettingsForm.name,
+            description: orgSettingsForm.description
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update organization');
+        }
+
+        const updated = await response.json();
+        setSelectedOrg(updated);
+        // Update organizations list entry
+        setOrganizations(prev => prev.map(o => (o.id === updated.id ? updated : o)));
+        setSuccess('Organization updated successfully');
+      } catch (err: any) {
+        setError(err.message || 'Failed to update organization');
+      }
+    });
+  };
+
+  const handleTransferOwnership = () => {
+    if (!selectedOrg || !newOwnerUserId) return;
+    if (!confirm('Are you sure you want to transfer ownership?')) return;
+
+    startTransferOwnerTransition(async () => {
+      try {
+        const response = await fetch(`/api/organizations/${selectedOrg.id}/transfer-ownership`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newOwnerUserId })
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to transfer ownership');
+        }
+        setSuccess('Ownership transferred successfully');
+        await fetchOrganizations();
+      } catch (err: any) {
+        setError(err.message || 'Failed to transfer ownership');
+      }
+    });
+  };
+
+  const handleLeaveOrganization = () => {
+    if (!selectedOrg) return;
+    if (!confirm(`Leave organization "${selectedOrg.name}"?`)) return;
+
+    startLeaveOrgTransition(async () => {
+      try {
+        const response = await fetch(`/api/organizations/${selectedOrg.id}/leave`, { method: 'POST' });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to leave organization');
+        }
+        setSuccess(`You have left "${selectedOrg.name}"`);
+        await fetchOrganizations();
+        // Clear selection if org not in list anymore
+        setSelectedOrg(null);
+      } catch (err: any) {
+        setError(err.message || 'Failed to leave organization');
+      }
+    });
+  };
+
   const copyInviteLink = (token: string) => {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     const inviteLink = `${baseUrl}/invite?token=${token}`;
@@ -351,6 +464,7 @@ export default function TeamPage() {
 
   const getRoleIcon = (role: UserRoleType) => {
     switch (role) {
+      case 'owner': return <Crown className="h-4 w-4" />;
       case 'admin': return <Crown className="h-4 w-4" />;
       case 'manager': return <Shield className="h-4 w-4" />;
       case 'user': return <Users className="h-4 w-4" />;
@@ -361,6 +475,7 @@ export default function TeamPage() {
 
   const getRoleColor = (role: UserRoleType) => {
     switch (role) {
+      case 'owner': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       case 'admin': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 'manager': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'user': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
@@ -563,7 +678,7 @@ export default function TeamPage() {
                                 {member.user?.avatar ? (
                                   <img 
                                     src={member.user.avatar} 
-                                    alt={member.user.name || member.user.email}
+                                    alt={(member.user.name || member.user.email || 'User avatar') as string}
                                     className="w-8 h-8 rounded-full object-cover"
                                   />
                                 ) : (
@@ -694,16 +809,27 @@ export default function TeamPage() {
                                       Copy Link
                                     </Button>
                                     {canManageInvitations && (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleRevokeInvitation(invitation.id, invitation.email)}
-                                        disabled={isRevokingInvitation}
-                                        className="text-destructive hover:text-destructive"
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Revoke
-                                      </Button>
+                                      <>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleResendInvitation(invitation.id, invitation.email)}
+                                          disabled={isResendingInvitation}
+                                        >
+                                          <RefreshCw className="h-4 w-4 mr-2" />
+                                          Resend
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleRevokeInvitation(invitation.id, invitation.email)}
+                                          disabled={isRevokingInvitation}
+                                          className="text-destructive hover:text-destructive"
+                                        >
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Revoke
+                                        </Button>
+                                      </>
                                     )}
                                   </>
                                 )}
@@ -888,15 +1014,88 @@ export default function TeamPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="p-4 border rounded-lg">
-              <h3 className="font-semibold mb-2">Organization Information</h3>
-              <div className="space-y-2 text-sm">
-                <div><strong>Name:</strong> {selectedOrg?.name}</div>
-                <div><strong>Slug:</strong> {selectedOrg?.slug}</div>
-                <div><strong>Members:</strong> {selectedOrg?.memberCount}</div>
-                <div><strong>Your Role:</strong> {selectedOrg?.userRole}</div>
+            {/* Editable Info */}
+            <div className="p-4 border rounded-lg space-y-3">
+              <h3 className="font-semibold">Organization Information</h3>
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <Label htmlFor="org-settings-name">Name</Label>
+                  <Input id="org-settings-name" value={orgSettingsForm.name} onChange={(e) => setOrgSettingsForm(prev => ({ ...prev, name: e.target.value }))} />
+                </div>
+                <div>
+                  <Label htmlFor="org-settings-description">Description</Label>
+                  <Textarea id="org-settings-description" value={orgSettingsForm.description} onChange={(e) => setOrgSettingsForm(prev => ({ ...prev, description: e.target.value }))} />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={handleUpdateOrganization} disabled={isUpdatingOrgSettings || !orgSettingsForm.name}>
+                  {isUpdatingOrgSettings ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </Button>
               </div>
             </div>
+
+            {/* Owner Tools */}
+            {selectedOrg?.userRole === 'owner' && (
+              <div className="p-4 border rounded-lg space-y-3">
+                <h3 className="font-semibold">Owner Tools</h3>
+                <div>
+                  <Label htmlFor="transfer-owner">Transfer Ownership</Label>
+                  <Select value={newOwnerUserId} onValueChange={(v) => setNewOwnerUserId(v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select new owner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {members
+                        .filter(m => m.userId !== (session?.user?.id || ''))
+                        .map(m => (
+                          <SelectItem key={m.userId} value={m.userId}>
+                            {m.user?.name || m.user?.email || m.userId}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleTransferOwnership} disabled={isTransferringOwner || !newOwnerUserId} variant="outline">
+                    {isTransferringOwner ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Transferring...
+                      </>
+                    ) : (
+                      'Transfer Ownership'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Leave Organization */}
+            {selectedOrg && selectedOrg.userRole !== 'owner' && (
+              <div className="p-4 border rounded-lg space-y-3">
+                <h3 className="font-semibold">Leave Organization</h3>
+                <p className="text-sm text-muted-foreground">You can leave this organization at any time.</p>
+                <div className="flex justify-end">
+                  <Button onClick={handleLeaveOrganization} disabled={isLeavingOrg} variant="outline">
+                    {isLeavingOrg ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Leaving...
+                      </>
+                    ) : (
+                      'Leave Organization'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
             
             {canDeleteOrganization && (
               <div className="p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/10">
@@ -946,18 +1145,13 @@ export default function TeamPage() {
                 </ul>
               </AlertDescription>
             </Alert>
-            <div className="bg-muted p-4 rounded-lg">
+              <div className="bg-muted p-4 rounded-lg">
               <p className="text-sm font-medium mb-2">Type the organization name to confirm:</p>
               <p className="text-sm text-muted-foreground mb-2">{selectedOrg?.name}</p>
               <Input
                 placeholder="Enter organization name"
-                onChange={(e) => {
-                  // Simple confirmation by typing org name
-                  const confirmButton = document.getElementById('delete-confirm-btn') as HTMLButtonElement;
-                  if (confirmButton) {
-                    confirmButton.disabled = e.target.value !== selectedOrg?.name;
-                  }
-                }}
+                value={deleteConfirmName}
+                onChange={(e) => setDeleteConfirmName(e.target.value)}
               />
             </div>
           </div>
@@ -969,7 +1163,7 @@ export default function TeamPage() {
               id="delete-confirm-btn"
               variant="destructive"
               onClick={handleDeleteOrganization}
-              disabled={isDeletingOrg || true} // Initially disabled
+              disabled={isDeletingOrg || deleteConfirmName !== selectedOrg?.name}
             >
               {isDeletingOrg ? (
                 <>

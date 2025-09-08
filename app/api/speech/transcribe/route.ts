@@ -65,9 +65,7 @@ export async function POST(request: NextRequest) {
 
       // Return transcription result
       return NextResponse.json({
-        text: transcription.text,
-        duration: transcription.duration || null,
-        language: transcription.language || 'en'
+        text: (transcription as any).text,
       });
 
     } catch (transcriptionError) {

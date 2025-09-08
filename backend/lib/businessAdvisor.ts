@@ -1,4 +1,4 @@
-import { createTrackedChatCompletion } from './openai';
+import { getOpenAI } from './openai';
 import { costTracker, ClientCostAnalysis } from './costTracking';
 
 export interface PricingRecommendation {
@@ -89,22 +89,13 @@ Rispondi in formato JSON con questa struttura:
 }
 `;
 
-      const completion = await createTrackedChatCompletion(
-        {
-          model: 'gpt-4-turbo',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.7,
-          max_tokens: 2000
-        },
-        {
-          endpoint: 'business-advisor-pricing',
-          userMessage: 'Pricing analysis request',
-          metadata: {
-            totalClients: totalClients,
-            avgCost: avgCostPerClient
-          }
-        }
-      );
+      const openai = getOpenAI();
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 2000
+      });
 
       const response = completion.choices[0]?.message?.content;
       if (!response) throw new Error('No response from AI advisor');
@@ -213,18 +204,13 @@ Formato JSON:
 `;
 
     try {
-      const completion = await createTrackedChatCompletion(
-        {
-          model: 'gpt-4-turbo',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.8,
-          max_tokens: 1500
-        },
-        {
-          endpoint: 'business-advisor-insights',
-          userMessage: 'Business insights analysis'
-        }
-      );
+      const openai = getOpenAI();
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.8,
+        max_tokens: 1500
+      });
 
       const response = completion.choices[0]?.message?.content;
       if (!response) return [];
@@ -262,18 +248,13 @@ Rispondi in JSON:
 }
 `;
 
-      const completion = await createTrackedChatCompletion(
-        {
-          model: 'gpt-4-turbo',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.6,
-          max_tokens: 1000
-        },
-        {
-          endpoint: 'business-advisor-market',
-          userMessage: 'Market analysis request'
-        }
-      );
+      const openai = getOpenAI();
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.6,
+        max_tokens: 1000
+      });
 
       const response = completion.choices[0]?.message?.content;
       if (!response) throw new Error('No market analysis response');
@@ -312,18 +293,13 @@ Fornisci 5-7 suggerimenti concreti per ottimizzare i costi, ordinati per impatto
 Formato JSON: {"suggestions": ["suggerimento1", "suggerimento2", ...]}
 `;
 
-      const completion = await createTrackedChatCompletion(
-        {
-          model: 'gpt-3.5-turbo',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.7,
-          max_tokens: 800
-        },
-        {
-          endpoint: 'business-advisor-optimization',
-          userMessage: 'Cost optimization analysis'
-        }
-      );
+      const openai = getOpenAI();
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 800
+      });
 
       const response = completion.choices[0]?.message?.content;
       if (!response) return this.getFallbackOptimizations();

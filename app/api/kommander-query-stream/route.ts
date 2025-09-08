@@ -323,11 +323,11 @@ export async function POST(request: Request) {
               }
             }
           }
-        } catch (error) {
+          } catch (error) {
           console.error('Stream processing error:', error);
           const errorData = JSON.stringify({
             type: 'error',
-            error: error.message || 'Stream processing error'
+            error: (error as any)?.message || 'Stream processing error'
           });
           controller.enqueue(`data: ${errorData}\n\n`);
         } finally {

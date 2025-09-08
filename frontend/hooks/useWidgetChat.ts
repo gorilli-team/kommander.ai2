@@ -92,7 +92,7 @@ const poll = async () => {
         }));
         
         // Filter out user messages from polling - they should only come from local addMessage
-        newMsgs = newMsgs.filter(msg => msg.role !== 'user');
+        newMsgs = newMsgs.filter((msg: any) => msg.role !== 'user');
         
         if (newMsgs.length) {
           lastTimestampRef.current = newMsgs[newMsgs.length - 1].timestamp.toISOString();
@@ -186,7 +186,9 @@ fetchInitial().then(() => {
         }]);
 
         while (true) {
-          const { done, value } = await reader?.read();
+          if (!reader) break;
+          const readResult = await reader.read();
+          const { done, value } = readResult;
           if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { auth } from '@/frontend/auth';
 import { organizationService } from './organizationService';
 import { PermissionType, UserRoleType } from '../schemas/organization';
 
@@ -38,7 +37,7 @@ export async function withAuth(
   try {
     // Check authentication
     if (requireAuth) {
-      const session = await getServerSession(authOptions);
+      const session = await auth();
       if (!session?.user?.id) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
@@ -81,6 +80,7 @@ export async function withAuth(
           if (requiredRole && userRole !== requiredRole) {
             // Allow higher roles (admin > manager > user > viewer > guest)
             const roleHierarchy: Record<UserRoleType, number> = {
+              owner: 6,
               admin: 5,
               manager: 4,
               user: 3,

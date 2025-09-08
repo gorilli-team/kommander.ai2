@@ -165,15 +165,21 @@ export class OrganizationService {
 
     // Get user role and permissions if userId provided
     if (userId) {
-      const membership = await this.db.collection('organization_members').findOne({
-        organizationId: new ObjectId(organizationId),
-        userId: new ObjectId(userId),
-        status: 'active'
-      });
+      // If user is owner, elevate to owner role regardless of membership role
+      if (org.ownerId?.toString?.() === userId) {
+        userRole = 'owner' as UserRoleType;
+        userPermissions = DEFAULT_ROLE_PERMISSIONS['owner'];
+      } else {
+        const membership: any = await this.db.collection('organization_members').findOne({
+          organizationId: new ObjectId(organizationId),
+          userId: new ObjectId(userId),
+          status: 'active'
+        });
 
-      if (membership) {
-        userRole = membership.role;
-        userPermissions = membership.permissions || DEFAULT_ROLE_PERMISSIONS[membership.role];
+        if (membership) {
+          userRole = membership.role as UserRoleType;
+          userPermissions = membership.permissions || DEFAULT_ROLE_PERMISSIONS[membership.role as UserRoleType];
+        }
       }
     }
 
@@ -284,23 +290,29 @@ export class OrganizationService {
     const endTime = Date.now();
     console.log(`[getUserOrganizations] Query completed in ${endTime - startTime}ms, found ${result.length} organizations`);
 
-    return result.map(org => ({
-      id: org.id.toString(),
-      name: org.name,
-      slug: org.slug,
-      description: org.description,
-      logo: org.logo,
-      website: org.website,
-      settings: org.settings,
-      ownerId: org.ownerId.toString(),
-      plan: org.plan,
-      isActive: org.isActive,
-      memberCount: org.memberCount,
-      userRole: org.userRole,
-      userPermissions: org.userPermissions || DEFAULT_ROLE_PERMISSIONS[org.userRole],
-      createdAt: org.createdAt?.toISOString(),
-      updatedAt: org.updatedAt?.toISOString()
-    }));
+    return result.map((org: any) => {
+      const resolvedRole: UserRoleType = (org.ownerId?.toString?.() === userId)
+        ? 'owner'
+        : (org.userRole || 'user');
+
+      return {
+        id: org.id.toString(),
+        name: org.name,
+        slug: org.slug,
+        description: org.description,
+        logo: org.logo,
+        website: org.website,
+        settings: org.settings,
+        ownerId: org.ownerId.toString(),
+        plan: org.plan,
+        isActive: org.isActive,
+        memberCount: org.memberCount,
+        userRole: resolvedRole,
+        userPermissions: org.userPermissions || DEFAULT_ROLE_PERMISSIONS[resolvedRole],
+        createdAt: org.createdAt?.toISOString(),
+        updatedAt: org.updatedAt?.toISOString()
+      } as ClientOrganization;
+    });
   }
 
   /**
@@ -309,7 +321,7 @@ export class OrganizationService {
   async addMember(data: {
     organizationId: string;
     userId: string;
-    role: UserRoleType;
+    role: Exclude<UserRoleType, 'owner'>;
     permissions?: PermissionType[];
     status?: 'active' | 'inactive' | 'suspended';
     invitedBy?: string;
@@ -335,7 +347,7 @@ export class OrganizationService {
       organizationId: new ObjectId(data.organizationId),
       userId: new ObjectId(data.userId),
       role: data.role,
-      permissions: data.permissions || DEFAULT_ROLE_PERMISSIONS[data.role],
+      permissions: data.permissions || DEFAULT_ROLE_PERMISSIONS[data.role as UserRoleType],
       status: data.status || 'active',
       invitedBy: data.invitedBy ? new ObjectId(data.invitedBy) : undefined,
       joinedAt: data.joinedAt || now,
@@ -389,7 +401,7 @@ export class OrganizationService {
       }
     ]).toArray();
 
-    return members.map(member => ({
+    return members.map((member: any) => ({
       id: member._id.toString(),
       organizationId: member.organizationId.toString(),
       userId: member.userId.toString(),
@@ -426,11 +438,21 @@ export class OrganizationService {
   ): Promise<boolean> {
     await this.ensureInitialized();
 
+    // Prevent modifying the organization owner via member updates
+    const org = await this.db.collection('organizations').findOne({ _id: new ObjectId(organizationId) });
+    if (org && org.ownerId?.toString?.() === userId) {
+      throw new Error('Cannot modify the organization owner via member updates');
+    }
+
     const updateData: any = {
       updatedAt: new Date()
     };
 
     if (updates.role) {
+      // Coerce 'owner' away if accidentally provided
+      if (updates.role === 'owner') {
+        throw new Error('Invalid role update: cannot set role to owner');
+      }
       updateData.role = updates.role;
       updateData.permissions = updates.permissions || DEFAULT_ROLE_PERMISSIONS[updates.role];
     }
@@ -454,6 +476,12 @@ export class OrganizationService {
   async removeMember(organizationId: string, userId: string): Promise<boolean> {
     await this.ensureInitialized();
 
+    // Prevent removing the organization owner from membership
+    const org = await this.db.collection('organizations').findOne({ _id: new ObjectId(organizationId) });
+    if (org && org.ownerId?.toString?.() === userId) {
+      throw new Error('Cannot remove the organization owner');
+    }
+
     const result = await this.db.collection('organization_members').deleteOne({
       organizationId: new ObjectId(organizationId),
       userId: new ObjectId(userId)
@@ -468,7 +496,7 @@ export class OrganizationService {
   async createInvitation(data: {
     organizationId: string;
     email: string;
-    role: UserRoleType;
+    role: Exclude<UserRoleType, 'owner'>;
     invitedBy: string;
     message?: string;
     expiresInDays?: number;
@@ -688,7 +716,13 @@ export class OrganizationService {
   ): Promise<boolean> {
     await this.ensureInitialized();
 
-    const member = await this.db.collection('organization_members').findOne({
+    // Owner has all permissions
+    const org = await this.db.collection('organizations').findOne({ _id: new ObjectId(organizationId), isActive: true });
+    if (org && org.ownerId?.toString?.() === userId) {
+      return true;
+    }
+
+    const member: any = await this.db.collection('organization_members').findOne({
       userId: new ObjectId(userId),
       organizationId: new ObjectId(organizationId),
       status: 'active'
@@ -696,7 +730,7 @@ export class OrganizationService {
 
     if (!member) return false;
 
-    const userPermissions = member.permissions || DEFAULT_ROLE_PERMISSIONS[member.role];
+    const userPermissions = member.permissions || DEFAULT_ROLE_PERMISSIONS[member.role as UserRoleType];
     return userPermissions.includes(permission);
   }
 
@@ -728,7 +762,7 @@ export class OrganizationService {
       }
     ]).toArray();
 
-    return invitations.map(inv => ({
+    return invitations.map((inv: any) => ({
       id: inv._id.toString(),
       organizationId: inv.organizationId.toString(),
       email: inv.email,
@@ -943,6 +977,225 @@ export class OrganizationService {
       console.error(`[deleteOrganization] Error deleting organization ${organizationId}:`, error);
       throw error;
     }
+  }
+  /**
+   * Update organization details (name, description, logo, website, settings, slug)
+   */
+  async updateOrganization(
+    organizationId: string,
+    requestingUserId: string,
+    updates: {
+      name?: string;
+      description?: string;
+      logo?: string;
+      website?: string;
+      settings?: any;
+      slug?: string;
+      plan?: 'free' | 'pro' | 'enterprise' | string;
+    }
+  ): Promise<ClientOrganization> {
+    await this.ensureInitialized();
+
+    // Check permissions (owner or manage_organization)
+    const org = await this.db.collection('organizations').findOne({ _id: new ObjectId(organizationId), isActive: true });
+    if (!org) throw new Error('Organization not found');
+
+    const isOwner = org.ownerId?.toString?.() === requestingUserId;
+    let allowed = isOwner;
+    if (!allowed) {
+      allowed = await this.hasPermission(requestingUserId, organizationId, 'manage_organization');
+    }
+    if (!allowed) {
+      throw new Error('Insufficient permissions to update organization');
+    }
+
+    const $set: any = { updatedAt: new Date() };
+    if (typeof updates.name === 'string') $set.name = updates.name;
+    if (typeof updates.description === 'string') $set.description = updates.description;
+    if (typeof updates.logo === 'string') $set.logo = updates.logo;
+    if (typeof updates.website === 'string') $set.website = updates.website;
+    if (updates.settings && typeof updates.settings === 'object') $set.settings = { ...org.settings, ...updates.settings };
+    if (typeof updates.plan === 'string') $set.plan = updates.plan;
+
+    // Handle slug update with uniqueness
+    if (typeof updates.slug === 'string' && updates.slug !== org.slug) {
+      const existing = await this.db.collection('organizations').findOne({ slug: updates.slug });
+      if (existing) {
+        throw new Error('Organization slug already exists');
+      }
+      $set.slug = updates.slug;
+    }
+
+    await this.db.collection('organizations').updateOne({ _id: new ObjectId(organizationId) }, { $set });
+
+    const updated = await this.getOrganization(organizationId, requestingUserId);
+    if (!updated) throw new Error('Failed to fetch updated organization');
+    return updated;
+  }
+
+  /**
+   * Transfer organization ownership
+   */
+  async transferOwnership(
+    organizationId: string,
+    currentOwnerUserId: string,
+    newOwnerUserId: string
+  ): Promise<boolean> {
+    await this.ensureInitialized();
+
+    const org = await this.db.collection('organizations').findOne({ _id: new ObjectId(organizationId), isActive: true });
+    if (!org) throw new Error('Organization not found');
+
+    if (org.ownerId?.toString?.() !== currentOwnerUserId) {
+      throw new Error('Only the current owner can transfer ownership');
+    }
+
+    // Ensure new owner is a current member
+    const newOwnerMember = await this.db.collection('organization_members').findOne({
+      organizationId: new ObjectId(organizationId),
+      userId: new ObjectId(newOwnerUserId),
+      status: 'active'
+    });
+    if (!newOwnerMember) {
+      throw new Error('New owner must be an active member of the organization');
+    }
+
+    // Start a transaction if available
+    const session = this.db.client?.startSession?.();
+    try {
+      if (session) {
+        await session.withTransaction(async () => {
+          await this.db.collection('organizations').updateOne(
+            { _id: new ObjectId(organizationId) },
+            { $set: { ownerId: new ObjectId(newOwnerUserId), updatedAt: new Date() } },
+            { session }
+          );
+
+          // Ensure the new owner is at least admin
+          if (newOwnerMember.role !== 'admin') {
+            await this.db.collection('organization_members').updateOne(
+              { organizationId: new ObjectId(organizationId), userId: new ObjectId(newOwnerUserId) },
+              { $set: { role: 'admin', permissions: DEFAULT_ROLE_PERMISSIONS['admin'], updatedAt: new Date() } },
+              { session }
+            );
+          }
+        });
+        await session.endSession();
+      } else {
+        await this.db.collection('organizations').updateOne(
+          { _id: new ObjectId(organizationId) },
+          { $set: { ownerId: new ObjectId(newOwnerUserId), updatedAt: new Date() } }
+        );
+        if (newOwnerMember.role !== 'admin') {
+          await this.db.collection('organization_members').updateOne(
+            { organizationId: new ObjectId(organizationId), userId: new ObjectId(newOwnerUserId) },
+            { $set: { role: 'admin', permissions: DEFAULT_ROLE_PERMISSIONS['admin'], updatedAt: new Date() } }
+          );
+        }
+      }
+      return true;
+    } catch (e) {
+      console.error('[transferOwnership] Error:', e);
+      if (session) await session.endSession();
+      throw e;
+    }
+  }
+
+  /**
+   * Member leaves organization (non-owner)
+   */
+  async leaveOrganization(organizationId: string, userId: string): Promise<boolean> {
+    await this.ensureInitialized();
+
+    const org = await this.db.collection('organizations').findOne({ _id: new ObjectId(organizationId), isActive: true });
+    if (!org) throw new Error('Organization not found');
+
+    if (org.ownerId?.toString?.() === userId) {
+      throw new Error('Organization owner cannot leave. Transfer ownership first.');
+    }
+
+    const membership = await this.db.collection('organization_members').findOne({
+      organizationId: new ObjectId(organizationId),
+      userId: new ObjectId(userId),
+      status: 'active'
+    });
+    if (!membership) return true; // Already not a member
+
+    if (membership.role === 'admin') {
+      const otherAdmins = await this.db.collection('organization_members').countDocuments({
+        organizationId: new ObjectId(organizationId),
+        status: 'active',
+        role: 'admin',
+        userId: { $ne: new ObjectId(userId) }
+      });
+      if (otherAdmins === 0) {
+        throw new Error('At least one admin must remain in the organization');
+      }
+    }
+
+    const result = await this.db.collection('organization_members').deleteOne({
+      organizationId: new ObjectId(organizationId),
+      userId: new ObjectId(userId)
+    });
+    return result.deletedCount > 0;
+  }
+
+  /**
+   * Get invitation by ID (for resend flow)
+   */
+  async getInvitationById(invitationId: string): Promise<ClientInvitation | null> {
+    await this.ensureInitialized();
+
+    const invitations = await this.db.collection('invitations').aggregate([
+      { $match: { _id: new ObjectId(invitationId) } },
+      {
+        $lookup: {
+          from: 'organizations',
+          localField: 'organizationId',
+          foreignField: '_id',
+          as: 'organization'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'invitedBy',
+          foreignField: '_id',
+          as: 'invitedByUser'
+        }
+      },
+      { $unwind: '$organization' },
+      { $unwind: '$invitedByUser' }
+    ]).toArray();
+
+    if (!invitations.length) return null;
+
+    const inv = invitations[0];
+    return {
+      id: inv._id.toString(),
+      organizationId: inv.organizationId.toString(),
+      email: inv.email,
+      role: inv.role,
+      permissions: inv.permissions,
+      token: inv.token,
+      status: inv.status,
+      message: inv.message,
+      invitedBy: inv.invitedBy.toString(),
+      organization: {
+        id: inv.organization._id.toString(),
+        name: inv.organization.name,
+        logo: inv.organization.logo
+      },
+      invitedByUser: {
+        id: inv.invitedByUser._id.toString(),
+        name: inv.invitedByUser.name,
+        email: inv.invitedByUser.email
+      },
+      createdAt: inv.createdAt?.toISOString(),
+      updatedAt: inv.updatedAt?.toISOString(),
+      expiresAt: inv.expiresAt.toISOString(),
+      acceptedAt: inv.acceptedAt?.toISOString()
+    };
   }
 }
 

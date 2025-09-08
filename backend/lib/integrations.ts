@@ -302,7 +302,7 @@ class IntegrationService {
    */
   private async getIntegration(integrationId: string): Promise<Integration | null> {
     const { db } = await connectToDatabase();
-    return await db.collection('integrations').findOne({ id: integrationId });
+    return (await db.collection('integrations').findOne({ id: integrationId })) as unknown as Integration | null;
   }
 
   private async updateEventStatus(integrationId: string, timestamp: Date, status: string): Promise<void> {

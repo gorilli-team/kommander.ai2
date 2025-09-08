@@ -172,7 +172,6 @@ export class SecurityService {
     const sanitized = DOMPurify.sanitize(input, {
       ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li'],
       ALLOWED_ATTR: ['href', 'title'],
-      FORBID_SCRCIPT: true,
       FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input'],
       FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
     });
@@ -223,7 +222,7 @@ export class SecurityService {
         .limit(limit)
         .toArray();
 
-      return logs.map(log => ({
+      return logs.map((log: any) => ({
         ...log,
         timestamp: new Date(log.timestamp)
       }));

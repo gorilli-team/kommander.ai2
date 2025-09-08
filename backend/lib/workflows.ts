@@ -1,4 +1,5 @@
 import { connectToDatabase } from './mongodb';
+import { ObjectId } from 'mongodb';
 import { sentimentAnalysisService } from './sentimentAnalysis';
 import { integrationService } from './integrations';
 
@@ -139,7 +140,7 @@ class WorkflowEngine {
 
     const now = new Date();
     const currentTime = now.toTimeString().slice(0, 5); // HH:mm
-    const currentDay = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    const currentDay = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(now).toLowerCase();
 
     const isInTimeRange = currentTime >= timeCondition.after && currentTime <= timeCondition.before;
     const isCorrectDay = timeCondition.days.includes(currentDay);
@@ -246,7 +247,7 @@ class WorkflowEngine {
     const { db } = await connectToDatabase();
     
     await db.collection('conversations').updateOne(
-      { _id: conversationId },
+      { _id: new ObjectId(conversationId) },
       { 
         $set: { 
           status: 'escalated',
@@ -331,7 +332,7 @@ class WorkflowEngine {
     const { db } = await connectToDatabase();
     
     await db.collection('conversations').updateOne(
-      { _id: conversationId },
+      { _id: new ObjectId(conversationId) },
       { 
         $set: { 
           assignedAgent: config.department || 'general',
@@ -355,8 +356,8 @@ class WorkflowEngine {
     };
 
     await db.collection('conversations').updateOne(
-      { _id: conversationId },
-      { $push: { messages: autoMessage } }
+      { _id: new ObjectId(conversationId) },
+      ({ $push: { messages: autoMessage } } as any)
     );
 
     return { responseSent: true };
@@ -366,7 +367,7 @@ class WorkflowEngine {
     const { db } = await connectToDatabase();
     
     await db.collection('conversations').updateOne(
-      { _id: conversationId },
+      { _id: new ObjectId(conversationId) },
       { 
         $addToSet: { 
           tags: { $each: config.tags || [] }
@@ -382,10 +383,11 @@ class WorkflowEngine {
    */
   private async getUserWorkflows(userId: string): Promise<Workflow[]> {
     const { db } = await connectToDatabase();
-    return await db.collection('workflows')
+    const results = await db.collection('workflows')
       .find({ userId, isActive: true })
       .sort({ priority: -1 })
       .toArray();
+    return results as unknown as Workflow[];
   }
 
   private determineTriggerReason(workflow: Workflow, context: any): string {
@@ -444,20 +446,21 @@ class WorkflowEngine {
 
   async getWorkflowExecutions(workflowId: string, limit: number = 50): Promise<WorkflowExecution[]> {
     const { db } = await connectToDatabase();
-    return await db.collection('workflow_executions')
+    const results = await db.collection('workflow_executions')
       .find({ workflowId })
       .sort({ triggeredAt: -1 })
       .limit(limit)
       .toArray();
+    return results as unknown as WorkflowExecution[];
   }
 
   async getWorkflowAnalytics(userId: string): Promise<any> {
     const { db } = await connectToDatabase();
     
-    const workflows = await db.collection('workflows').find({ userId }).toArray();
-    const executions = await db.collection('workflow_executions')
-      .find({ workflowId: { $in: workflows.map(w => w.id) } })
-      .toArray();
+    const workflows = (await db.collection('workflows').find({ userId }).toArray()) as unknown as Workflow[];
+    const executions = (await db.collection('workflow_executions')
+      .find({ workflowId: { $in: workflows.map((w: Workflow) => w.id) } })
+      .toArray()) as unknown as WorkflowExecution[];
 
     return {
       totalWorkflows: workflows.length,

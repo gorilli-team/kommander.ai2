@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2022-11-15',
+  apiVersion: '2025-06-30.basil',
 });
 
 // Subscription Plans
@@ -50,15 +50,20 @@ export const SUBSCRIPTION_PLANS = [
 
 export async function createCheckoutSession(customerId: string, planId: string) {
   try {
+    const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
+    if (!plan) {
+      throw new Error('Invalid planId');
+    }
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
         price_data: {
           currency: 'usd',
           product_data: {
-            name: SUBSCRIPTION_PLANS.find(plan => plan.id === planId)?.name,
+            name: plan.name,
           },
-          unit_amount: SUBSCRIPTION_PLANS.find(plan => plan.id === planId)?.price * 100,
+          unit_amount: plan.price * 100,
         },
         quantity: 1,
       }],
@@ -69,7 +74,7 @@ export async function createCheckoutSession(customerId: string, planId: string) 
     });
 
     return session.url;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating checkout session:', error);
     throw new Error('Failed to create checkout session');
   }
@@ -81,7 +86,7 @@ export async function handleWebhook(payload: Buffer, signature: string | undefin
 
   try {
     event = stripe.webhooks.constructEvent(payload, signature || '', endpointSecret);
-  } catch (err) {
+  } catch (err: any) {
     console.error(`Webhook signature verification failed: ${err.message}`);
     throw new Error(err.message);
   }

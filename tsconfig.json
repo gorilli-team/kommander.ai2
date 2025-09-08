@@ -1,8 +1,11 @@
-
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -21,29 +24,54 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/frontend/*": ["frontend/*"],
-      "@/backend/*": ["backend/*"],
-      "@/app/*": ["app/*"],
-      "@/components/*": ["frontend/components/*"],
-      "@/ui/*": ["frontend/components/ui/*"],
-      "@/hooks/*": ["frontend/hooks/*"],
-      "@/lib/*": ["frontend/lib/*"],
-      "@/auth": ["frontend/auth.ts"],
-      "@/auth.config": ["frontend/auth.config.ts"]
+      "@/frontend/*": [
+        "frontend/*"
+      ],
+      "@/backend/*": [
+        "backend/*"
+      ],
+      "@/app/*": [
+        "app/*"
+      ],
+      "@/components/*": [
+        "frontend/components/*"
+      ],
+      "@/ui/*": [
+        "frontend/components/ui/*"
+      ],
+      "@/hooks/*": [
+        "frontend/hooks/*"
+      ],
+      "@/lib/*": [
+        "frontend/lib/*"
+      ],
+      "@/auth": [
+        "frontend/auth.ts"
+      ],
+      "@/auth.config": [
+        "frontend/auth.config.ts"
+      ]
     },
-    "types": ["node", "@types/pdf-parse"]
+    "types": [
+      "node",
+      "@types/pdf-parse"
+    ]
   },
   "include": [
-    "next-env.d.ts",
-    ".next/types/**/*.ts",
     "*.ts",
     "*.tsx",
     "app/**/*.ts",
     "app/**/*.tsx",
+    "backend/**/*.ts",
+    "backend/**/*.tsx",
     "frontend/**/*.ts",
     "frontend/**/*.tsx",
-    "backend/**/*.ts",
-    "backend/**/*.tsx"
+    "next-env.d.ts",
+    "types/**/*.d.ts",
+    ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "src"]
+  "exclude": [
+    "node_modules",
+    "src"
+  ]
 }

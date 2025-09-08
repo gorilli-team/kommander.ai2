@@ -1,5 +1,5 @@
 import { connectToDatabase } from '@/backend/lib/mongodb';
-import { ObjectId, BulkWriteOperation } from 'mongodb';
+import { ObjectId, AnyBulkWriteOperation } from 'mongodb';
 import { parse } from 'csv-parse/sync';
 
 export interface CsvDatasetDocument {
@@ -78,7 +78,7 @@ export async function ingestCsvDataset(params: {
   const datasetId = datasetInsert.insertedId;
 
   if (records.length > 0) {
-    const ops: BulkWriteOperation<CsvRowDocument>[] = records.map((row, idx) => ({
+    const ops: AnyBulkWriteOperation<CsvRowDocument>[] = records.map((row, idx) => ({
       insertOne: {
         document: {
           datasetId,

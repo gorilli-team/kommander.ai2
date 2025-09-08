@@ -379,7 +379,7 @@ class CostTracker {
         }
       ];
 
-      return await collection.aggregate(pipeline).toArray();
+      return (await collection.aggregate(pipeline).toArray()) as any;
     } catch (error) {
       console.error('[CostTracker] Error getting top spending clients:', error);
       return [];

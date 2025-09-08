@@ -182,7 +182,7 @@ class WhatsAppBot {
       const conversationId = new ObjectId().toString();
 
       // Genera risposta
-      const result = await generateChatResponse(messageText, [], userId, conversationId);
+      const result = await generateChatResponse(messageText, [], userId);
 
       if (result.error) {
         await this.sendMessage(from, '❌ Scusa, ho avuto un problema. Riprova tra poco.');
