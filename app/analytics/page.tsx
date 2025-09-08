@@ -194,9 +194,20 @@ export default function AnalyticsPage() {
               <SelectItem value="month">Questo Mese</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={fetchAnalytics} variant="outline" size="icon">
+          <Button onClick={fetchAnalytics} variant="outline" size="icon" title="Aggiorna">
             <RefreshCw className="w-4 h-4" />
           </Button>
+          {process.env.NODE_ENV !== 'production' && (
+            <Button
+              onClick={async () => {
+                await fetch(`/api/analytics/seed?days=7&perDay=25`, { method: 'POST' });
+                await Promise.all([fetchAnalytics(), fetchSentimentAnalytics()]);
+              }}
+              variant="outline"
+            >
+              Dati demo
+            </Button>
+          )}
         </div>
       </div>
 
