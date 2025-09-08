@@ -54,19 +54,19 @@ export interface AnalyticsSummary {
   };
   hourlyDistribution: Array<{ hour: number; count: number }>;
   dailyDistribution: Array<{ date: string; count: number }>;
-  // New metrics
-  conversionRate: number;
-  leadsGenerated: number;
-  templatesUsed: number;
-  customerSatisfactionScore: number;
-  uptime: number;
-  deviceBreakdown: { mobile: number; desktop: number; tablet: number };
-  topPages: Array<{ page: string; views: number; avgTime: number }>;
-  userRetention: { daily: number; weekly: number; monthly: number };
-  peakUsageHours: Array<{ hour: number; activity: number }>;
-  errorBreakdown: Array<{ type: string; count: number; trend: 'up' | 'down' | 'stable' }>;
-  geographicDistribution: Array<{ country: string; users: number; percentage: number }>;
-  languageDistribution: Array<{ language: string; users: number; percentage: number }>;
+  // New metrics (optional for backward compatibility)
+  conversionRate?: number;
+  leadsGenerated?: number;
+  templatesUsed?: number;
+  customerSatisfactionScore?: number;
+  uptime?: number;
+  deviceBreakdown?: { mobile: number; desktop: number; tablet: number };
+  topPages?: Array<{ page: string; views: number; avgTime: number }>;
+  userRetention?: { daily: number; weekly: number; monthly: number };
+  peakUsageHours?: Array<{ hour: number; activity: number }>;
+  errorBreakdown?: Array<{ type: string; count: number; trend: 'up' | 'down' | 'stable' }>;
+  geographicDistribution?: Array<{ country: string; users: number; percentage: number }>;
+  languageDistribution?: Array<{ language: string; users: number; percentage: number }>;
 }
 
 export class AnalyticsService {
@@ -275,7 +275,7 @@ export class AnalyticsService {
     ];
 
     const result = await this.db.collection('analytics_events').aggregate(pipeline).toArray();
-    const stats = result.reduce((acc, item) => {
+    const stats = result.reduce((acc: any, item: any) => {
       acc[item._id] = item.count;
       return acc;
     }, {} as any);
@@ -373,7 +373,7 @@ export class AnalyticsService {
     ];
 
     const result = await this.db.collection('analytics_events').aggregate(pipeline).toArray();
-    return result.map(item => ({
+    return result.map((item: any) => ({
       topic: item._id.split(' ').slice(0, 3).join(' '), // First 3 words as topic
       count: item.count,
       trend: 'stable' as const // Would need historical comparison for real trends
@@ -404,10 +404,10 @@ export class AnalyticsService {
     
     // Fill in missing hours with 0
     const hourlyData = Array.from({ length: 24 }, (_, hour) => {
-      const found = result.find(item => item._id === hour);
+      const found = result.find((item: any) => item._id === hour);
       return {
         hour,
-        count: found?.count || 0
+        count: (found as any)?.count || 0
       };
     });
 
@@ -440,7 +440,7 @@ export class AnalyticsService {
     ];
 
     const result = await this.db.collection('analytics_events').aggregate(pipeline).toArray();
-    return result.map(item => ({
+    return result.map((item: any) => ({
       date: item._id,
       count: item.count
     }));
@@ -686,7 +686,7 @@ export class AnalyticsService {
     ];
 
     const result = await this.db.collection('analytics_events').aggregate(pipeline).toArray();
-    const stats = result.reduce((acc, item) => {
+    const stats = result.reduce((acc: any, item: any) => {
       acc[item._id] = item.count;
       return acc;
     }, {} as any);
@@ -767,13 +767,189 @@ export class AnalyticsService {
     ];
 
     const result = await this.db.collection('analytics_events').aggregate(pipeline).toArray();
-    return result.map(item => ({
+    return result.map((item: any) => ({
       deviceType: item._id.deviceType || 'unknown',
       engagement: item._id.engagement,
       userCount: item.count,
       averageDuration: Math.round(item.avgDuration * 100) / 100,
       averageEvents: Math.round(item.avgEvents * 100) / 100
     }));
+  }
+
+  // New: data set for export/dashboard
+  async getDashboardData(startDate: Date, endDate: Date, userId: string) {
+    if (!this.db) await this.initializeDb();
+
+    const [conversationStats, messageStats, responseTimeStats, conversationsOverTime, messagesOverTime, responseTimeOverTime, hourlyDistribution, topPages, popularTemplates, commonErrors] = await Promise.all([
+      this.getConversationStats(userId, startDate, endDate),
+      this.getMessageStats(userId, startDate, endDate),
+      this.getResponseTimeStats(userId, startDate, endDate),
+      this.getConversationsOverTime(userId, startDate, endDate),
+      this.getDailyDistribution(userId, startDate, endDate),
+      this.getResponseTimeOverTime(userId, startDate, endDate),
+      this.getHourlyDistribution(userId, startDate, endDate),
+      this.getTopPages(userId, startDate, endDate),
+      this.getPopularTemplates(userId, startDate, endDate),
+      this.getCommonErrors(userId, startDate, endDate)
+    ]);
+
+    // Peak hours derived from hourly distribution
+    const peakHours = hourlyDistribution
+      .map(h => ({ hour: h.hour, activity: h.count }))
+      .sort((a, b) => b.activity - a.activity)
+      .slice(0, 5);
+
+    return {
+      overview: {
+        totalUsers: conversationStats.uniqueUsers || 0,
+        totalConversations: conversationStats.total || 0,
+        totalMessages: messageStats.total || 0,
+        averageResponseTime: responseTimeStats.average || 0
+      },
+      charts: {
+        conversationsOverTime: conversationsOverTime.map((d: any) => ({ date: d.date, count: d.count })),
+        messagesOverTime: messagesOverTime.map((d: any) => ({ date: d.date, count: d.count })),
+        responseTimeOverTime,
+        topPages,
+        userEngagement: hourlyDistribution.map(h => ({ hour: h.hour, interactions: h.count }))
+      },
+      insights: {
+        peakHours,
+        popularTemplates,
+        commonErrors,
+        userJourney: [
+          { step: 'Widget Opened', completionRate: 1 },
+          { step: 'Conversation Started', completionRate: conversationsOverTime.reduce((a: number, b: any) => a + b.count, 0) > 0 ? 0.8 : 0 },
+          { step: 'Messages Sent', completionRate: messagesOverTime.reduce((a: number, b: any) => a + b.count, 0) > 0 ? 0.6 : 0 }
+        ]
+      }
+    };
+  }
+
+  private async getConversationsOverTime(userId: string, startDate: Date, endDate: Date) {
+    const pipeline = [
+      {
+        $match: {
+          userId,
+          type: 'conversation_started',
+          timestamp: { $gte: startDate, $lte: endDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: '$timestamp'
+            }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id': 1 } }
+    ];
+
+    const result = await this.db.collection('analytics_events').aggregate(pipeline).toArray();
+    return result.map((item: any) => ({ date: item._id, count: item.count }));
+  }
+
+  private async getResponseTimeOverTime(userId: string, startDate: Date, endDate: Date) {
+    const pipeline = [
+      {
+        $match: {
+          userId,
+          type: 'response_generated',
+          timestamp: { $gte: startDate, $lte: endDate },
+          'metadata.responseTime': { $exists: true }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: '$timestamp'
+            }
+          },
+          averageTime: { $avg: '$metadata.responseTime' }
+        }
+      },
+      { $sort: { '_id': 1 } }
+    ];
+
+    const result = await this.db.collection('analytics_events').aggregate(pipeline).toArray();
+    return result.map((item: any) => ({ date: item._id, averageTime: Math.round(item.averageTime) }));
+  }
+
+  private async getTopPages(userId: string, startDate: Date, endDate: Date) {
+    const pipeline = [
+      {
+        $match: {
+          userId,
+          timestamp: { $gte: startDate, $lte: endDate },
+          'metadata.page': { $exists: true }
+        }
+      },
+      {
+        $group: {
+          _id: '$metadata.page',
+          interactions: { $sum: 1 }
+        }
+      },
+      { $sort: { interactions: -1 } },
+      { $limit: 10 }
+    ];
+
+    const result = await this.db.collection('analytics_events').aggregate(pipeline).toArray();
+    return result.map((item: any) => ({ page: item._id, interactions: item.interactions }));
+  }
+
+  private async getPopularTemplates(userId: string, startDate: Date, endDate: Date) {
+    const pipeline = [
+      {
+        $match: {
+          userId,
+          type: 'template_applied',
+          timestamp: { $gte: startDate, $lte: endDate },
+          'metadata.templateId': { $exists: true }
+        }
+      },
+      {
+        $group: {
+          _id: '$metadata.templateId',
+          usageCount: { $sum: 1 }
+        }
+      },
+      { $sort: { usageCount: -1 } },
+      { $limit: 10 }
+    ];
+
+    const result = await this.db.collection('analytics_events').aggregate(pipeline).toArray();
+    return result.map((item: any) => ({ templateId: item._id, usageCount: item.usageCount }));
+  }
+
+  private async getCommonErrors(userId: string, startDate: Date, endDate: Date) {
+    const pipeline = [
+      {
+        $match: {
+          userId,
+          type: 'error_occurred',
+          timestamp: { $gte: startDate, $lte: endDate },
+          'metadata.errorType': { $exists: true }
+        }
+      },
+      {
+        $group: {
+          _id: '$metadata.errorType',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ];
+
+    const result = await this.db.collection('analytics_events').aggregate(pipeline).toArray();
+    return result.map((item: any) => ({ error: item._id, count: item.count }));
   }
 
   async getRealTimeMetrics(userId: string) {

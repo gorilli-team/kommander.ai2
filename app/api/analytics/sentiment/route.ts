@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/frontend/auth';
 import { connectToDatabase } from '@/backend/lib/mongodb';
 import { sentimentAnalysisService } from '@/backend/lib/sentimentAnalysis';
+import { ObjectId } from 'mongodb';
 
 export async function GET(request: NextRequest) {
   try {
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
     const conversation = await db
       .collection('conversations')
       .findOne({ 
-        _id: conversationId,
+        _id: new ObjectId(conversationId),
         userId: session.user.id 
       });
 
