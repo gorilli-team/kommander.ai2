@@ -71,11 +71,8 @@ export default function ChatbotWidget({ userId }: ChatbotWidgetProps) {
     }
   }, [currentContextId]);
 
-  // Regular polling for settings changes
-  useEffect(() => {
-    const interval = setInterval(fetchSettings, 30000); // Reduced to 30 seconds
-    return () => clearInterval(interval);
-  }, [fetchSettings]);
+  // Removed polling for settings changes to reduce network usage.
+  // Settings are fetched on context change via the effect above.
 
   // Auto-scroll disabilitato - lascia che controlli l'utente durante streaming
   // useEffect(() => {

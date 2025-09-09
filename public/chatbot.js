@@ -294,59 +294,75 @@
         // Don't fetch settings if we have preloaded ones and it's trial mode
         if (trialMode) return;
       }
-      
-      const fetchSettings = () => {
-        const contextId = organizationId || userId;
-        console.log('[Chatbot] Fetching settings for contextId:', contextId, 'organizationId:', organizationId, 'userId:', userId);
-        fetch(`${ORIGIN}/api/settings/${contextId}`)
-          .then((res) => {
-            console.log('[Chatbot] Settings response status:', res.status);
-            return res.ok ? res.json() : null;
-          })
-          .then((data) => {
-            console.log('[Chatbot] Settings data received:', data);
-            if (!data) {
-              console.log('[Chatbot] No settings found for contextId:', contextId);
-              return;
-            }
-            if (data.name) {
-              console.log('[Chatbot] Setting bot name to:', data.name);
-              setBotName(data.name);
-            }
-            if (data.color) {
-              console.log('[Chatbot] Setting bot color to:', data.color);
-              setBotColor(data.color);
-              document.documentElement.style.setProperty(
-                '--kommander-primary-color',
-                data.color,
-              );
 
-              document.documentElement.style.setProperty(
-                '--kommander-secondary-color',
-                data.color,
-              );
-              
-              // Calculate and set contrasting text color for header
-              const contrastColor = getContrastTextColor(data.color);
-              document.documentElement.style.setProperty(
-                '--kommander-header-text-color',
-                contrastColor,
-              );
+      const contextId = organizationId || userId;
+      const metaKey = `kommander:settings:${contextId}:meta`;
+      const dataKey = `kommander:settings:${contextId}:data`;
+      const TTL = 60 * 60 * 1000; // 1 hour
 
-            }
-          })
-          .catch((err) => {
-            console.error('[Chatbot] Error fetching settings:', err);
-          });
+      const applySettings = (data) => {
+        if (!data) return;
+        if (data.name) setBotName(data.name);
+        if (data.color) {
+          setBotColor(data.color);
+          document.documentElement.style.setProperty('--kommander-primary-color', data.color);
+          document.documentElement.style.setProperty('--kommander-secondary-color', data.color);
+          const contrastColor = getContrastTextColor(data.color);
+          document.documentElement.style.setProperty('--kommander-header-text-color', contrastColor);
+        }
       };
-      
-      // Fetch settings immediately when context changes
-      fetchSettings();
-      
-      // Poll for settings changes every 10 seconds (reduced from 1 second)
-      const interval = setInterval(fetchSettings, 10000);
-      
-      return () => clearInterval(interval);
+
+      const readCache = () => {
+        try {
+          const meta = JSON.parse(localStorage.getItem(metaKey) || 'null');
+          const cached = localStorage.getItem(dataKey);
+          if (meta && cached && meta.expiresAt && Date.now() < meta.expiresAt) {
+            return JSON.parse(cached);
+          }
+        } catch (e) {
+          console.warn('[Chatbot] Failed to read settings cache', e);
+        }
+        return null;
+      };
+
+      const fetchFromNetwork = async () => {
+        const headers = {};
+        try {
+          const meta = JSON.parse(localStorage.getItem(metaKey) || 'null');
+          if (meta?.etag) headers['If-None-Match'] = meta.etag;
+        } catch {}
+
+        try {
+          const res = await fetch(`${ORIGIN}/api/settings/${contextId}`, { headers, cache: 'no-store' });
+          if (res.status === 304) {
+            const cached = readCache();
+            if (cached) applySettings(cached);
+            return;
+          }
+          if (!res.ok) {
+            console.warn('[Chatbot] Settings fetch not ok:', res.status);
+            return;
+          }
+          const etag = res.headers.get('ETag');
+          const data = await res.json();
+          applySettings(data);
+          try {
+            localStorage.setItem(dataKey, JSON.stringify(data));
+            localStorage.setItem(metaKey, JSON.stringify({ etag, expiresAt: Date.now() + TTL }));
+          } catch (e) {
+            // ignore quota errors
+          }
+        } catch (err) {
+          console.error('[Chatbot] Error fetching settings:', err);
+        }
+      };
+
+      // 1) Try cache first for instant paint
+      const cached = readCache();
+      if (cached) applySettings(cached);
+
+      // 2) Always fetch once (revalidates with ETag), no polling
+      fetchFromNetwork();
     }, [userId, organizationId, preloadSettings, trialMode]);
 
     const currentDate = new Date().toLocaleDateString('it-IT', {
@@ -1112,6 +1128,18 @@
   window.initKommanderChatbot = async function ({ userId, organizationId, trialMode = false, forceReset = false, preloadSettings = {} }) {
     await ensureReact();
     loadStyles();
+
+    // Allow zero-fetch override via data attributes on the script tag
+    try {
+      const ds = (document.currentScript || Array.from(document.querySelectorAll('script')).find(s => s.src && s.src.includes('chatbot.js')))?.dataset || {};
+      const override = {};
+      if (ds.primaryColor) override.color = ds.primaryColor;
+      if (ds.botName) override.name = ds.botName;
+      if (Object.keys(override).length > 0) {
+        preloadSettings = { ...override, ...preloadSettings }; // script data-* wins unless explicitly overridden in preloadSettings
+      }
+    } catch {}
+
     let container = document.getElementById('kommander-chatbot');
     if (!container) {
       container = document.createElement('div');
