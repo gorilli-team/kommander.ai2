@@ -44,14 +44,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ userId: 
   if (ifNoneMatch && ifNoneMatch === etag) {
     const res = new NextResponse(null, { status: 304 });
     res.headers.set('ETag', etag);
-    res.headers.set('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+    // Revalidate on every request to ensure instant updates for the widget
+    res.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
     return addCorsHeaders(res);
   }
 
   const res = new NextResponse(body, { status: 200 });
   res.headers.set('Content-Type', 'application/json');
   res.headers.set('ETag', etag);
-  res.headers.set('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+  // Revalidate on every request to ensure instant updates for the widget
+  res.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
   return addCorsHeaders(res);
 }
 
