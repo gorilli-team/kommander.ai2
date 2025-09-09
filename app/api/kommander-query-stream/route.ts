@@ -123,6 +123,7 @@ async function generateChatResponseStream(
             model: 'gpt-3.5-turbo',
             messages: messages,
             temperature: 0.7,
+            max_tokens: 1000,
             stream: true,
           });
 
@@ -215,56 +216,6 @@ export async function POST(request: Request) {
           'Connection': 'keep-alive',
         },
       });
-    }
-
-    // Deterministic CSV handling (count and row N)
-    try {
-      const { findCsvDatasetForQuery, countRows, getRow } = await import('@/backend/lib/csvResolver');
-      const dataset = await findCsvDatasetForQuery(userId, message);
-      if (dataset?._id) {
-        const countMatch = /(quante|quanti|numero|count)\s+.*(offerte|righe|record|entries)/i.test(message);
-        if (countMatch) {
-          const total = await countRows(dataset._id);
-          await appendMessages(userId, convId, [{ role: 'assistant', text: `Sono presenti ${total} offerte (righe dati) nel dataset "${dataset.fileName}".`, timestamp: new Date().toISOString() }], site);
-          const stream = new ReadableStream({
-            start(controller) {
-              const data = JSON.stringify({
-                type: 'complete',
-                conversationId: convId,
-                handledBy: 'bot'
-              });
-              controller.enqueue(`data: ${data}\n\n`);
-              controller.close();
-            }
-          });
-          return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
-        }
-        const rowMatch = message.match(/\b(?:riga|row|linea)\s*(\d{1,6})\b/i);
-        if (rowMatch) {
-          const n = parseInt(rowMatch[1], 10);
-          if (Number.isFinite(n) && n > 0) {
-            const dataRow = await getRow(dataset._id, n);
-            const text = dataRow
-              ? `Riga ${n} (${dataset.fileName}): ` + Object.entries(dataRow).map(([k, v]) => `${k}: ${String(v ?? '').trim()}`).join(' | ')
-              : `La riga ${n} non esiste nel dataset (righe disponibili: ${dataset.rowCount}).`;
-            await appendMessages(userId, convId, [{ role: 'assistant', text, timestamp: new Date().toISOString() }], site);
-            const stream = new ReadableStream({
-              start(controller) {
-                const data = JSON.stringify({
-                  type: 'complete',
-                  conversationId: convId,
-                  handledBy: 'bot'
-                });
-                controller.enqueue(`data: ${data}\n\n`);
-                controller.close();
-              }
-            });
-            return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
-          }
-        }
-      }
-    } catch (csvErr) {
-      console.warn('[kommander-query-stream] CSV deterministic handler failed:', (csvErr as any)?.message || csvErr);
     }
 
     // Generate streaming response using the same logic as /chatbot page

@@ -19,7 +19,7 @@ interface FileUploaderProps {
 export default function FileUploader({ 
   onUploadComplete, 
   maxFileSize = 5,
-  acceptedFormats = ['.pdf', '.docx', '.txt', '.csv']
+  acceptedFormats = ['.pdf', '.docx', '.txt', '.xlsx', '.csv', '.pptx']
 }: FileUploaderProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
