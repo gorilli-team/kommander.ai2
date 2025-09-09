@@ -44,7 +44,9 @@ function normalizeSettings(input: Partial<ChatbotSettingsDocument>) {
     else if ((input as any).traits?.length === 0) out.traits = [] as any;
   }
   if (typeof (input as any).notificationEmail === 'string') {
-    out.notificationEmail = (input as any).notificationEmail as any;
+    const v = ((input as any).notificationEmail || '').trim();
+    // Only persist if non-empty; empty string would fail zod email() and block the save
+    if (v) out.notificationEmail = v as any;
   }
   return out;
 }
