@@ -75,6 +75,36 @@ export async function generateChatResponse(
 
   try {
     console.log(`[generateChatResponse] Elaborazione query per utente ${userIdToUse}`);
+
+    // Heuristics for deterministic CSV answers via DB
+    try {
+      const { findCsvDatasetForQuery, countRows, getRow } = await import('@/backend/lib/csvResolver');
+      const dataset = await findCsvDatasetForQuery(userIdToUse, userMessage);
+      if (dataset?._id) {
+        // Count requests: "quante/quanti/numero/count ... offerte/righe/record"
+        const countMatch = /(quante|quanti|numero|count)\s+.*(offerte|righe|record|entries)/i.test(userMessage);
+        if (countMatch) {
+          const total = await countRows(dataset._id);
+          return { response: `Sono presenti ${total} offerte (righe dati) nel dataset "${dataset.fileName}".` };
+        }
+        // Row N requests: riga/row/linea N
+        const rowMatch = userMessage.match(/\b(?:riga|row|linea)\s*(\d{1,6})\b/i);
+        if (rowMatch) {
+          const n = parseInt(rowMatch[1], 10);
+          if (Number.isFinite(n) && n > 0) {
+            const data = await getRow(dataset._id, n);
+            if (data) {
+              const pairs = Object.entries(data).map(([k, v]) => `${k}: ${String(v ?? '').trim()}`).join(' | ');
+              return { response: `Riga ${n} (${dataset.fileName}): ${pairs}` };
+            } else {
+              return { response: `La riga ${n} non esiste nel dataset (righe disponibili: ${dataset.rowCount}).` };
+            }
+          }
+        }
+      }
+    } catch (csvErr) {
+      console.warn('[generateChatResponse] CSV deterministic handler failed:', (csvErr as any)?.message || csvErr);
+    }
     
     // Usa il sistema di ricerca semantica per le FAQ
     const faqs: Faq[] = await getSemanticFaqs(userIdToUse, userMessage, 10);
@@ -113,7 +143,6 @@ export async function generateChatResponse(
       model: 'gpt-3.5-turbo',
       messages: messages,
       temperature: 0.7,
-      max_tokens: 1000,
     });
 
     const assistantResponse = completion.choices[0]?.message?.content;

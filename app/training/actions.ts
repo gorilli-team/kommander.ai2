@@ -364,7 +364,27 @@ export async function uploadFileAndProcess(formData: FormData, context?: { type:
         uploadedAt: new Date(),
     };
 
-    await db.collection('raw_files_meta').insertOne(fileMetaDoc);
+    const insertMetaResult = await db.collection('raw_files_meta').insertOne(fileMetaDoc);
+
+    // If CSV, ingest into dedicated collections for reliable querying
+    if (file.type === 'text/csv') {
+      try {
+        const { ingestCsvDataset } = await import('@/backend/lib/csvResolver');
+        const { datasetId, rowCount } = await ingestCsvDataset({
+          buffer: fileBuffer,
+          fileName: file.name,
+          userId: userId || 'unknown',
+          gridFsFileId: uploadStream.id as any,
+        });
+        await db.collection('raw_files_meta').updateOne(
+          { _id: insertMetaResult.insertedId },
+          { $set: { csvDatasetId: datasetId } }
+        );
+        console.log(`[app/training/actions.ts] CSV ingested: datasetId=${datasetId.toString()}, rows=${rowCount}`);
+      } catch (csvErr: any) {
+        console.error('[app/training/actions.ts] CSV ingestion failed:', csvErr?.message || csvErr);
+      }
+    }
 
     let summary = '';
     try {
@@ -383,7 +403,7 @@ export async function uploadFileAndProcess(formData: FormData, context?: { type:
     
     revalidatePath('/training');
     console.log(`[app/training/actions.ts] uploadFileAndProcess (GridFS): END - Success for user ${userId}.`);
-    return { success: `File "${file.name}" uploaded and metadata stored.`, fileId: uploadStream.id.toString() };
+    return { success: `File \"${file.name}\" uploaded and metadata stored.`, fileId: uploadStream.id.toString() };
 
   } catch (error: any) { 
     const errorMessage = error instanceof Error ? error.message : `Unknown error during file upload for ${file?.name || 'unknown file'}.`;
