@@ -549,16 +549,49 @@
     useEffect(() => {
       if (!conversationId) return;
       pollFnRef.current = poll;
-      let interval;
-      fetchInitial().then(() => {
-        // Only start polling if the chatbot is open, otherwise poll when opened
-        if (open) {
+      let interval = null;
+
+      const start = () => {
+        if (interval || isStreamingRef.current) return;
+        // poll immediato per allineare lo stato
+        if (open && !document.hidden) {
           poll();
         }
+        interval = setInterval(() => {
+          if (!document.hidden && open && !isStreamingRef.current) {
+            poll();
+          }
+        }, 10000); // Poll ogni 10s quando visibile e aperto
+      };
+
+      const stop = () => {
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+      };
+
+      const onVisibility = () => {
+        if (document.hidden || !open) {
+          stop();
+        } else {
+          start();
+        }
+      };
+
+      fetchInitial().then(() => {
+        if (open && !document.hidden) {
+          start();
+        }
       });
-      interval = setInterval(poll, 5000); // Polling ogni 5 secondi per ridurre conflitti
-      return () => interval && clearInterval(interval);
-    }, [conversationId, userId, open]); // Added 'open' to dependency array
+
+      document.addEventListener('visibilitychange', onVisibility);
+
+      return () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        stop();
+      };
+    }, [conversationId, userId, open]); // Gestisce open/visibility e stop durante streaming
 
     useEffect(() => {
       if (handledBy === 'agent' && prevHandledBy.current !== 'agent') {
@@ -1126,6 +1159,9 @@
   }
 
   window.initKommanderChatbot = async function ({ userId, organizationId, trialMode = false, forceReset = false, preloadSettings = {} }) {
+    // Evita doppia inizializzazione del widget sulla stessa pagina
+    if (window.__kommander_inited) return;
+    window.__kommander_inited = true;
     await ensureReact();
     loadStyles();
 

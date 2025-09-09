@@ -108,15 +108,45 @@ const poll = async () => {
     }
   };
 
+  const start = () => {
+    if (interval) return;
+    // Poll immediato per sincronizzare
+    poll();
+    interval = setInterval(() => {
+      if (typeof document === 'undefined' || !document.hidden) {
+        poll();
+      }
+    }, 8000); // Poll ogni 8s quando la tab è attiva
+  };
+
+  const stop = () => {
+    if (interval) {
+      clearInterval(interval);
+      interval = null;
+    }
+  };
+
+  const onVisibility = () => {
+    if (typeof document !== 'undefined' && document.hidden) {
+      stop();
+    } else {
+      start();
+    }
+  };
+
 fetchInitial().then(() => {
       // Start polling for updates
       pollFnRef.current = poll;
-      interval = setInterval(poll, 2000); // Poll every 2 seconds
+      start();
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', onVisibility);
+      }
     });
     
     return () => {
-      if (interval) {
-        clearInterval(interval);
+      stop();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibility);
       }
     };
   }, [conversationId, contextId]);
