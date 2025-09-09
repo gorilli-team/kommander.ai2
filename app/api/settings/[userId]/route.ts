@@ -28,6 +28,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ userId: 
   const body = JSON.stringify(doc || {});
   const etag = 'W/"' + crypto.createHash('sha1').update(body).digest('base64') + '"';
 
+  // Admin can force-fresh via ?fresh=1 to bypass caches completely
+  const fresh = new URL(req.url).searchParams.get('fresh');
+  if (fresh === '1' || fresh === 'true') {
+    const res = new NextResponse(body, { status: 200 });
+    res.headers.set('Content-Type', 'application/json');
+    res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    // Still add ETag for consistency, but it won't be cached client-side due to no-store
+    res.headers.set('ETag', etag);
+    return addCorsHeaders(res);
+  }
+
   // If client sent an ETag and it matches, return 304
   const ifNoneMatch = req.headers.get('if-none-match');
   if (ifNoneMatch && ifNoneMatch === etag) {

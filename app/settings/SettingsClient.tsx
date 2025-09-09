@@ -63,13 +63,14 @@ export default function SettingsClient({ initialSettings }: Props) {
       
       setIsLoading(true);
       try {
-        console.log('[SettingsClient] Fetching from API:', `/api/settings/${contextId}`);
-        const response = await fetch(`/api/settings/${contextId}`);
+        const url = `/api/settings/${contextId}?fresh=1`;
+        console.log('[SettingsClient] Fetching from API:', url);
+        const response = await fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
         console.log('[SettingsClient] API response status:', response.status);
         
         if (response.ok) {
           const data = await response.json();
-          console.log('[SettingsClient] Settings data received:', data);
+          console.log('[SettingsClient] Settings data received (fresh):', data);
           
           setName(data?.name || 'Kommander.ai');
           setColor(data?.color || '#6366f1');
