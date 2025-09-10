@@ -132,6 +132,11 @@
     const prevHandledBy = useRef('bot');
     const lastSentTextRef = useRef('');
 
+    // WebSocket state (optional, with fallback to polling)
+    const wsRef = useRef(null);
+    const wsConnectedRef = useRef(false);
+    const wsRetryRef = useRef(0);
+
     const isSendingRef = useRef(false);
     const isStreamingRef = useRef(false);
     const [showRestartConfirm, setShowRestartConfirm] = useState(false);
@@ -554,11 +559,11 @@
       const start = () => {
         if (interval || isStreamingRef.current) return;
         // poll immediato per allineare lo stato
-        if (open && !document.hidden) {
+        if (open && !document.hidden && !wsConnectedRef.current) {
           poll();
         }
         interval = setInterval(() => {
-          if (!document.hidden && open && !isStreamingRef.current) {
+          if (!document.hidden && open && !isStreamingRef.current && !wsConnectedRef.current) {
             poll();
           }
         }, 10000); // Poll ogni 10s quando visibile e aperto
@@ -580,7 +585,7 @@
       };
 
       fetchInitial().then(() => {
-        if (open && !document.hidden) {
+        if (open && !document.hidden && !wsConnectedRef.current) {
           start();
         }
       });
@@ -658,6 +663,118 @@
       lastTimestampRef.current = '';
       setShowConversationsList(false);
     };
+
+    // Determine if WS is enabled via preloadSettings
+    const wsEnabled = !!preloadSettings.ws;
+
+    const getWsUrl = () => {
+      try {
+        const o = new URL(ORIGIN);
+        const proto = o.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = o.hostname;
+        const port = preloadSettings.wsPort || (o.port ? parseInt(o.port, 10) : (o.protocol === 'https:' ? 443 : 80));
+        return `${proto}//${host}:${port}/ws`;
+      } catch (e) {
+        return (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host + '/ws';
+      }
+    };
+
+    const handleWsUpdate = (data) => {
+      try {
+        if (!data) return;
+        if (data.handledBy) setHandledBy(data.handledBy || 'bot');
+        let newMsgs = (data.messages || []).map((m) => ({
+          role: m.role === 'assistant' ? 'assistant' : (m.role === 'agent' ? 'agent' : m.role),
+          text: m.text,
+          time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: m.timestamp
+        }));
+        // Filter out user messages from WS as well
+        newMsgs = newMsgs.filter(msg => msg.role !== 'user');
+        if (newMsgs.length) {
+          lastTimestampRef.current = newMsgs[newMsgs.length - 1].timestamp;
+          setMessages((prevMessages) => {
+            const combinedMessages = [...prevMessages];
+            newMsgs.forEach(newMsg => {
+              const isDuplicate = combinedMessages.some(existingMsg => {
+                if (existingMsg.streamingId) return false;
+                if (existingMsg.role === newMsg.role && existingMsg.text === newMsg.text) {
+                  if (existingMsg.timestamp && newMsg.timestamp) {
+                    return Math.abs(new Date(existingMsg.timestamp) - new Date(newMsg.timestamp)) < 30000;
+                  }
+                  return true;
+                }
+                return false;
+              });
+              if (!isDuplicate) combinedMessages.push(newMsg);
+            });
+            return combinedMessages;
+          });
+          setIsTyping(false);
+        }
+      } catch (e) {
+        console.warn('[Chatbot] WS update handling error', e);
+      }
+    };
+
+    const connectWebSocket = () => {
+      if (!wsEnabled) return;
+      try {
+        const url = getWsUrl();
+        const ws = new WebSocket(url);
+        wsRef.current = ws;
+        ws.onopen = () => {
+          wsConnectedRef.current = true;
+          wsRetryRef.current = 0;
+          const id = conversationIdRef.current;
+          if (id) {
+            try { ws.send(JSON.stringify({ type: 'subscribe', conversationId: id, userId })); } catch {}
+          }
+        };
+        ws.onmessage = (ev) => {
+          try {
+            const payload = JSON.parse(ev.data);
+            if (payload?.type === 'update') {
+              handleWsUpdate(payload);
+            }
+          } catch {}
+        };
+        const scheduleReconnect = () => {
+          wsConnectedRef.current = false;
+          if (!wsEnabled) return;
+          const attempt = Math.min(wsRetryRef.current + 1, 6);
+          wsRetryRef.current = attempt;
+          const delay = Math.pow(2, attempt) * 500; // 0.5s,1s,2s,4s,8s,16s
+          setTimeout(() => {
+            connectWebSocket();
+          }, delay);
+        };
+        ws.onclose = scheduleReconnect;
+        ws.onerror = scheduleReconnect;
+      } catch (e) {
+        console.warn('[Chatbot] WS connect error', e);
+      }
+    };
+
+    // Manage WS lifecycle based on conversationId and widget state
+    useEffect(() => {
+      if (!wsEnabled) return;
+      if (!open) {
+        // Close if widget closed
+        try { wsRef.current?.close(); } catch {}
+        wsConnectedRef.current = false;
+        return;
+      }
+      // Connect or resubscribe
+      if (!wsRef.current || wsRef.current.readyState > 1) {
+        connectWebSocket();
+      } else if (wsConnectedRef.current && conversationIdRef.current) {
+        try { wsRef.current.send(JSON.stringify({ type: 'subscribe', conversationId: conversationIdRef.current, userId })); } catch {}
+      }
+      return () => {
+        // No-op cleanup; connection persists while open
+      };
+    }, [conversationId, userId, open, wsEnabled]);
 
     // Funzione per mostrare la lista delle conversazioni
     const showConversationsListHandler = () => {
@@ -1171,6 +1288,11 @@
       const override = {};
       if (ds.primaryColor) override.color = ds.primaryColor;
       if (ds.botName) override.name = ds.botName;
+      if (ds.ws) override.ws = ds.ws === '1' || ds.ws === 'true';
+      if (ds.wsPort) {
+        const p = parseInt(ds.wsPort, 10);
+        if (!isNaN(p)) override.wsPort = p;
+      }
       if (Object.keys(override).length > 0) {
         preloadSettings = { ...override, ...preloadSettings }; // script data-* wins unless explicitly overridden in preloadSettings
       }
