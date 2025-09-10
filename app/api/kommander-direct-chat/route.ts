@@ -19,6 +19,8 @@ export async function OPTIONS() {
 }
 
 export async function POST(request: Request) {
+  // Ensure WS hub is started early (so clients can connect before first broadcast)
+  try { getWsHub().start(); } catch {}
   try {
     const { userId, message, history, conversationId, site, endUserId } = await request.json();
 
