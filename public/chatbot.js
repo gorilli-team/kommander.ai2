@@ -501,19 +501,27 @@
           if (newMsgs.length) {
             lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
             
-            // Add new messages with deduplication
+            // Add new messages with deduplication and merge with streaming message if present
             setMessages((prevMessages) => {
               const combinedMessages = [...prevMessages];
               
               newMsgs.forEach(newMsg => {
+                // If we have a streaming assistant message, merge instead of pushing a new one
+                if (newMsg.role === 'assistant') {
+                  const streamingIdx = combinedMessages.findIndex(m => m.role === 'assistant' && m.streamingId);
+                  if (streamingIdx !== -1) {
+                    combinedMessages[streamingIdx] = {
+                      ...combinedMessages[streamingIdx],
+                      text: newMsg.text,
+                      timestamp: newMsg.timestamp
+                    };
+                    console.log('Merged polling update into streaming assistant message');
+                    return;
+                  }
+                }
+
                 // Check if this message already exists (prevent assistant duplicates)
                 const isDuplicate = combinedMessages.some(existingMsg => {
-                  // Skip messages that are currently being streamed
-                  if (existingMsg.streamingId) {
-                    console.log('Skipping streaming message during polling duplicate check');
-                    return false;
-                  }
-                  
                   // Exact text match for same role
                   if (existingMsg.role === newMsg.role && existingMsg.text === newMsg.text) {
                     // If both have timestamps, check they're within 30 seconds
@@ -696,8 +704,20 @@
           setMessages((prevMessages) => {
             const combinedMessages = [...prevMessages];
             newMsgs.forEach(newMsg => {
+              // If a streaming assistant message exists, merge into it
+              if (newMsg.role === 'assistant') {
+                const streamingIdx = combinedMessages.findIndex(m => m.role === 'assistant' && m.streamingId);
+                if (streamingIdx !== -1) {
+                  combinedMessages[streamingIdx] = {
+                    ...combinedMessages[streamingIdx],
+                    text: newMsg.text,
+                    timestamp: newMsg.timestamp
+                  };
+                  return;
+                }
+              }
+
               const isDuplicate = combinedMessages.some(existingMsg => {
-                if (existingMsg.streamingId) return false;
                 if (existingMsg.role === newMsg.role && existingMsg.text === newMsg.text) {
                   if (existingMsg.timestamp && newMsg.timestamp) {
                     return Math.abs(new Date(existingMsg.timestamp) - new Date(newMsg.timestamp)) < 30000;
