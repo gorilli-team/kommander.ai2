@@ -175,6 +175,8 @@ const poll = async () => {
   const connectWS = () => {
     if (!wsEnabled || typeof window === 'undefined') return;
     try {
+      // Ensure server WS hub is started before connecting
+      fetch('/api/ws-start').catch(() => {});
       const url = getWsUrl();
       const ws = new (window as any).WebSocket(url);
       wsRef.current = ws;

@@ -720,6 +720,8 @@
     const connectWebSocket = () => {
       if (!wsEnabled) return;
       try {
+        // Ensure server WS hub is started before connecting
+        fetch(ORIGIN + '/api/ws-start').catch(() => {});
         const url = getWsUrl();
         const ws = new WebSocket(url);
         wsRef.current = ws;
