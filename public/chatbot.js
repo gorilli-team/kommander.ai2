@@ -559,6 +559,9 @@
       }
     };
 
+    // Skip initial fetch once for freshly created conversation IDs to avoid 404 noise
+    const skipInitialFetchOnceRef = useRef(false);
+
     useEffect(() => {
       if (!conversationId) return;
       pollFnRef.current = poll;
@@ -592,11 +595,21 @@
         }
       };
 
-      fetchInitial().then(() => {
+      const doStart = () => {
         if (open && !document.hidden && !wsConnectedRef.current) {
           start();
         }
-      });
+      };
+
+      if (skipInitialFetchOnceRef.current) {
+        // Consume the skip flag and start polling/ws without fetching
+        skipInitialFetchOnceRef.current = false;
+        doStart();
+      } else {
+        fetchInitial().then(() => {
+          doStart();
+        });
+      }
 
       document.addEventListener('visibilitychange', onVisibility);
 
@@ -659,6 +672,8 @@
     // Funzione per creare una nuova conversazione
     const startNewConversation = () => {
       const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Avoid immediate fetchInitial 404 for new conversations
+      skipInitialFetchOnceRef.current = true;
       console.log('[Chatbot] Starting new conversation:', newId);
       conversationIdRef.current = newId;
       setConversationId(newId);
@@ -834,7 +849,9 @@
 
       try {
         if (!conversationIdRef.current) {
-          const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; // More robust ID
+      const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; // More robust ID
+          // Avoid immediate fetchInitial 404 for new conversations
+          skipInitialFetchOnceRef.current = true;
           conversationIdRef.current = newId;
           setConversationId(newId);
           localStorage.setItem(storageKey, newId);

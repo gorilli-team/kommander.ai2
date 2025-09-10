@@ -29,6 +29,8 @@ export function useWidgetChat(contextId: string) {
   const site = typeof window !== 'undefined' ? window.location.hostname : '';
 // const POLL_INTERVAL_MS = 500;
 
+  const skipInitialFetchOnceRef = useRef(false);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(storageKey);
@@ -206,19 +208,30 @@ const poll = async () => {
     } catch {}
   };
 
-fetchInitial().then(() => {
+if (skipInitialFetchOnceRef.current) {
+      skipInitialFetchOnceRef.current = false;
       // Start polling for updates
       pollFnRef.current = poll;
       start();
       if (typeof document !== 'undefined') {
         document.addEventListener('visibilitychange', onVisibility);
       }
+      if (wsEnabled) connectWS();
+    } else {
+      fetchInitial().then(() => {
+        // Start polling for updates
+        pollFnRef.current = poll;
+        start();
+        if (typeof document !== 'undefined') {
+          document.addEventListener('visibilitychange', onVisibility);
+        }
 
-      // Connect WS if enabled
-      if (wsEnabled) {
-        connectWS();
-      }
-    });
+        // Connect WS if enabled
+        if (wsEnabled) {
+          connectWS();
+        }
+      });
+    }
     
     return () => {
       stop();
@@ -261,6 +274,8 @@ fetchInitial().then(() => {
       try {
         if (!conversationIdRef.current) {
           const newId = Date.now().toString();
+          // Avoid immediate fetchInitial 404 for new conversations
+          skipInitialFetchOnceRef.current = true;
           conversationIdRef.current = newId;
           setConversationId(newId);
           if (typeof window !== 'undefined') {
