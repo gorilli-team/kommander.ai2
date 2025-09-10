@@ -7,13 +7,22 @@ import {
   UserProfileDocument,
   UserRoleType, 
   PermissionType,
-  DEFAULT_ROLE_PERMISSIONS,
   ClientOrganization,
   ClientOrganizationMember,
   ClientInvitation
 } from '../schemas/organization';
 import { UserDocument } from '../schemas/user';
 import crypto from 'crypto';
+
+// Local default permissions map (runtime constant) to avoid missing export issues
+const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
+  admin: ['org:manage', 'member:manage', 'invite:send', 'settings:update'],
+  manager: ['member:manage', 'invite:send'],
+  user: ['org:read'],
+  member: ['org:read'],
+  viewer: ['org:read'],
+  guest: ['org:read']
+};
 
 export class OrganizationService {
   private db: any;
@@ -76,8 +85,16 @@ export class OrganizationService {
       // User profiles indexes
       await this.db.collection('user_profiles').createIndex({ userId: 1 }, { unique: true });
       
-      // Users collection indexes for invitation lookups
-      await this.db.collection('users').createIndex({ email: 1 });
+      // Users collection indexes for invitation lookups (ensure unique email)
+      try {
+        await this.db.collection('users').createIndex({ email: 1 }, { unique: true, name: 'email_1' });
+      } catch (error: any) {
+        if (error?.code === 86 || error?.codeName === 'IndexKeySpecsConflict' || error?.codeName === 'IndexOptionsConflict') {
+          console.log('[OrganizationService] Email index already exists with different options, skipping...');
+        } else {
+          throw error;
+        }
+      }
       
       console.log('[OrganizationService] Database indexes created successfully');
     } catch (error) {
