@@ -19,6 +19,9 @@ interface RealChatbotWidgetProps {
 }
 
 export default function RealChatbotWidget({ userId, settings }: RealChatbotWidgetProps) {
+  // WS flags from env (replaced at build time)
+  const wsEnabled = process.env.NEXT_PUBLIC_WIDGET_WS === '1' || process.env.NEXT_PUBLIC_WIDGET_WS === 'true';
+  const wsPort = process.env.NEXT_PUBLIC_WS_PORT ? parseInt(process.env.NEXT_PUBLIC_WS_PORT, 10) : undefined;
   const { currentContext, currentOrganization } = useOrganization();
   const [isLoaded, setIsLoaded] = useState(false);
   const pathname = usePathname();
@@ -95,8 +98,6 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
   // Initialize the chatbot once on component mount
   useEffect(() => {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai';
-    const wsEnabled = process.env.NEXT_PUBLIC_WIDGET_WS === '1' || process.env.NEXT_PUBLIC_WIDGET_WS === 'true';
-    const wsPort = process.env.NEXT_PUBLIC_WS_PORT ? parseInt(process.env.NEXT_PUBLIC_WS_PORT, 10) : undefined;
     
     // Load the chatbot CSS
     const link = document.createElement('link');
