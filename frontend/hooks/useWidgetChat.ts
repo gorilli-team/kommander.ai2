@@ -23,8 +23,8 @@ export function useWidgetChat(contextId: string) {
   const wsRef = useRef<WebSocket | null>(null);
   const wsConnectedRef = useRef(false);
   const wsRetryRef = useRef(0);
-  const wsEnabled = (process.env.NEXT_PUBLIC_WIDGET_WS === '1' || process.env.NEXT_PUBLIC_WIDGET_WS === 'true');
   const externalWsUrl = process.env.NEXT_PUBLIC_WS_URL || '';
+  const wsEnabled = (process.env.NEXT_PUBLIC_WIDGET_WS === '1' || process.env.NEXT_PUBLIC_WIDGET_WS === 'true' || !!externalWsUrl);
 
   const storageKey = `kommander_conversation_${contextId}`;
   const site = typeof window !== 'undefined' ? window.location.hostname : '';
@@ -181,6 +181,7 @@ const poll = async () => {
     try {
       // Ensure server WS hub is started before connecting (only when using local WS)
       const url = getWsUrl();
+      try { console.log('[useWidgetChat] Attempting WS connect:', { url, externalWsUrl: !!externalWsUrl }); } catch {}
       if (!externalWsUrl) {
         fetch('/api/ws-start').catch(() => {});
       }

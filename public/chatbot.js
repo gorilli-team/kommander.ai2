@@ -688,8 +688,8 @@
     };
 
     // Determine if WS is enabled via preloadSettings
-    const wsEnabled = !!preloadSettings.ws;
     const externalWsUrl = preloadSettings.wsUrl || null;
+    const wsEnabled = !!(preloadSettings.ws || externalWsUrl);
 
     const getWsUrl = () => {
       try {
@@ -760,6 +760,7 @@
       try {
         // Ensure server WS hub is started before connecting (only for local WS)
         const url = getWsUrl();
+        try { console.log('[Chatbot] Attempting WS connect:', { url, externalWsUrl: !!externalWsUrl }); } catch {}
         if (!externalWsUrl) {
           fetch(ORIGIN + '/api/ws-start').catch(() => {});
         }
