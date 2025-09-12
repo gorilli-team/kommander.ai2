@@ -689,15 +689,18 @@
 
     // Determine if WS is enabled via preloadSettings
     const wsEnabled = !!preloadSettings.ws;
+    const externalWsUrl = preloadSettings.wsUrl || null;
 
     const getWsUrl = () => {
       try {
+        if (externalWsUrl) return externalWsUrl;
         const o = new URL(ORIGIN);
         const proto = o.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = o.hostname;
         const port = preloadSettings.wsPort || (o.port ? parseInt(o.port, 10) : (o.protocol === 'https:' ? 443 : 80));
         return `${proto}//${host}:${port}/ws`;
       } catch (e) {
+        if (externalWsUrl) return externalWsUrl;
         return (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host + '/ws';
       }
     };
@@ -755,9 +758,11 @@
     const connectWebSocket = () => {
       if (!wsEnabled) return;
       try {
-        // Ensure server WS hub is started before connecting
-        fetch(ORIGIN + '/api/ws-start').catch(() => {});
+        // Ensure server WS hub is started before connecting (only for local WS)
         const url = getWsUrl();
+        if (!externalWsUrl) {
+          fetch(ORIGIN + '/api/ws-start').catch(() => {});
+        }
         const ws = new WebSocket(url);
         wsRef.current = ws;
         ws.onopen = () => {
@@ -1331,6 +1336,9 @@
       if (ds.wsPort) {
         const p = parseInt(ds.wsPort, 10);
         if (!isNaN(p)) override.wsPort = p;
+      }
+      if (ds.wsUrl) {
+        override.wsUrl = ds.wsUrl;
       }
       if (Object.keys(override).length > 0) {
         preloadSettings = { ...override, ...preloadSettings }; // script data-* wins unless explicitly overridden in preloadSettings

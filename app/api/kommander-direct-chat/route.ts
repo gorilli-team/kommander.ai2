@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '@/backend/lib/mongodb';
 import { sendConversationNotificationEmail } from '@/backend/lib/email';
 import type { ChatbotSettingsDocument } from '@/backend/schemas/settings';
-import { getWsHub } from '@/backend/lib/wsHub';
+import { broadcastUpdate } from '@/backend/lib/realtime';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,8 +19,6 @@ export async function OPTIONS() {
 }
 
 export async function POST(request: Request) {
-  // Ensure WS hub is started early (so clients can connect before first broadcast)
-  try { getWsHub().start(); } catch {}
   try {
     const { userId, message, history, conversationId, site, endUserId } = await request.json();
 
@@ -60,9 +58,9 @@ export async function POST(request: Request) {
         }
       });
 
-      // Broadcast handledBy change via WS (no messages payload needed)
+      // Broadcast handledBy change via relay/local
       try {
-        getWsHub().broadcast(convId, { type: 'update', conversationId: convId, handledBy: 'agent', messages: [] });
+        await broadcastUpdate(convId, { handledBy: 'agent', messages: [] });
       } catch {}
 
       return new Response(stream, {
@@ -195,12 +193,9 @@ export async function POST(request: Request) {
                 ],
                 site
               );
-              // Broadcast update to WS subscribers
+              // Broadcast update via relay/local
               try {
-                getWsHub().start();
-                getWsHub().broadcast(convId, {
-                  type: 'update',
-                  conversationId: convId,
+                await broadcastUpdate(convId, {
                   handledBy: 'bot',
                   messages: [
                     { role: 'assistant', text: response, timestamp: new Date().toISOString() }

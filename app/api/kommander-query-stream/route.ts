@@ -12,7 +12,7 @@ import { getSettings } from '@/app/settings/actions';
 import mammoth from 'mammoth';
 import { getSemanticFaqs } from '@/backend/lib/semanticFaqSearch';
 import { getSmartFiles, buildFileContext } from '@/backend/lib/smartFileManager';
-import { getWsHub } from '@/backend/lib/wsHub';
+import { broadcastUpdate } from '@/backend/lib/realtime';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -221,9 +221,6 @@ export async function POST(request: Request) {
 
     // Generate streaming response using the same logic as /chatbot page
     const { stream, handledBy: resultHandledBy } = await generateChatResponseStream(message, chatHistory, userId);
-
-    // Ensure WS hub is started for dev/Node runtime
-    try { getWsHub().start(); } catch {}
     
     // Transform the stream to include conversation ID in each chunk
     const transformedStream = new ReadableStream({
@@ -267,11 +264,9 @@ export async function POST(request: Request) {
                       site
                     );
 
-                    // Broadcast update via WS
+                    // Broadcast update via relay/local
                     try {
-                      getWsHub().broadcast(convId, {
-                        type: 'update',
-                        conversationId: convId,
+                      await broadcastUpdate(convId, {
                         handledBy: resultHandledBy,
                         messages: [
                           { role: 'assistant', text: fullResponse, timestamp: new Date().toISOString() }

@@ -24,6 +24,7 @@ export function useWidgetChat(contextId: string) {
   const wsConnectedRef = useRef(false);
   const wsRetryRef = useRef(0);
   const wsEnabled = (process.env.NEXT_PUBLIC_WIDGET_WS === '1' || process.env.NEXT_PUBLIC_WIDGET_WS === 'true');
+  const externalWsUrl = process.env.NEXT_PUBLIC_WS_URL || '';
 
   const storageKey = `kommander_conversation_${contextId}`;
   const site = typeof window !== 'undefined' ? window.location.hostname : '';
@@ -144,6 +145,7 @@ const poll = async () => {
 
   const getWsUrl = () => {
     if (typeof window === 'undefined') return '';
+    if (externalWsUrl) return externalWsUrl;
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
     const port = (process.env.NEXT_PUBLIC_WS_PORT && !isNaN(Number(process.env.NEXT_PUBLIC_WS_PORT)))
@@ -177,9 +179,11 @@ const poll = async () => {
   const connectWS = () => {
     if (!wsEnabled || typeof window === 'undefined') return;
     try {
-      // Ensure server WS hub is started before connecting
-      fetch('/api/ws-start').catch(() => {});
+      // Ensure server WS hub is started before connecting (only when using local WS)
       const url = getWsUrl();
+      if (!externalWsUrl) {
+        fetch('/api/ws-start').catch(() => {});
+      }
       const ws = new (window as any).WebSocket(url);
       wsRef.current = ws;
       ws.onopen = () => {
