@@ -688,7 +688,12 @@
     };
 
     // Determine if WS is enabled via preloadSettings
-    const externalWsUrl = preloadSettings.wsUrl || null;
+    // Auto-enable external WS relay by default when widget is served from production host
+    const isProdWidgetHost = (() => {
+      try { return ORIGIN.indexOf('app.kommander.ai') !== -1; } catch { return false; }
+    })();
+    const defaultRelayWsUrl = isProdWidgetHost ? 'wss://kommander-backend-26277fa2fefe.herokuapp.com/ws' : null;
+    const externalWsUrl = preloadSettings.wsUrl || defaultRelayWsUrl;
     const wsEnabled = !!(preloadSettings.ws || externalWsUrl);
 
     const getWsUrl = () => {
