@@ -994,10 +994,10 @@
         setIsTyping(false); // Hide typing indicator
         isSendingRef.current = false;
         
-        // Re-enable polling after streaming completes
+        // Re-enable polling after streaming completes (only if WS is not connected)
         setTimeout(() => {
           isStreamingRef.current = false;
-          if (pollFnRef.current) {
+          if (!wsConnectedRef.current && pollFnRef.current) {
             pollFnRef.current();
           }
         }, 1000); // Wait 1 second before polling after streaming completes

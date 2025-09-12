@@ -383,7 +383,8 @@ if (skipInitialFetchOnceRef.current) {
         addMessage('system', `Error: ${err.message || 'Network error.'}`);
       } finally {
         setIsLoading(false);
-        if (pollFnRef.current) {
+        // Only guard-poll if WS is not connected
+        if (!wsConnectedRef.current && pollFnRef.current) {
           pollFnRef.current();
         }
       }
