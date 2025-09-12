@@ -98,7 +98,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
 
   // Initialize the chatbot once on component mount
   useEffect(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai';
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai');
     
     // Load the chatbot CSS
     const link = document.createElement('link');
