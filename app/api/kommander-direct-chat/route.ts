@@ -6,6 +6,7 @@ import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '@/backend/lib/mongodb';
 import { sendConversationNotificationEmail } from '@/backend/lib/email';
 import type { ChatbotSettingsDocument } from '@/backend/schemas/settings';
+import { broadcastUpdate } from '@/backend/lib/realtime';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,6 +37,8 @@ export async function POST(request: Request) {
     const handledBy = existing?.handledBy || 'bot';
 
     if (handledBy === 'agent') {
+      // Ensure WS hub is started for dev/Node runtime
+      try { getWsHub().start(); } catch {}
       await appendMessages(
         userId,
         convId,
@@ -54,6 +57,11 @@ export async function POST(request: Request) {
           controller.close();
         }
       });
+
+      // Broadcast handledBy change via relay/local
+      try {
+        await broadcastUpdate(convId, { handledBy: 'agent', messages: [] });
+      } catch {}
 
       return new Response(stream, {
         headers: {
@@ -185,6 +193,15 @@ export async function POST(request: Request) {
                 ],
                 site
               );
+              // Broadcast update via relay/local
+              try {
+                await broadcastUpdate(convId, {
+                  handledBy: 'bot',
+                  messages: [
+                    { role: 'assistant', text: response, timestamp: new Date().toISOString() }
+                  ]
+                });
+              } catch {}
             } catch (saveError) {
               console.error('Error saving assistant message:', saveError);
             }

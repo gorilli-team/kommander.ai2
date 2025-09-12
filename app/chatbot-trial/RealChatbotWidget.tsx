@@ -19,6 +19,10 @@ interface RealChatbotWidgetProps {
 }
 
 export default function RealChatbotWidget({ userId, settings }: RealChatbotWidgetProps) {
+  // WS flags from env (replaced at build time)
+  const wsEnabled = process.env.NEXT_PUBLIC_WIDGET_WS === '1' || process.env.NEXT_PUBLIC_WIDGET_WS === 'true';
+  const wsPort = process.env.NEXT_PUBLIC_WS_PORT ? parseInt(process.env.NEXT_PUBLIC_WS_PORT, 10) : undefined;
+  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || undefined;
   const { currentContext, currentOrganization } = useOrganization();
   const [isLoaded, setIsLoaded] = useState(false);
   const pathname = usePathname();
@@ -94,7 +98,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
 
   // Initialize the chatbot once on component mount
   useEffect(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai';
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || 'https://app.kommander.ai');
     
     // Load the chatbot CSS
     const link = document.createElement('link');
@@ -261,7 +265,8 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
       
       // Load the original chatbot script
       const script = document.createElement('script');
-      script.src = `${baseUrl}/chatbot.js`;
+      // Cache-busting param to ensure latest widget in Preview
+      script.src = `${baseUrl}/chatbot.js?v=wsrelay1`;
       script.setAttribute('data-chatbot-widget', 'true');
       document.body.appendChild(script);
       
@@ -279,7 +284,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
               const initOptions = {
                 trialMode: true,
                 forceReset: true, // Force new conversation
-                preloadSettings: settings || {}
+                preloadSettings: { ...(settings || {}), ...(wsEnabled ? { ws: true } : {}), ...(wsPort ? { wsPort } : {}), ...(wsUrl ? { wsUrl } : {}) }
               };
               
               if (currentContext === 'organization' && currentOrganization?.id) {
@@ -414,7 +419,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
         const initOptions = {
           trialMode: true,
           forceReset: true, // Force new conversation
-          preloadSettings: settings || {}
+          preloadSettings: { ...(settings || {}), ...(wsEnabled ? { ws: true } : {}), ...(wsPort ? { wsPort } : {}), ...(wsUrl ? { wsUrl } : {}) }
         };
         
         if (currentContext === 'organization' && currentOrganization?.id) {

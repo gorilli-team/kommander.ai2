@@ -19,9 +19,18 @@ export function useWidgetChat(contextId: string) {
 
   const pollFnRef = useRef<() => Promise<void>>();
 
+  // Optional WebSocket client
+  const wsRef = useRef<WebSocket | null>(null);
+  const wsConnectedRef = useRef(false);
+  const wsRetryRef = useRef(0);
+  const externalWsUrl = process.env.NEXT_PUBLIC_WS_URL || '';
+  const wsEnabled = (process.env.NEXT_PUBLIC_WIDGET_WS === '1' || process.env.NEXT_PUBLIC_WIDGET_WS === 'true' || !!externalWsUrl);
+
   const storageKey = `kommander_conversation_${contextId}`;
   const site = typeof window !== 'undefined' ? window.location.hostname : '';
 // const POLL_INTERVAL_MS = 500;
+
+  const skipInitialFetchOnceRef = useRef(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -108,17 +117,144 @@ const poll = async () => {
     }
   };
 
-fetchInitial().then(() => {
+  const start = () => {
+    if (interval) return;
+    // Poll immediato per sincronizzare
+    if (!wsConnectedRef.current) poll();
+    interval = setInterval(() => {
+      if ((typeof document === 'undefined' || !document.hidden) && !wsConnectedRef.current) {
+        poll();
+      }
+    }, 8000); // Poll ogni 8s quando la tab è attiva
+  };
+
+  const stop = () => {
+    if (interval) {
+      clearInterval(interval);
+      interval = null;
+    }
+  };
+
+  const onVisibility = () => {
+    if (typeof document !== 'undefined' && document.hidden) {
+      stop();
+    } else {
+      start();
+    }
+  };
+
+  const getWsUrl = () => {
+    if (typeof window === 'undefined') return '';
+    if (externalWsUrl) return externalWsUrl;
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.hostname;
+    const port = (process.env.NEXT_PUBLIC_WS_PORT && !isNaN(Number(process.env.NEXT_PUBLIC_WS_PORT)))
+      ? Number(process.env.NEXT_PUBLIC_WS_PORT)
+      : (window.location.port ? Number(window.location.port) : (window.location.protocol === 'https:' ? 443 : 80));
+    return `${proto}//${host}:${port}/ws`;
+  };
+
+  const handleWsUpdate = (data: any) => {
+    try {
+      if (!data) return;
+      if (data.handledBy) setHandledBy(data.handledBy || 'bot');
+      let newMsgs = (data.messages || []).map((m: any) => ({
+        id: (m.timestamp || '') + (m.role || ''),
+        role: m.role,
+        content: m.text,
+        timestamp: new Date(m.timestamp),
+      }));
+      newMsgs = newMsgs.filter((msg: any) => msg.role !== 'user');
+      if (newMsgs.length) {
+        lastTimestampRef.current = newMsgs[newMsgs.length - 1].timestamp.toISOString();
+        setMessages((prev) => {
+          const existing = new Set(prev.map((msg: Message) => msg.id));
+          const unique = newMsgs.filter((msg: Message) => !existing.has(msg.id));
+          return unique.length ? [...prev, ...unique] : prev;
+        });
+      }
+    } catch {}
+  };
+
+  const connectWS = () => {
+    if (!wsEnabled || typeof window === 'undefined') return;
+    try {
+      // Ensure server WS hub is started before connecting (only when using local WS)
+      const url = getWsUrl();
+      try { console.log('[useWidgetChat] Attempting WS connect:', { url, externalWsUrl: !!externalWsUrl }); } catch {}
+      if (!externalWsUrl) {
+        fetch('/api/ws-start').catch(() => {});
+      }
+      const ws = new (window as any).WebSocket(url);
+      wsRef.current = ws;
+      ws.onopen = () => {
+        try { console.log('[useWidgetChat] WS connected'); } catch {}
+        wsConnectedRef.current = true;
+        wsRetryRef.current = 0;
+        if (conversationIdRef.current) {
+          try { ws.send(JSON.stringify({ type: 'subscribe', conversationId: conversationIdRef.current, userId: contextId })); } catch {}
+        }
+      };
+      ws.onmessage = (ev: MessageEvent) => {
+        try {
+          const payload = JSON.parse((ev as any).data);
+          if (payload?.type === 'update') handleWsUpdate(payload);
+        } catch {}
+      };
+      const scheduleReconnect = () => {
+        wsConnectedRef.current = false;
+        if (!wsEnabled) return;
+        const attempt = Math.min(wsRetryRef.current + 1, 6);
+        wsRetryRef.current = attempt;
+        const delay = Math.pow(2, attempt) * 500;
+        setTimeout(() => connectWS(), delay);
+      };
+      ws.onerror = (e) => { try { console.warn('[useWidgetChat] WS error', e); } catch {}; scheduleReconnect(); };
+      ws.onclose = () => { try { console.warn('[useWidgetChat] WS closed'); } catch {}; scheduleReconnect(); };
+    } catch {}
+  };
+
+if (skipInitialFetchOnceRef.current) {
+      skipInitialFetchOnceRef.current = false;
       // Start polling for updates
       pollFnRef.current = poll;
-      interval = setInterval(poll, 2000); // Poll every 2 seconds
-    });
+      start();
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', onVisibility);
+      }
+      if (wsEnabled) connectWS();
+    } else {
+      fetchInitial().then(() => {
+        // Start polling for updates
+        pollFnRef.current = poll;
+        start();
+        if (typeof document !== 'undefined') {
+          document.addEventListener('visibilitychange', onVisibility);
+        }
+
+        // Connect WS if enabled
+        if (wsEnabled) {
+          connectWS();
+        }
+      });
+    }
     
     return () => {
-      if (interval) {
-        clearInterval(interval);
+      stop();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibility);
       }
+      try { wsRef.current?.close(); } catch {}
+      wsConnectedRef.current = false;
     };
+  }, [conversationId, contextId]);
+
+  // Resubscribe on conversation change
+  useEffect(() => {
+    if (!wsEnabled) return;
+    if (wsConnectedRef.current && wsRef.current && conversationIdRef.current) {
+      try { (wsRef.current as any).send(JSON.stringify({ type: 'subscribe', conversationId: conversationIdRef.current, userId: contextId })); } catch {}
+    }
   }, [conversationId, contextId]);
 
   const addMessage = (role: Message['role'], content: string) => {
@@ -144,6 +280,8 @@ fetchInitial().then(() => {
       try {
         if (!conversationIdRef.current) {
           const newId = Date.now().toString();
+          // Avoid immediate fetchInitial 404 for new conversations
+          skipInitialFetchOnceRef.current = true;
           conversationIdRef.current = newId;
           setConversationId(newId);
           if (typeof window !== 'undefined') {
@@ -245,7 +383,8 @@ fetchInitial().then(() => {
         addMessage('system', `Error: ${err.message || 'Network error.'}`);
       } finally {
         setIsLoading(false);
-        if (pollFnRef.current) {
+        // Only guard-poll if WS is not connected
+        if (!wsConnectedRef.current && pollFnRef.current) {
           pollFnRef.current();
         }
       }

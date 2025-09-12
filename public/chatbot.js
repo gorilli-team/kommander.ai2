@@ -132,6 +132,11 @@
     const prevHandledBy = useRef('bot');
     const lastSentTextRef = useRef('');
 
+    // WebSocket state (optional, with fallback to polling)
+    const wsRef = useRef(null);
+    const wsConnectedRef = useRef(false);
+    const wsRetryRef = useRef(0);
+
     const isSendingRef = useRef(false);
     const isStreamingRef = useRef(false);
     const [showRestartConfirm, setShowRestartConfirm] = useState(false);
@@ -496,19 +501,27 @@
           if (newMsgs.length) {
             lastTimestampRef.current = data.messages[data.messages.length - 1].timestamp;
             
-            // Add new messages with deduplication
+            // Add new messages with deduplication and merge with streaming message if present
             setMessages((prevMessages) => {
               const combinedMessages = [...prevMessages];
               
               newMsgs.forEach(newMsg => {
+                // If we have a streaming assistant message, merge instead of pushing a new one
+                if (newMsg.role === 'assistant') {
+                  const streamingIdx = combinedMessages.findIndex(m => m.role === 'assistant' && m.streamingId);
+                  if (streamingIdx !== -1) {
+                    combinedMessages[streamingIdx] = {
+                      ...combinedMessages[streamingIdx],
+                      text: newMsg.text,
+                      timestamp: newMsg.timestamp
+                    };
+                    console.log('Merged polling update into streaming assistant message');
+                    return;
+                  }
+                }
+
                 // Check if this message already exists (prevent assistant duplicates)
                 const isDuplicate = combinedMessages.some(existingMsg => {
-                  // Skip messages that are currently being streamed
-                  if (existingMsg.streamingId) {
-                    console.log('Skipping streaming message during polling duplicate check');
-                    return false;
-                  }
-                  
                   // Exact text match for same role
                   if (existingMsg.role === newMsg.role && existingMsg.text === newMsg.text) {
                     // If both have timestamps, check they're within 30 seconds
@@ -546,19 +559,65 @@
       }
     };
 
+    // Skip initial fetch once for freshly created conversation IDs to avoid 404 noise
+    const skipInitialFetchOnceRef = useRef(false);
+
     useEffect(() => {
       if (!conversationId) return;
       pollFnRef.current = poll;
-      let interval;
-      fetchInitial().then(() => {
-        // Only start polling if the chatbot is open, otherwise poll when opened
-        if (open) {
+      let interval = null;
+
+      const start = () => {
+        if (interval || isStreamingRef.current) return;
+        // poll immediato per allineare lo stato
+        if (open && !document.hidden && !wsConnectedRef.current) {
           poll();
         }
-      });
-      interval = setInterval(poll, 5000); // Polling ogni 5 secondi per ridurre conflitti
-      return () => interval && clearInterval(interval);
-    }, [conversationId, userId, open]); // Added 'open' to dependency array
+        interval = setInterval(() => {
+          if (!document.hidden && open && !isStreamingRef.current && !wsConnectedRef.current) {
+            poll();
+          }
+        }, 10000); // Poll ogni 10s quando visibile e aperto
+      };
+
+      const stop = () => {
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+      };
+
+      const onVisibility = () => {
+        if (document.hidden || !open) {
+          stop();
+        } else {
+          start();
+        }
+      };
+
+      const doStart = () => {
+        if (open && !document.hidden && !wsConnectedRef.current) {
+          start();
+        }
+      };
+
+      if (skipInitialFetchOnceRef.current) {
+        // Consume the skip flag and start polling/ws without fetching
+        skipInitialFetchOnceRef.current = false;
+        doStart();
+      } else {
+        fetchInitial().then(() => {
+          doStart();
+        });
+      }
+
+      document.addEventListener('visibilitychange', onVisibility);
+
+      return () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        stop();
+      };
+    }, [conversationId, userId, open]); // Gestisce open/visibility e stop durante streaming
 
     useEffect(() => {
       if (handledBy === 'agent' && prevHandledBy.current !== 'agent') {
@@ -613,6 +672,8 @@
     // Funzione per creare una nuova conversazione
     const startNewConversation = () => {
       const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Avoid immediate fetchInitial 404 for new conversations
+      skipInitialFetchOnceRef.current = true;
       console.log('[Chatbot] Starting new conversation:', newId);
       conversationIdRef.current = newId;
       setConversationId(newId);
@@ -625,6 +686,139 @@
       lastTimestampRef.current = '';
       setShowConversationsList(false);
     };
+
+    // Determine if WS is enabled via preloadSettings
+    const externalWsUrl = preloadSettings.wsUrl || null;
+    const wsEnabled = !!(preloadSettings.ws || externalWsUrl);
+
+    const getWsUrl = () => {
+      try {
+        if (externalWsUrl) return externalWsUrl;
+        const o = new URL(ORIGIN);
+        const proto = o.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = o.hostname;
+        const port = preloadSettings.wsPort || (o.port ? parseInt(o.port, 10) : (o.protocol === 'https:' ? 443 : 80));
+        return `${proto}//${host}:${port}/ws`;
+      } catch (e) {
+        if (externalWsUrl) return externalWsUrl;
+        return (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host + '/ws';
+      }
+    };
+
+    const handleWsUpdate = (data) => {
+      try {
+        if (!data) return;
+        if (data.handledBy) setHandledBy(data.handledBy || 'bot');
+        let newMsgs = (data.messages || []).map((m) => ({
+          role: m.role === 'assistant' ? 'assistant' : (m.role === 'agent' ? 'agent' : m.role),
+          text: m.text,
+          time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: m.timestamp
+        }));
+        // Filter out user messages from WS as well
+        newMsgs = newMsgs.filter(msg => msg.role !== 'user');
+        if (newMsgs.length) {
+          lastTimestampRef.current = newMsgs[newMsgs.length - 1].timestamp;
+          setMessages((prevMessages) => {
+            const combinedMessages = [...prevMessages];
+            newMsgs.forEach(newMsg => {
+              // If a streaming assistant message exists, merge into it
+              if (newMsg.role === 'assistant') {
+                const streamingIdx = combinedMessages.findIndex(m => m.role === 'assistant' && m.streamingId);
+                if (streamingIdx !== -1) {
+                  combinedMessages[streamingIdx] = {
+                    ...combinedMessages[streamingIdx],
+                    text: newMsg.text,
+                    timestamp: newMsg.timestamp
+                  };
+                  return;
+                }
+              }
+
+              const isDuplicate = combinedMessages.some(existingMsg => {
+                if (existingMsg.role === newMsg.role && existingMsg.text === newMsg.text) {
+                  if (existingMsg.timestamp && newMsg.timestamp) {
+                    return Math.abs(new Date(existingMsg.timestamp) - new Date(newMsg.timestamp)) < 30000;
+                  }
+                  return true;
+                }
+                return false;
+              });
+              if (!isDuplicate) combinedMessages.push(newMsg);
+            });
+            return combinedMessages;
+          });
+          setIsTyping(false);
+        }
+      } catch (e) {
+        console.warn('[Chatbot] WS update handling error', e);
+      }
+    };
+
+    const connectWebSocket = () => {
+      if (!wsEnabled) return;
+      try {
+        // Ensure server WS hub is started before connecting (only for local WS)
+        const url = getWsUrl();
+        try { console.log('[Chatbot] Attempting WS connect:', { url, externalWsUrl: !!externalWsUrl }); } catch {}
+        if (!externalWsUrl) {
+          fetch(ORIGIN + '/api/ws-start').catch(() => {});
+        }
+        const ws = new WebSocket(url);
+        wsRef.current = ws;
+        ws.onopen = () => {
+          try { console.log('[Chatbot] WS connected'); } catch {}
+          wsConnectedRef.current = true;
+          wsRetryRef.current = 0;
+          const id = conversationIdRef.current;
+          if (id) {
+            try { ws.send(JSON.stringify({ type: 'subscribe', conversationId: id, userId })); } catch {}
+          }
+        };
+        ws.onmessage = (ev) => {
+          try {
+            const payload = JSON.parse(ev.data);
+            if (payload?.type === 'update') {
+              handleWsUpdate(payload);
+            }
+          } catch {}
+        };
+        const scheduleReconnect = () => {
+          wsConnectedRef.current = false;
+          if (!wsEnabled) return;
+          const attempt = Math.min(wsRetryRef.current + 1, 6);
+          wsRetryRef.current = attempt;
+          const delay = Math.pow(2, attempt) * 500; // 0.5s,1s,2s,4s,8s,16s
+          setTimeout(() => {
+            connectWebSocket();
+          }, delay);
+        };
+        ws.onclose = (ev) => { try { console.warn('[Chatbot] WS closed', ev.code); } catch {}; scheduleReconnect(); };
+        ws.onerror = (err) => { try { console.warn('[Chatbot] WS error', err); } catch {}; scheduleReconnect(); };
+      } catch (e) {
+        console.warn('[Chatbot] WS connect error', e);
+      }
+    };
+
+    // Manage WS lifecycle based on conversationId and widget state
+    useEffect(() => {
+      if (!wsEnabled) return;
+      if (!open) {
+        // Close if widget closed
+        try { wsRef.current?.close(); } catch {}
+        wsConnectedRef.current = false;
+        return;
+      }
+      // Connect or resubscribe
+      if (!wsRef.current || wsRef.current.readyState > 1) {
+        connectWebSocket();
+      } else if (wsConnectedRef.current && conversationIdRef.current) {
+        try { wsRef.current.send(JSON.stringify({ type: 'subscribe', conversationId: conversationIdRef.current, userId })); } catch {}
+      }
+      return () => {
+        // No-op cleanup; connection persists while open
+      };
+    }, [conversationId, userId, open, wsEnabled]);
 
     // Funzione per mostrare la lista delle conversazioni
     const showConversationsListHandler = () => {
@@ -662,7 +856,9 @@
 
       try {
         if (!conversationIdRef.current) {
-          const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; // More robust ID
+      const newId = `konv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; // More robust ID
+          // Avoid immediate fetchInitial 404 for new conversations
+          skipInitialFetchOnceRef.current = true;
           conversationIdRef.current = newId;
           setConversationId(newId);
           localStorage.setItem(storageKey, newId);
@@ -798,10 +994,10 @@
         setIsTyping(false); // Hide typing indicator
         isSendingRef.current = false;
         
-        // Re-enable polling after streaming completes
+        // Re-enable polling after streaming completes (only if WS is not connected)
         setTimeout(() => {
           isStreamingRef.current = false;
-          if (pollFnRef.current) {
+          if (!wsConnectedRef.current && pollFnRef.current) {
             pollFnRef.current();
           }
         }, 1000); // Wait 1 second before polling after streaming completes
@@ -1126,6 +1322,9 @@
   }
 
   window.initKommanderChatbot = async function ({ userId, organizationId, trialMode = false, forceReset = false, preloadSettings = {} }) {
+    // Evita doppia inizializzazione del widget sulla stessa pagina
+    if (window.__kommander_inited) return;
+    window.__kommander_inited = true;
     await ensureReact();
     loadStyles();
 
@@ -1135,6 +1334,14 @@
       const override = {};
       if (ds.primaryColor) override.color = ds.primaryColor;
       if (ds.botName) override.name = ds.botName;
+      if (ds.ws) override.ws = ds.ws === '1' || ds.ws === 'true';
+      if (ds.wsPort) {
+        const p = parseInt(ds.wsPort, 10);
+        if (!isNaN(p)) override.wsPort = p;
+      }
+      if (ds.wsUrl) {
+        override.wsUrl = ds.wsUrl;
+      }
       if (Object.keys(override).length > 0) {
         preloadSettings = { ...override, ...preloadSettings }; // script data-* wins unless explicitly overridden in preloadSettings
       }

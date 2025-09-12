@@ -12,6 +12,7 @@ import { getSettings } from '@/app/settings/actions';
 import mammoth from 'mammoth';
 import { getSemanticFaqs } from '@/backend/lib/semanticFaqSearch';
 import { getSmartFiles, buildFileContext } from '@/backend/lib/smartFileManager';
+import { broadcastUpdate } from '@/backend/lib/realtime';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -262,6 +263,16 @@ export async function POST(request: Request) {
                       [{ role: 'assistant', text: fullResponse, timestamp: new Date().toISOString() }],
                       site
                     );
+
+                    // Broadcast update via relay/local
+                    try {
+                      await broadcastUpdate(convId, {
+                        handledBy: resultHandledBy,
+                        messages: [
+                          { role: 'assistant', text: fullResponse, timestamp: new Date().toISOString() }
+                        ]
+                      });
+                    } catch {}
                   }
                   
                   controller.enqueue(`data: ${JSON.stringify(event)}\n\n`);
