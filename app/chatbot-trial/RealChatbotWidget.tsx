@@ -265,7 +265,8 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
       
       // Load the original chatbot script
       const script = document.createElement('script');
-      script.src = `${baseUrl}/chatbot.js`;
+      // Cache-busting param to ensure latest widget in Preview
+      script.src = `${baseUrl}/chatbot.js?v=wsrelay1`;
       script.setAttribute('data-chatbot-widget', 'true');
       document.body.appendChild(script);
       

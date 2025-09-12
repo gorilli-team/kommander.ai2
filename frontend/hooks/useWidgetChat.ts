@@ -188,6 +188,7 @@ const poll = async () => {
       const ws = new (window as any).WebSocket(url);
       wsRef.current = ws;
       ws.onopen = () => {
+        try { console.log('[useWidgetChat] WS connected'); } catch {}
         wsConnectedRef.current = true;
         wsRetryRef.current = 0;
         if (conversationIdRef.current) {
@@ -208,8 +209,8 @@ const poll = async () => {
         const delay = Math.pow(2, attempt) * 500;
         setTimeout(() => connectWS(), delay);
       };
-      ws.onerror = scheduleReconnect;
-      ws.onclose = scheduleReconnect;
+      ws.onerror = (e) => { try { console.warn('[useWidgetChat] WS error', e); } catch {}; scheduleReconnect(); };
+      ws.onclose = () => { try { console.warn('[useWidgetChat] WS closed'); } catch {}; scheduleReconnect(); };
     } catch {}
   };
 

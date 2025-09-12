@@ -767,6 +767,7 @@
         const ws = new WebSocket(url);
         wsRef.current = ws;
         ws.onopen = () => {
+          try { console.log('[Chatbot] WS connected'); } catch {}
           wsConnectedRef.current = true;
           wsRetryRef.current = 0;
           const id = conversationIdRef.current;
@@ -792,8 +793,8 @@
             connectWebSocket();
           }, delay);
         };
-        ws.onclose = scheduleReconnect;
-        ws.onerror = scheduleReconnect;
+        ws.onclose = (ev) => { try { console.warn('[Chatbot] WS closed', ev.code); } catch {}; scheduleReconnect(); };
+        ws.onerror = (err) => { try { console.warn('[Chatbot] WS error', err); } catch {}; scheduleReconnect(); };
       } catch (e) {
         console.warn('[Chatbot] WS connect error', e);
       }
