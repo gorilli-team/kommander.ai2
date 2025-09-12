@@ -22,6 +22,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
   // WS flags from env (replaced at build time)
   const wsEnabled = process.env.NEXT_PUBLIC_WIDGET_WS === '1' || process.env.NEXT_PUBLIC_WIDGET_WS === 'true';
   const wsPort = process.env.NEXT_PUBLIC_WS_PORT ? parseInt(process.env.NEXT_PUBLIC_WS_PORT, 10) : undefined;
+  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || undefined;
   const { currentContext, currentOrganization } = useOrganization();
   const [isLoaded, setIsLoaded] = useState(false);
   const pathname = usePathname();
@@ -282,7 +283,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
               const initOptions = {
                 trialMode: true,
                 forceReset: true, // Force new conversation
-                preloadSettings: { ...(settings || {}), ...(wsEnabled ? { ws: true } : {}), ...(wsPort ? { wsPort } : {}) }
+                preloadSettings: { ...(settings || {}), ...(wsEnabled ? { ws: true } : {}), ...(wsPort ? { wsPort } : {}), ...(wsUrl ? { wsUrl } : {}) }
               };
               
               if (currentContext === 'organization' && currentOrganization?.id) {
@@ -417,7 +418,7 @@ export default function RealChatbotWidget({ userId, settings }: RealChatbotWidge
         const initOptions = {
           trialMode: true,
           forceReset: true, // Force new conversation
-          preloadSettings: { ...(settings || {}), ...(wsEnabled ? { ws: true } : {}), ...(wsPort ? { wsPort } : {}) }
+          preloadSettings: { ...(settings || {}), ...(wsEnabled ? { ws: true } : {}), ...(wsPort ? { wsPort } : {}), ...(wsUrl ? { wsUrl } : {}) }
         };
         
         if (currentContext === 'organization' && currentOrganization?.id) {
