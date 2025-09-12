@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/frontend/auth';
-import { deleteConversation, getConversation, setConversationHandledBy } from '@/app/conversations/actions';
+import { deleteConversation, getConversation, setConversationHandledBy, appendMessages } from '@/app/conversations/actions';
+import { broadcastUpdate } from '@/backend/lib/realtime';
 
 export async function DELETE(
   request: Request,
@@ -43,11 +44,25 @@ export async function POST(
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const { handledBy } = await request.json();
+  const { handledBy, operatorName } = await request.json();
   if (handledBy !== 'bot' && handledBy !== 'agent') {
     return NextResponse.json({ error: 'Invalid handledBy' }, { status: 400 });
   }
   const { id } = await params;
   await setConversationHandledBy(session.user.id, id, handledBy);
+
+  // If operator takes over, insert and broadcast a system banner
+  if (handledBy === 'agent') {
+    const timestamp = new Date().toISOString();
+    const name = operatorName || 'Operatore';
+    const banner = { role: 'system', text: `Sei ora in contatto con ${name}`, timestamp } as const;
+    try {
+      await appendMessages(session.user.id, id, [banner]);
+    } catch {}
+    try {
+      await broadcastUpdate(id, { handledBy: 'agent', messages: [banner as any] });
+    } catch {}
+  }
+
   return NextResponse.json({ success: true });
 }

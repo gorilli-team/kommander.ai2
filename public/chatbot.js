@@ -1127,7 +1127,7 @@
                     React.createElement(
                       'div',
                       {
-                        className: `kommander-msg kommander-${m.role}`,
+                    className: `kommander-msg kommander-${m.role} ${m.role === 'system' ? 'kommander-system-banner' : ''}`
                       },
                       m.role === 'user' 
                         ? React.createElement('p', null, m.text)
