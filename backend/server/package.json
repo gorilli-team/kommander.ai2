@@ -1,0 +1,15 @@
+{
+  "name": "kommander-ws-relay",
+  "private": true,
+  "version": "0.1.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.14.2"
+  }
+}
