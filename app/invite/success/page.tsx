@@ -13,11 +13,13 @@ function InviteSuccessContent() {
   
   const orgName = searchParams.get('orgName') || 'the organization';
   const role = searchParams.get('role') || 'member';
+  const roleCode = searchParams.get('roleCode') || '';
   
   useEffect(() => {
     // Auto-redirect after 5 seconds
+    const target = roleCode === 'operator' ? '/operator-dashboard' : '/team';
     const timer = setTimeout(() => {
-      router.push('/team');
+      router.push(target);
     }, 5000);
     
     return () => clearTimeout(timer);
@@ -75,10 +77,10 @@ function InviteSuccessContent() {
 
             {/* Action Buttons */}
             <div className="space-y-3">
-              <Link href="/team">
+              <Link href={roleCode === 'operator' ? '/operator-dashboard' : '/team'}>
                 <Button className="w-full">
                   <ArrowRight className="h-4 w-4 mr-2" />
-                  Go to Team Dashboard
+                  {roleCode === 'operator' ? 'Go to Operator Dashboard' : 'Go to Team Dashboard'}
                 </Button>
               </Link>
               

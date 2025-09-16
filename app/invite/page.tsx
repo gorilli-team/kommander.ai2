@@ -108,11 +108,14 @@ function InviteContent() {
         }
         
         // Redirect to success page with organization info
-        setTimeout(() => {
+        setTimeout(async () => {
           const orgName = invitation?.organization?.name || 'Unknown Organization';
           const roleDisplay = roleDisplayNames[invitation?.role as keyof typeof roleDisplayNames] || invitation?.role;
-          router.push(`/invite/success?orgName=${encodeURIComponent(orgName)}&role=${encodeURIComponent(roleDisplay)}`);
-        }, 2000);
+          const roleCode = invitation?.role || 'user';
+          // Warm-up: fetch organizations to sync membership immediately
+          try { await fetch('/api/organizations'); } catch {}
+          router.push(`/invite/success?orgName=${encodeURIComponent(orgName)}&role=${encodeURIComponent(roleDisplay)}&roleCode=${encodeURIComponent(roleCode)}`);
+        }, 1000);
         
       } catch (err) {
         setError('Failed to accept invitation. Please try again.');
