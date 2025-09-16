@@ -768,14 +768,14 @@ export default function ConversationsClient({ conversations: initial }: Props) {
 
                     <CardContent className="flex-1 overflow-hidden">
                       {/* Control history */}
-                      {Array.isArray(selected.controlHistory) && selected.controlHistory.length > 0 && (
-                        <div className="mb-4 p-3 border rounded-md bg-muted/40">
-                          <div className="flex items-center gap-2 mb-2">
-                            <History className="h-4 w-4" />
-                            <span className="text-sm font-medium">Control history</span>
-                          </div>
-                          <div className="space-y-2 max-h-40 overflow-auto pr-1">
-                            {selected.controlHistory
+                      <div className="mb-4 p-3 border rounded-md bg-muted/40">
+                        <div className="flex items-center gap-2 mb-2">
+                          <History className="h-4 w-4" />
+                          <span className="text-sm font-medium">Control history</span>
+                        </div>
+                        <div className="space-y-2 max-h-40 overflow-auto pr-1">
+                          {Array.isArray(selected.controlHistory) && selected.controlHistory.length > 0 ? (
+                            selected.controlHistory
                               .slice()
                               .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
                               .map((e, i) => (
@@ -790,10 +790,12 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                                     {formatDistanceToNow(new Date(e.at), { addSuffix: true })}
                                   </span>
                                 </div>
-                              ))}
-                          </div>
+                              ))
+                          ) : (
+                            <div className="text-xs text-muted-foreground">Nessun evento di controllo ancora</div>
+                          )}
                         </div>
-                      )}
+                      </div>
 
                       <ScrollArea className="h-full py-4">
                         <div className="space-y-4">
