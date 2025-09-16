@@ -106,6 +106,7 @@ export default function TeamPage() {
   const [isRemovingMember, startRemoveMemberTransition] = useTransition();
   const [isDeletingOrg, startDeleteOrgTransition] = useTransition();
   const [isRevokingInvitation, startRevokeInvitationTransition] = useTransition();
+  const [canDeleteConfirm, setCanDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -999,11 +1000,7 @@ export default function TeamPage() {
               <Input
                 placeholder="Enter organization name"
                 onChange={(e) => {
-                  // Simple confirmation by typing org name
-                  const confirmButton = document.getElementById('delete-confirm-btn') as HTMLButtonElement;
-                  if (confirmButton) {
-                    confirmButton.disabled = e.target.value !== selectedOrg?.name;
-                  }
+                  setCanDeleteConfirm(e.target.value === selectedOrg?.name);
                 }}
               />
             </div>
@@ -1016,7 +1013,7 @@ export default function TeamPage() {
               id="delete-confirm-btn"
               variant="destructive"
               onClick={handleDeleteOrganization}
-              disabled={isDeletingOrg || true} // Initially disabled
+              disabled={isDeletingOrg || !canDeleteConfirm}
             >
               {isDeletingOrg ? (
                 <>
