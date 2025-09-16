@@ -26,6 +26,7 @@ export default function Sidebar() {
       return [
         { href: '/operator-dashboard', label: 'Operator', icon: Shield, id: 'sidebar-operator' },
         { href: '/conversations', label: 'Conversazioni', icon: MessageSquare, id: 'sidebar-conversations' },
+        { href: '/chatbot-trial', label: 'Prova Chatbot', icon: MessageCircle, id: 'sidebar-chatbot' },
       ];
     }
     // Default full nav

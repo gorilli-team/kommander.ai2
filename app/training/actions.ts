@@ -93,6 +93,16 @@ export async function createFaq(data: unknown, context?: { type: 'personal' | 'o
   
   const session = await auth();
   const organizationContext = context?.type || 'personal';
+  const isOperator = (session?.user as any)?.role === 'operator';
+  
+  if (isOperator) {
+    return { error: 'Forbidden: operators cannot upload documents.' };
+  }
+
+  if (!session?.user?.id && organizationContext === 'personal') {
+  if (isOperator) {
+    return { error: 'Forbidden: operators cannot create FAQs.' };
+  }
 
   if (!session?.user?.id && organizationContext === 'personal') {
     console.error('[app/training/actions.ts] createFaq: User not authenticated.');
@@ -317,6 +327,9 @@ export async function deleteFaq(id: string) {
     console.error('[app/training/actions.ts] deleteFaq: User not authenticated.');
     return { error: 'User not authenticated. Please log in.' };
   }
+  if ((session.user as any)?.role === 'operator') {
+    return { error: 'Forbidden: operators cannot delete FAQs.' };
+  }
   const userId = session.user.id;
 
    if (!ObjectId.isValid(id)) {
@@ -505,6 +518,9 @@ export async function deleteDocument(id: string) {
   if (!session?.user?.id) {
     console.error('[app/training/actions.ts] deleteDocument: User not authenticated.');
     return { error: 'User not authenticated. Please log in.' };
+  }
+  if ((session.user as any)?.role === 'operator') {
+    return { error: 'Forbidden: operators cannot delete documents.' };
   }
   const userId = session.user.id;
 

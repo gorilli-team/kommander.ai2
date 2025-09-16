@@ -100,15 +100,36 @@ export async function GET(
       site: doc.site,
       createdAt: doc.createdAt?.toISOString(),
       updatedAt: doc.updatedAt?.toISOString(),
+      controlHistory: (doc.controlHistory || []).map((e: any) => ({
+        action: e.action,
+        byUserId: e.byUserId,
+        byEmail: e.byEmail,
+        byName: e.byName,
+        at: e.at instanceof Date ? e.at.toISOString() : e.at,
+      }))
     };
     return NextResponse.json(conv);
   }
 
-  const conv = await getConversation(session.user.id, id);
-  if (!conv) {
+  const convBase = await getConversation(session.user.id, id);
+  if (!convBase) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
-  return NextResponse.json(conv);
+  // Fetch control history for personal context
+  try {
+    const { db } = await connectToDatabase();
+    const doc = await db.collection('conversations').findOne({ conversationId: id, userId: session.user.id });
+    const controlHistory = (doc?.controlHistory || []).map((e: any) => ({
+      action: e.action,
+      byUserId: e.byUserId,
+      byEmail: e.byEmail,
+      byName: e.byName,
+      at: e.at instanceof Date ? e.at.toISOString() : e.at,
+    }));
+    return NextResponse.json({ ...convBase, controlHistory });
+  } catch {
+    return NextResponse.json(convBase);
+  }
 }
 
 export async function POST(
@@ -151,7 +172,16 @@ export async function POST(
     const memberUserIds = members.map((m: any) => m.userId.toString());
     const res = await db.collection('conversations').updateOne(
       { conversationId: id, userId: { $in: memberUserIds } },
-      { $set: { handledBy, updatedAt: new Date() } }
+      { 
+        $set: { handledBy, updatedAt: new Date() },
+        $push: { controlHistory: {
+          action: handledBy === 'agent' ? 'take' : 'release',
+          byUserId: session.user.id,
+          byEmail: session.user.email,
+          byName: session.user.name,
+          at: new Date()
+        }}
+      }
     );
     if (res.matchedCount === 0) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -160,5 +190,19 @@ export async function POST(
   }
 
   await setConversationHandledBy(session.user.id, id, handledBy);
+  // Log control history for personal context as well
+  try {
+    const { db } = await connectToDatabase();
+    await db.collection('conversations').updateOne(
+      { conversationId: id, userId: session.user.id },
+      { $push: { controlHistory: {
+        action: handledBy === 'agent' ? 'take' : 'release',
+        byUserId: session.user.id,
+        byEmail: session.user.email,
+        byName: session.user.name,
+        at: new Date()
+      } } }
+    );
+  } catch {}
   return NextResponse.json({ success: true });
 }
