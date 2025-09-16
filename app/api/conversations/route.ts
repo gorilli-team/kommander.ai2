@@ -25,6 +25,12 @@ export async function GET(request: NextRequest) {
     const contextType = request.headers.get('x-context-type') || 'personal';
     const orgId = request.headers.get('x-organization-id') || undefined;
 
+    // Disallow personal context for operators
+    const userRole = (session.user as any)?.role;
+    if (userRole === 'operator' && contextType !== 'organization') {
+      return NextResponse.json({ error: 'Operators must use organization context' }, { status: 403 });
+    }
+
     const { db } = await connectToDatabase();
 
     let filter: any = {};

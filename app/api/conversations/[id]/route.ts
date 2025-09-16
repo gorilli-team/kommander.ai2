@@ -17,6 +17,10 @@ export async function DELETE(
 
   const orgId = request.headers.get('x-organization-id') || undefined;
   const contextType = request.headers.get('x-context-type') || undefined;
+  const userRole = (session.user as any)?.role;
+  if (userRole === 'operator' && contextType !== 'organization') {
+    return NextResponse.json({ error: 'Operators must use organization context' }, { status: 403 });
+  }
 
   if (orgId && contextType === 'organization') {
     // Operators should not be able to delete conversations; restrict to admins/managers/owners
@@ -62,6 +66,10 @@ export async function GET(
 
   const orgId = request.headers.get('x-organization-id') || undefined;
   const contextType = request.headers.get('x-context-type') || undefined;
+  const userRole = (session.user as any)?.role;
+  if (userRole === 'operator' && contextType !== 'organization') {
+    return NextResponse.json({ error: 'Operators must use organization context' }, { status: 403 });
+  }
 
   if (orgId && contextType === 'organization') {
     const permitted = await organizationService.hasPermission(
@@ -120,6 +128,10 @@ export async function POST(
 
   const orgId = request.headers.get('x-organization-id') || undefined;
   const contextType = request.headers.get('x-context-type') || undefined;
+  const userRole = (session.user as any)?.role;
+  if (userRole === 'operator' && contextType !== 'organization') {
+    return NextResponse.json({ error: 'Operators must use organization context' }, { status: 403 });
+  }
 
   if (orgId && contextType === 'organization') {
     const permitted = await organizationService.hasPermission(

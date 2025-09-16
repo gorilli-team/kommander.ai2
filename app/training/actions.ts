@@ -167,6 +167,12 @@ export async function getFaqs(context?: { type: 'personal' | 'organization', org
   }
   const userId = session.user.id;
   const organizationContext = context?.type || 'personal';
+  const isOperator = (session.user as any)?.role === 'operator';
+
+  if (isOperator && organizationContext === 'personal') {
+    // Operators cannot access personal KB
+    return [];
+  }
 
   console.log('[app/training/actions.ts] getFaqs: Fetching FAQs for user:', userId, 'organization:', organizationContext === 'organization' ? context?.organizationId : 'N/A');
 
@@ -222,12 +228,16 @@ export async function updateFaq(id: string, data: unknown, context?: { type: 'pe
   
   const session = await auth();
   const organizationContext = context?.type || 'personal';
-  
+  const isOperator = (session?.user as any)?.role === 'operator';
   if (!session?.user?.id && organizationContext === 'personal') {
     console.error('[app/training/actions.ts] updateFaq: User not authenticated.');
     return { error: 'User not authenticated. Please log in.' };
   }
   const userId = session?.user?.id;
+
+  if (isOperator && organizationContext === 'personal') {
+    return { error: 'Forbidden: operators cannot modify personal knowledge base.' };
+  }
 
   if (organizationContext === 'organization') {
     const canWrite = await organizationService.hasPermission(
@@ -341,6 +351,7 @@ export async function uploadFileAndProcess(formData: FormData, context?: { type:
   
   const session = await auth();
   const organizationContext = context?.type || 'personal';
+  const isOperator = (session?.user as any)?.role === 'operator';
   
   if (!session?.user?.id && organizationContext === 'personal') {
     console.error('[app/training/actions.ts] uploadFileAndProcess: User not authenticated.');
@@ -445,10 +456,15 @@ export async function getUploadedFiles(context?: { type: 'personal' | 'organizat
   }
   const userId = session.user.id;
   const organizationContext = context?.type || 'personal';
+  const isOperator = (session.user as any)?.role === 'operator';
   console.log('[app/training/actions.ts] getUploadedFiles (GridFS): Fetching files for user:', userId, 'organization:', organizationContext === 'organization' ? context?.organizationId : 'N/A');
 
   try {
     const { db } = await connectToDatabase();
+
+    if (isOperator && organizationContext === 'personal') {
+      return [];
+    }
 
     if (organizationContext === 'organization') {
       const canRead = await organizationService.hasPermission(
