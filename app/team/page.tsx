@@ -42,6 +42,7 @@ import {
   DropdownMenuTrigger,
 } from '@/frontend/components/ui/dropdown-menu';
 import { Textarea } from '@/frontend/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/frontend/components/ui/tooltip';
 import { 
   Users, 
   UserPlus, 
@@ -698,9 +699,24 @@ export default function TeamPage() {
                           <TableRow key={invitation.id}>
                             <TableCell className="font-medium">{invitation.email}</TableCell>
                             <TableCell>
-                              <Badge className={getRoleColor(invitation.role)}>
-                                {invitation.role}
-                              </Badge>
+                              {invitation.role === 'operator' ? (
+                                <TooltipProvider delayDuration={0}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge className={getRoleColor(invitation.role)}>
+                                        Operator
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                      Può vedere e rispondere alle conversazioni. KB in sola lettura. Nessun accesso a Team/Training/Settings.
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ) : (
+                                <Badge className={getRoleColor(invitation.role)}>
+                                  {invitation.role}
+                                </Badge>
+                              )}
                             </TableCell>
                             <TableCell>{invitation.invitedByUser?.name || invitation.invitedByUser?.email}</TableCell>
                             <TableCell>
