@@ -52,12 +52,23 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const isOperator = (session?.user as any)?.role === 'operator';
+
   // Load user's organizations
   useEffect(() => {
     if (session?.user?.id) {
       loadUserOrganizations();
     }
   }, [session?.user?.id]);
+
+  const persistContext = (type: 'personal' | 'organization', orgId?: string) => {
+    localStorage.setItem('currentContext', type);
+    if (type === 'organization' && orgId) {
+      localStorage.setItem('currentOrganizationId', orgId);
+    } else {
+      localStorage.removeItem('currentOrganizationId');
+    }
+  };
 
   const loadUserOrganizations = async () => {
     if (!session?.user?.id) return;
@@ -90,6 +101,13 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
           updatedAt: org.updatedAt
         }));
         setOrganizations(mappedOrgs);
+
+        // If user is an operator, force organization context and pick first organization
+        if (isOperator && mappedOrgs.length > 0) {
+          setCurrentContext('organization');
+          setCurrentOrganization(mappedOrgs[0]);
+          persistContext('organization', mappedOrgs[0].id);
+        }
       } else {
         console.error('[OrganizationContext] API error:', response.status, await response.text());
       }
@@ -101,10 +119,13 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   };
 
   const switchToPersonal = () => {
+    if (isOperator) {
+      // Operators cannot use personal context
+      return;
+    }
     setCurrentContext('personal');
     setCurrentOrganization(null);
-    localStorage.setItem('currentContext', 'personal');
-    localStorage.removeItem('currentOrganizationId');
+    persistContext('personal');
   };
 
   const switchToOrganization = (organizationId: string) => {
@@ -112,8 +133,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     if (organization) {
       setCurrentContext('organization');
       setCurrentOrganization(organization);
-      localStorage.setItem('currentContext', 'organization');
-      localStorage.setItem('currentOrganizationId', organizationId);
+      persistContext('organization', organizationId);
     }
   };
 
@@ -121,6 +141,17 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   useEffect(() => {
     const savedContext = localStorage.getItem('currentContext');
     const savedOrganizationId = localStorage.getItem('currentOrganizationId');
+
+    if (isOperator) {
+      // Force organization context for operator
+      if (organizations.length > 0) {
+        const org = (savedOrganizationId && organizations.find(o => o.id === savedOrganizationId)) || organizations[0];
+        setCurrentContext('organization');
+        setCurrentOrganization(org);
+        persistContext('organization', org.id);
+      }
+      return;
+    }
     
     if (savedContext === 'organization' && savedOrganizationId && organizations.length > 0) {
       const savedOrganization = organizations.find(org => org.id === savedOrganizationId);
@@ -129,7 +160,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         setCurrentOrganization(savedOrganization);
       }
     }
-  }, [organizations]);
+  }, [organizations, isOperator]);
 
   const isPersonalContext = () => currentContext === 'personal';
   const isOrganizationContext = () => currentContext === 'organization';

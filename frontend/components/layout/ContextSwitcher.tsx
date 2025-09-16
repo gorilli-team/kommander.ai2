@@ -34,6 +34,7 @@ export default function ContextSwitcher() {
 
   const currentName = getCurrentContextName();
   const isPersonal = currentContext === 'personal';
+  const isOperator = (session?.user as any)?.role === 'operator';
 
   return (
     <DropdownMenu>
@@ -52,9 +53,10 @@ export default function ContextSwitcher() {
         {/* Personal Profile */}
         <DropdownMenuItem
           onClick={switchToPersonal}
-          className={`flex items-center gap-2 p-3 cursor-pointer ${
+          disabled={isOperator}
+          className={`flex items-center gap-2 p-3 ${
             isPersonal ? 'bg-accent' : ''
-          }`}
+          } ${isOperator ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
           <User className="h-4 w-4" />
           <div className="flex flex-col">
