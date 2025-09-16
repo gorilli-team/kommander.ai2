@@ -295,7 +295,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
     let interval: NodeJS.Timeout;
     const fetchConv = async () => {
       try {
-        const res = await fetch(`/api/conversations/${selectedId}`);
+        const res = await fetchWithContext(`/api/conversations/${selectedId}`);
         if (res.ok) {
           const data: ConversationDisplayItem = await res.json();
           setConversations((prev) =>
@@ -860,7 +860,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                           const input = form.elements.namedItem('agentMsg') as HTMLInputElement;
                           const text = input.value.trim();
                           if (!text) return;
-                          const res = await fetch(`/api/conversations/${selected.id}/agent-message`, {
+                          const res = await fetchWithContext(`/api/conversations/${selected.id}/agent-message`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ text }),

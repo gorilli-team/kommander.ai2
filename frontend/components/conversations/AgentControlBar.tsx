@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Button } from '@/frontend/components/ui/button';
+import { useContextualRequest } from '@/frontend/hooks/useContextualRequest';
 
 interface Props {
   conversationId: string;
@@ -10,10 +11,11 @@ interface Props {
 
 export default function AgentControlBar({ conversationId, initialHandledBy, onChange }: Props) {
   const [handledBy, setHandledBy] = useState<'bot' | 'agent'>(initialHandledBy);
+  const { fetchWithContext } = useContextualRequest();
 
   const toggle = async () => {
     const next = handledBy === 'bot' ? 'agent' : 'bot';
-    await fetch(`/api/conversations/${conversationId}`, {
+    await fetchWithContext(`/api/conversations/${conversationId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ handledBy: next }),
