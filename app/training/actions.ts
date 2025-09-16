@@ -10,6 +10,7 @@ import { Readable } from 'stream';
 import { auth } from '@/frontend/auth'; // Import auth for session
 import { getOpenAI } from '@/backend/lib/openai';
 import mammoth from 'mammoth';
+import { organizationService } from '@/backend/lib/organizationService';
 // Context helpers removed since we'll pass context as parameters
 
 async function extractTextFromFileBuffer(buffer: Buffer, fileType: string, fileName: string): Promise<string> {
@@ -102,6 +103,18 @@ export async function createFaq(data: unknown, context?: { type: 'personal' | 'o
   const userId = session?.user?.id; // Always get userId from session
   const organizationId = organizationContext === 'organization' ? context?.organizationId : undefined;
 
+  // If org context, ensure write permission (operators have read-only)
+  if (organizationContext === 'organization') {
+    const canWrite = await organizationService.hasPermission(
+      userId!,
+      organizationId as string,
+      'write_kb' as any
+    );
+    if (!canWrite) {
+      return { error: 'Forbidden: you do not have permission to modify organization knowledge base.' };
+    }
+  }
+
   // SECURITY CHECK: Ensure we always have a valid userId
   if (!userId) {
     console.error('[app/training/actions.ts] createFaq: No valid userId available.');
@@ -165,6 +178,14 @@ export async function getFaqs(context?: { type: 'personal' | 'organization', org
     if (organizationContext === 'personal') {
       query = { userId: userId };
     } else {
+      // Enforce permission for read
+      const canRead = await organizationService.hasPermission(
+        userId,
+        context?.organizationId as string,
+        'read_kb' as any
+      );
+      if (!canRead) return [];
+
       // For organization context, ensure FAQ has valid userId AND belongs to organization
       query = {
         organizationId: context?.organizationId,
@@ -207,6 +228,17 @@ export async function updateFaq(id: string, data: unknown, context?: { type: 'pe
     return { error: 'User not authenticated. Please log in.' };
   }
   const userId = session?.user?.id;
+
+  if (organizationContext === 'organization') {
+    const canWrite = await organizationService.hasPermission(
+      userId!,
+      context?.organizationId as string,
+      'write_kb' as any
+    );
+    if (!canWrite) {
+      return { error: 'Forbidden: you do not have permission to modify organization knowledge base.' };
+    }
+  }
 
   if (!ObjectId.isValid(id)) {
     console.error('[app/training/actions.ts] updateFaq: Invalid FAQ ID.');
@@ -317,6 +349,17 @@ export async function uploadFileAndProcess(formData: FormData, context?: { type:
   const userId = organizationContext === 'personal' ? session?.user?.id : undefined;
   const organizationId = organizationContext === 'organization' ? context?.organizationId : undefined;
 
+  if (organizationContext === 'organization') {
+    const canWrite = await organizationService.hasPermission(
+      session?.user?.id!,
+      organizationId as string,
+      'write_kb' as any
+    );
+    if (!canWrite) {
+      return { error: 'Forbidden: you do not have permission to upload documents to organization knowledge base.' };
+    }
+  }
+
   const file = formData.get('file') as File | null;
 
   if (!file) {
@@ -406,6 +449,16 @@ export async function getUploadedFiles(context?: { type: 'personal' | 'organizat
 
   try {
     const { db } = await connectToDatabase();
+
+    if (organizationContext === 'organization') {
+      const canRead = await organizationService.hasPermission(
+        userId,
+        context?.organizationId as string,
+        'read_kb' as any
+      );
+      if (!canRead) return [];
+    }
+
     const query = organizationContext === 'personal' ? { userId: userId } : { organizationId: context?.organizationId };
     const filesFromDb = await db.collection('raw_files_meta')
       .find(query)

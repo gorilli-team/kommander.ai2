@@ -42,6 +42,7 @@ import {
   DropdownMenuTrigger,
 } from '@/frontend/components/ui/dropdown-menu';
 import { Textarea } from '@/frontend/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/frontend/components/ui/tooltip';
 import { 
   Users, 
   UserPlus, 
@@ -62,7 +63,7 @@ import {
 } from 'lucide-react';
 import { ClientOrganization, ClientOrganizationMember, ClientInvitation } from '@/backend/schemas/organization';
 
-type UserRoleType = 'admin' | 'manager' | 'user' | 'viewer' | 'guest';
+type UserRoleType = 'admin' | 'manager' | 'user' | 'viewer' | 'guest' | 'operator';
 
 interface InviteMemberForm {
   email: string;
@@ -143,6 +144,11 @@ export default function TeamPage() {
     
     try {
       const response = await fetch(`/api/organizations/${selectedOrg.id}/members`);
+      if (response.status === 403) {
+        // No permission to view members (e.g., operator)
+        setMembers([]);
+        return;
+      }
       if (!response.ok) throw new Error('Failed to fetch members');
       
       const memberData = await response.json();
@@ -156,7 +162,7 @@ export default function TeamPage() {
     if (!selectedOrg) return;
     
     try {
-      const response = await fetch(`/api/organizations/${selectedOrg.id}/invitations`);
+      const response = await fetch(`/api/organizations/${selectedOrg.id}/invitations?status=pending`);
       if (!response.ok) throw new Error('Failed to fetch invitations');
       
       const inviteData = await response.json();
@@ -355,6 +361,8 @@ export default function TeamPage() {
       case 'manager': return <Shield className="h-4 w-4" />;
       case 'user': return <Users className="h-4 w-4" />;
       case 'viewer': return <Eye className="h-4 w-4" />;
+      case 'guest': return <Users className="h-4 w-4" />;
+      case 'operator': return <Shield className="h-4 w-4" />;
       default: return <Users className="h-4 w-4" />;
     }
   };
@@ -366,6 +374,7 @@ export default function TeamPage() {
       case 'user': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'viewer': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'guest': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'operator': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
   };
@@ -376,6 +385,25 @@ export default function TeamPage() {
   const canManageInvitations = selectedOrg?.userPermissions?.includes('manage_invitations') || false;
   const canManageOrganization = selectedOrg?.userPermissions?.includes('manage_organization') || selectedOrg?.userRole === 'admin' || selectedOrg?.userRole === 'owner' || false;
   const canDeleteOrganization = selectedOrg?.userRole === 'admin' || selectedOrg?.userRole === 'owner' || false;
+
+  const isOperator = (session?.user as any)?.role === 'operator';
+
+  if (isOperator) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Accesso limitato</AlertTitle>
+          <AlertDescription>
+            Il ruolo Operatore non ha accesso alla gestione del team. Vai alla Operator Dashboard per lavorare sulle conversazioni.
+          </AlertDescription>
+        </Alert>
+        <div className="mt-4">
+          <a href="/operator-dashboard" className="underline text-primary">Apri Operator Dashboard</a>
+        </div>
+      </div>
+    );
+  }
 
   if (status === 'loading' || loading) {
     return (
@@ -613,6 +641,9 @@ export default function TeamPage() {
                                       <DropdownMenuItem onClick={() => handleUpdateMemberRole(member.userId, 'manager')}>
                                         Rendi Manager
                                       </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleUpdateMemberRole(member.userId, 'operator')}>
+                                        Rendi Operatore
+                                      </DropdownMenuItem>
                                       <DropdownMenuItem onClick={() => handleUpdateMemberRole(member.userId, 'user')}>
                                         Rendi Utente
                                       </DropdownMenuItem>
@@ -668,9 +699,24 @@ export default function TeamPage() {
                           <TableRow key={invitation.id}>
                             <TableCell className="font-medium">{invitation.email}</TableCell>
                             <TableCell>
-                              <Badge className={getRoleColor(invitation.role)}>
-                                {invitation.role}
-                              </Badge>
+                              {invitation.role === 'operator' ? (
+                                <TooltipProvider delayDuration={0}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge className={getRoleColor(invitation.role)}>
+                                        Operator
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                      Può vedere e rispondere alle conversazioni. KB in sola lettura. Nessun accesso a Team/Training/Settings.
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ) : (
+                                <Badge className={getRoleColor(invitation.role)}>
+                                  {invitation.role}
+                                </Badge>
+                              )}
                             </TableCell>
                             <TableCell>{invitation.invitedByUser?.name || invitation.invitedByUser?.email}</TableCell>
                             <TableCell>
@@ -841,6 +887,7 @@ export default function TeamPage() {
                   <SelectItem value="admin">Administrator</SelectItem>
                   <SelectItem value="viewer">Viewer</SelectItem>
                   <SelectItem value="guest">Guest</SelectItem>
+                  <SelectItem value="operator">Operator</SelectItem>
                 </SelectContent>
               </Select>
             </div>

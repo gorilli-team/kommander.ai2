@@ -15,13 +15,58 @@ import { UserDocument } from '../schemas/user';
 import crypto from 'crypto';
 
 // Local default permissions map (runtime constant) to avoid missing export issues
+// Uses the same permission strings referenced by API endpoints and docs/TEAM_MANAGEMENT.md
 const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
-  admin: ['org:manage', 'member:manage', 'invite:send', 'settings:update'],
-  manager: ['member:manage', 'invite:send'],
-  user: ['org:read'],
-  member: ['org:read'],
-  viewer: ['org:read'],
-  guest: ['org:read']
+  admin: [
+    'read_organization',
+    'manage_organization',
+    'manage_members',
+    'invite_users',
+    'remove_users',
+    'manage_billing',
+    'access_analytics',
+    'admin_access',
+    'read_conversations',
+    'write_conversations',
+    'read_kb',
+    'write_kb',
+  ],
+  manager: [
+    'read_organization',
+    'manage_members',
+    'invite_users',
+    'access_analytics',
+    'read_conversations',
+    'write_conversations',
+    'read_kb',
+  ],
+  user: [
+    'read_organization',
+    'read_conversations',
+    'write_conversations',
+    'read_kb',
+  ],
+  member: [
+    'read_organization',
+    'read_conversations',
+    'read_kb',
+  ],
+  viewer: [
+    'read_organization',
+    'read_conversations',
+    'read_kb',
+  ],
+  guest: [
+    'read_organization',
+  ],
+  operator: [
+    // External operator role: can see and reply to conversations, read-only KB, view basic analytics
+    'read_organization',
+    'access_analytics',
+    'read_conversations',
+    'write_conversations',
+    'read_kb',
+  ],
 };
 
 export class OrganizationService {

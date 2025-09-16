@@ -9,7 +9,7 @@ export interface Organization {
   slug: string;
   description?: string;
   logo?: string;
-  userRole: 'owner' | 'admin' | 'manager' | 'user' | 'viewer' | 'guest';
+  userRole: 'owner' | 'admin' | 'manager' | 'user' | 'viewer' | 'guest' | 'operator';
   userPermissions?: string[];
   memberCount?: number;
   isActive: boolean;

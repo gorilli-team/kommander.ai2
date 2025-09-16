@@ -3,9 +3,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, MessageCircle, MessageSquare, BarChart3, Settings as SettingsIcon, Users, type LucideIcon } from 'lucide-react';
+import { BookOpen, MessageCircle, MessageSquare, BarChart3, Settings as SettingsIcon, Users, Shield, type LucideIcon } from 'lucide-react';
 import { cn } from '@/frontend/lib/utils';
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useOrganization } from '@/frontend/contexts/OrganizationContext';
 
 interface NavItem {
   href: string;
@@ -14,17 +15,29 @@ interface NavItem {
   id: string; 
 }
 
-const navItems: NavItem[] = [
-  { href: '/training', label: 'Addestramento', icon: BookOpen, id: 'sidebar-training' },
-  { href: '/chatbot-trial', label: 'Prova Chatbot', icon: MessageCircle, id: 'sidebar-chatbot' },
-  { href: '/conversations', label: 'Conversazioni', icon: MessageSquare, id: 'sidebar-conversations' },
-  { href: '/analytics', label: 'Analytics', icon: BarChart3, id: 'sidebar-analytics' },
-  { href: '/settings', label: 'Impostazioni', icon: SettingsIcon, id: 'sidebar-settings' },
-  { href: '/team', label: 'Gestione Team', icon: Users, id: 'sidebar-team' },
-];
-
 export default function Sidebar() {
   const pathname = usePathname();
+  const { currentOrganization } = useOrganization();
+
+  const navItems = useMemo<NavItem[]>(() => {
+    const role = currentOrganization?.userRole;
+    // For operator role, show a simplified navigation
+    if (role === 'operator') {
+      return [
+        { href: '/operator-dashboard', label: 'Operator', icon: Shield, id: 'sidebar-operator' },
+        { href: '/conversations', label: 'Conversazioni', icon: MessageSquare, id: 'sidebar-conversations' },
+      ];
+    }
+    // Default full nav
+    return [
+      { href: '/training', label: 'Addestramento', icon: BookOpen, id: 'sidebar-training' },
+      { href: '/chatbot-trial', label: 'Prova Chatbot', icon: MessageCircle, id: 'sidebar-chatbot' },
+      { href: '/conversations', label: 'Conversazioni', icon: MessageSquare, id: 'sidebar-conversations' },
+      { href: '/analytics', label: 'Analytics', icon: BarChart3, id: 'sidebar-analytics' },
+      { href: '/settings', label: 'Impostazioni', icon: SettingsIcon, id: 'sidebar-settings' },
+      { href: '/team', label: 'Gestione Team', icon: Users, id: 'sidebar-team' },
+    ];
+  }, [currentOrganization?.userRole]);
   
   return (
     <div className="flex w-14 flex-col items-center justify-start"> 

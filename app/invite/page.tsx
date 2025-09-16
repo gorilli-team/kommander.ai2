@@ -108,11 +108,14 @@ function InviteContent() {
         }
         
         // Redirect to success page with organization info
-        setTimeout(() => {
+        setTimeout(async () => {
           const orgName = invitation?.organization?.name || 'Unknown Organization';
           const roleDisplay = roleDisplayNames[invitation?.role as keyof typeof roleDisplayNames] || invitation?.role;
-          router.push(`/invite/success?orgName=${encodeURIComponent(orgName)}&role=${encodeURIComponent(roleDisplay)}`);
-        }, 2000);
+          const roleCode = invitation?.role || 'user';
+          // Warm-up: fetch organizations to sync membership immediately
+          try { await fetch('/api/organizations'); } catch {}
+          router.push(`/invite/success?orgName=${encodeURIComponent(orgName)}&role=${encodeURIComponent(roleDisplay)}&roleCode=${encodeURIComponent(roleCode)}`);
+        }, 1000);
         
       } catch (err) {
         setError('Failed to accept invitation. Please try again.');
@@ -237,8 +240,9 @@ function InviteContent() {
     manager: 'Manager',
     user: 'Team Member',
     viewer: 'Viewer',
-    guest: 'Guest'
-  };
+    guest: 'Guest',
+    operator: 'Operator',
+  } as const;
 
   const roleDisplay = roleDisplayNames[invitation.role as keyof typeof roleDisplayNames] || invitation.role;
   const roleColor = {
@@ -246,8 +250,9 @@ function InviteContent() {
     manager: 'bg-blue-100 text-blue-800',
     user: 'bg-green-100 text-green-800',
     viewer: 'bg-yellow-100 text-yellow-800',
-    guest: 'bg-gray-100 text-gray-800'
-  };
+    guest: 'bg-gray-100 text-gray-800',
+    operator: 'bg-purple-100 text-purple-800',
+  } as const;
 
   return (
     <Card className="w-full max-w-lg shadow-xl">

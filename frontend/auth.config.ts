@@ -149,12 +149,31 @@ export const authConfig = {
         token.id = MOCK_USER_ID;
         token.email = MOCK_USER_EMAIL;
         token.name = MOCK_USER_NAME;
-        // Add any other properties your session expects from the token
+        // Operator bypass: set default role
+        token.role = 'operator';
         return token;
       }
       if (user) {
         token.id = user.id;
       }
+      // Fetch user's organizations and derive highest role for convenience
+      try {
+        if (token.id) {
+          const { db } = await connectToDatabase();
+          const membership = await db.collection('organization_members')
+            .find({ userId: new ObjectId(token.id as string), status: 'active' })
+            .project({ role: 1 })
+            .toArray();
+          const roles = membership.map((m: any) => m.role);
+          // Prefer operator if present; else fall back
+          if (roles.includes('operator')) token.role = 'operator';
+          else if (roles.includes('admin')) token.role = 'admin';
+          else if (roles.includes('manager')) token.role = 'manager';
+          else if (roles.includes('user')) token.role = 'user';
+          else if (roles.includes('viewer')) token.role = 'viewer';
+          else if (roles.includes('guest')) token.role = 'guest';
+        }
+      } catch {}
       return token;
     },
     async session({ session, token }) {
@@ -171,10 +190,13 @@ export const authConfig = {
             emailVerified: null,
           } as any;
         }
+        // Expose role in session in bypass too
+        (session.user as any).role = token.role || 'operator';
         return session;
       }
       if (session.user && token.id) {
         session.user.id = token.id as string;
+        (session.user as any).role = (token as any).role || 'user';
       }
       return session;
     },
