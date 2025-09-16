@@ -110,9 +110,8 @@ export default function ConversationsClient({ conversations: initial }: Props) {
         const data = await response.json();
         setConversations(data.conversations || []);
         // Reset selected ID if current selection doesn't exist in new data
-        if (selectedId && !data.conversations?.some((c: any) => c.id === selectedId)) {
-          setSelectedId(data.conversations?.[0]?.id || '');
-        }
+        // Preserve current selection even if not present in the just-fetched list;
+        // selection will be hydrated by the specific-conversation fetch effect.
         // Clear failed requests when conversations are refreshed
         setFailedRequests(new Set());
       } else {

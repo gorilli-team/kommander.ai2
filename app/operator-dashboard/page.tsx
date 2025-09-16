@@ -4,12 +4,18 @@ import { useEffect, useState } from 'react';
 import { useOrganization } from '@/frontend/contexts/OrganizationContext';
 import ConversationsClient from '@/frontend/components/conversations/ConversationsClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/frontend/components/ui/card';
+import { Input } from '@/frontend/components/ui/input';
+import { Button } from '@/frontend/components/ui/button';
+import { useSession } from 'next-auth/react';
 import { MessageSquare, Bot, User, FileText, HelpCircle, RefreshCw } from 'lucide-react';
 
 export default function OperatorDashboardPage() {
   const { currentContext, currentOrganization } = useOrganization();
+  const { data: session } = useSession();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [displayName, setDisplayName] = useState<string>(() => (session?.user?.name as string) || '');
+  const [savingName, setSavingName] = useState(false);
 
   const fetchSummary = async () => {
     setLoading(true);
@@ -42,6 +48,39 @@ export default function OperatorDashboardPage() {
         <h1 className="text-3xl font-bold">Operator Dashboard</h1>
         <p className="text-muted-foreground">Conversazioni e metriche di base. Accesso KB in sola lettura nelle prossime iterazioni.</p>
       </div>
+
+      {/* Operator profile quick settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Profilo Operatore</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex-1">
+            <label className="block text-sm text-muted-foreground mb-1">Nome visualizzato</label>
+            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Es. Mario Rossi" />
+          </div>
+          <Button
+            disabled={savingName || !displayName.trim()}
+            onClick={async () => {
+              setSavingName(true);
+              try {
+                const res = await fetch('/api/me/profile', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: displayName.trim() })
+                });
+                if (!res.ok) throw new Error('Salvataggio non riuscito');
+              } catch (e) {
+                console.error(e);
+              } finally {
+                setSavingName(false);
+              }
+            }}
+          >
+            {savingName ? 'Salvataggio...' : 'Salva'}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
