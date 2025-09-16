@@ -5,7 +5,7 @@ import { withRateLimit, withAuditLog } from '@/backend/lib/security';
 import { z } from 'zod';
 
 const UpdateMemberSchema = z.object({
-  role: z.enum(['admin', 'manager', 'user', 'viewer', 'guest']).optional(),
+  role: z.enum(['admin', 'manager', 'user', 'viewer', 'guest', 'operator']).optional(),
   status: z.enum(['active', 'inactive', 'suspended']).optional(),
   permissions: z.array(z.string()).optional()
 });

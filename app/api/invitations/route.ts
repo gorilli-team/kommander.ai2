@@ -8,7 +8,7 @@ import { z } from 'zod';
 const CreateInvitationSchema = z.object({
   organizationId: z.string(),
   email: z.string().email(),
-  role: z.enum(['admin', 'manager', 'user', 'viewer', 'guest']),
+  role: z.enum(['admin', 'manager', 'user', 'viewer', 'guest', 'operator']),
   message: z.string().optional(),
   expiresInDays: z.number().min(1).max(30).optional()
 });

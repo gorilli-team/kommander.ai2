@@ -62,7 +62,7 @@ import {
 } from 'lucide-react';
 import { ClientOrganization, ClientOrganizationMember, ClientInvitation } from '@/backend/schemas/organization';
 
-type UserRoleType = 'admin' | 'manager' | 'user' | 'viewer' | 'guest';
+type UserRoleType = 'admin' | 'manager' | 'user' | 'viewer' | 'guest' | 'operator';
 
 interface InviteMemberForm {
   email: string;
@@ -355,6 +355,8 @@ export default function TeamPage() {
       case 'manager': return <Shield className="h-4 w-4" />;
       case 'user': return <Users className="h-4 w-4" />;
       case 'viewer': return <Eye className="h-4 w-4" />;
+      case 'guest': return <Users className="h-4 w-4" />;
+      case 'operator': return <Shield className="h-4 w-4" />;
       default: return <Users className="h-4 w-4" />;
     }
   };
@@ -366,6 +368,7 @@ export default function TeamPage() {
       case 'user': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'viewer': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'guest': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'operator': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
   };
@@ -613,6 +616,9 @@ export default function TeamPage() {
                                       <DropdownMenuItem onClick={() => handleUpdateMemberRole(member.userId, 'manager')}>
                                         Rendi Manager
                                       </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleUpdateMemberRole(member.userId, 'operator')}>
+                                        Rendi Operatore
+                                      </DropdownMenuItem>
                                       <DropdownMenuItem onClick={() => handleUpdateMemberRole(member.userId, 'user')}>
                                         Rendi Utente
                                       </DropdownMenuItem>
@@ -841,6 +847,7 @@ export default function TeamPage() {
                   <SelectItem value="admin">Administrator</SelectItem>
                   <SelectItem value="viewer">Viewer</SelectItem>
                   <SelectItem value="guest">Guest</SelectItem>
+                  <SelectItem value="operator">Operator</SelectItem>
                 </SelectContent>
               </Select>
             </div>
