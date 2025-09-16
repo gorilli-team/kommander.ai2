@@ -93,6 +93,11 @@ export async function createFaq(data: unknown, context?: { type: 'personal' | 'o
   
   const session = await auth();
   const organizationContext = context?.type || 'personal';
+  const isOperator = (session?.user as any)?.role === 'operator';
+
+  if (isOperator) {
+    return { error: 'Forbidden: operators cannot create FAQs.' };
+  }
 
   if (!session?.user?.id && organizationContext === 'personal') {
     console.error('[app/training/actions.ts] createFaq: User not authenticated.');
@@ -353,6 +358,10 @@ export async function uploadFileAndProcess(formData: FormData, context?: { type:
   const organizationContext = context?.type || 'personal';
   const isOperator = (session?.user as any)?.role === 'operator';
   
+  if (isOperator) {
+    return { error: 'Forbidden: operators cannot upload documents.' };
+  }
+
   if (!session?.user?.id && organizationContext === 'personal') {
     console.error('[app/training/actions.ts] uploadFileAndProcess: User not authenticated.');
     return { error: 'User not authenticated. Please log in.' };
