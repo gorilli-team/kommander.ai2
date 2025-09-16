@@ -22,11 +22,11 @@ export async function GET(
 
     const organizationId = params.id;
 
-    // Check if user has permission to view members
+// Check if user has permission to view members (only managers/admins)
     const hasPermission = await organizationService.hasPermission(
       session.user.id,
       organizationId,
-      'read_organization'
+      'manage_members'
     );
 
     if (!hasPermission) {

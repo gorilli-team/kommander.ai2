@@ -15,11 +15,11 @@ export async function GET(
 
     const organizationId = params.id;
 
-    // Check if user has permission to view invitations
+// Check if user has permission to view invitations (must be able to invite users)
     const hasPermission = await organizationService.hasPermission(
       session.user.id,
       organizationId,
-      'read_organization'
+      'invite_users'
     );
 
     if (!hasPermission) {

@@ -237,8 +237,9 @@ function InviteContent() {
     manager: 'Manager',
     user: 'Team Member',
     viewer: 'Viewer',
-    guest: 'Guest'
-  };
+    guest: 'Guest',
+    operator: 'Operator',
+  } as const;
 
   const roleDisplay = roleDisplayNames[invitation.role as keyof typeof roleDisplayNames] || invitation.role;
   const roleColor = {
@@ -246,8 +247,9 @@ function InviteContent() {
     manager: 'bg-blue-100 text-blue-800',
     user: 'bg-green-100 text-green-800',
     viewer: 'bg-yellow-100 text-yellow-800',
-    guest: 'bg-gray-100 text-gray-800'
-  };
+    guest: 'bg-gray-100 text-gray-800',
+    operator: 'bg-purple-100 text-purple-800',
+  } as const;
 
   return (
     <Card className="w-full max-w-lg shadow-xl">
