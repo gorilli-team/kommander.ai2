@@ -328,6 +328,35 @@ class GdprComplianceService {
     // Delete billing data
     await db.collection('subscriptions').deleteMany({ userId });
 
+    // Delete user files from GridFS and associated metadata
+    try {
+      const { GridFSBucket } = await import('mongodb');
+      const bucket = new GridFSBucket(db, { bucketName: 'fs' });
+      
+      // Find all user files
+      const userFiles = await db.collection('raw_files_meta').find({ userId }).toArray();
+      
+      // Delete files from GridFS
+      for (const file of userFiles) {
+        try {
+          await bucket.delete(file.gridFsFileId);
+          console.log(`[GDPR] Deleted GridFS file ${file.gridFsFileId} for user ${userId}`);
+        } catch (gridFsError: any) {
+          console.warn(`[GDPR] Could not delete GridFS file ${file.gridFsFileId}: ${gridFsError.message}`);
+        }
+      }
+      
+      // Delete file metadata
+      await db.collection('raw_files_meta').deleteMany({ userId });
+      
+      // Delete file summaries
+      await db.collection('file_summaries').deleteMany({ userId });
+      
+      console.log(`[GDPR] Deleted ${userFiles.length} files and associated data for user ${userId}`);
+    } catch (fileError: any) {
+      console.error(`[GDPR] Error deleting user files for ${userId}:`, fileError.message);
+    }
+    
     // Delete any cached data
     await db.collection('cache').deleteMany({ userId });
   }

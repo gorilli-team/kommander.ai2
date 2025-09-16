@@ -93,16 +93,6 @@ export async function createFaq(data: unknown, context?: { type: 'personal' | 'o
   
   const session = await auth();
   const organizationContext = context?.type || 'personal';
-  const isOperator = (session?.user as any)?.role === 'operator';
-  
-  if (isOperator) {
-    return { error: 'Forbidden: operators cannot upload documents.' };
-  }
-
-  if (!session?.user?.id && organizationContext === 'personal') {
-  if (isOperator) {
-    return { error: 'Forbidden: operators cannot create FAQs.' };
-  }
 
   if (!session?.user?.id && organizationContext === 'personal') {
     console.error('[app/training/actions.ts] createFaq: User not authenticated.');
@@ -327,9 +317,6 @@ export async function deleteFaq(id: string) {
     console.error('[app/training/actions.ts] deleteFaq: User not authenticated.');
     return { error: 'User not authenticated. Please log in.' };
   }
-  if ((session.user as any)?.role === 'operator') {
-    return { error: 'Forbidden: operators cannot delete FAQs.' };
-  }
   const userId = session.user.id;
 
    if (!ObjectId.isValid(id)) {
@@ -519,9 +506,6 @@ export async function deleteDocument(id: string) {
     console.error('[app/training/actions.ts] deleteDocument: User not authenticated.');
     return { error: 'User not authenticated. Please log in.' };
   }
-  if ((session.user as any)?.role === 'operator') {
-    return { error: 'Forbidden: operators cannot delete documents.' };
-  }
   const userId = session.user.id;
 
   if (!ObjectId.isValid(id)) {
@@ -555,8 +539,21 @@ export async function deleteDocument(id: string) {
     // Delete the metadata document (already confirmed it belongs to the user)
     await db.collection('raw_files_meta').deleteOne({ _id: new ObjectId(id), userId: userId });
     console.log(`[app/training/actions.ts] deleteDocument (GridFS): Document metadata with ID ${id} deleted successfully for user ${userId}.`);
+    
+    // Delete the associated file summary to completely remove from knowledge base
+    try {
+      const summaryDeleteResult = await db.collection('file_summaries').deleteOne({ 
+        gridFsFileId: gridFsFileIdToDelete, 
+        userId: userId 
+      });
+      console.log(`[app/training/actions.ts] deleteDocument (GridFS): File summary deleted for GridFS ID ${gridFsFileIdToDelete}. Matched: ${summaryDeleteResult.deletedCount}`);
+    } catch (summaryError: any) {
+      console.warn(`[app/training/actions.ts] deleteDocument (GridFS): Warning - could not delete file summary for GridFS ID ${gridFsFileIdToDelete}: ${summaryError.message}`);
+      // Don't fail the entire operation if summary deletion fails
+    }
+    
     revalidatePath('/training');
-    return { success: 'Document and its metadata deleted successfully.' };
+    return { success: 'Document completely removed from knowledge base.' };
   } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown database/GridFS error during document deletion.';
     console.error(`[app/training/actions.ts] deleteDocument (GridFS): Database/GridFS error for ID ${id}, user ${userId}:`, errorMessage);
