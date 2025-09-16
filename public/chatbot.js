@@ -136,8 +136,8 @@
     const wsRef = useRef(null);
     const wsConnectedRef = useRef(false);
     const wsRetryRef = useRef(0);
-
-    const isSendingRef = useRef(false);
+    
+    const [isSending, setIsSending] = useState(false);
     const isStreamingRef = useRef(false);
     const [showRestartConfirm, setShowRestartConfirm] = useState(false);
     const [showConversationsList, setShowConversationsList] = useState(false);
@@ -833,8 +833,8 @@
 
     const sendMessage = async () => {
       const text = input.trim();
-      if (!text || isSendingRef.current) return;
-      isSendingRef.current = true;
+      if (!text || isSending) return;
+      setIsSending(true);
 
       addMessage('user', text, false);
       lastSentTextRef.current = text;
@@ -852,7 +852,7 @@
         );
         setIsTyping(false);
         setInput('');
-        isSendingRef.current = false;
+        setIsSending(false);
         // DO NOT call API for human operator requests - this prevents AI from generating response
         return;
       }
@@ -997,7 +997,7 @@
         console.error("Failed to send message:", err);
       } finally {
         setIsTyping(false); // Hide typing indicator
-        isSendingRef.current = false;
+        setIsSending(false);
         
         // Re-enable polling after streaming completes (only if WS is not connected)
         setTimeout(() => {
@@ -1266,12 +1266,12 @@
                 setInput(capitalizedValue);
               },
               placeholder: 'Scrivi qui…',
-              disabled: isTyping || isSendingRef.current, // Disable input while typing or sending
+              disabled: isTyping || isSending, // Disable input while typing or sending
               autoComplete: 'off'
             }),
             React.createElement(
               'button',
-              { type: 'submit', 'aria-label': 'Invia', disabled: isTyping || !input.trim() || isSendingRef.current },
+              { type: 'submit', 'aria-label': 'Invia', disabled: isTyping || !input.trim() || isSending },
               React.createElement(
                 'svg',
                 {
