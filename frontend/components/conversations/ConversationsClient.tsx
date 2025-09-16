@@ -32,7 +32,8 @@ import {
   Archive,
   Trash2,
   Copy,
-  ExternalLink
+  ExternalLink,
+  History
 } from 'lucide-react';
 import AgentControlBar from './AgentControlBar';
 import { Input } from '@/frontend/components/ui/input';
@@ -45,6 +46,14 @@ export interface ConversationMessageDisplay {
   timestamp: string;
 }
 
+export interface ControlHistoryEntry {
+  action: 'take' | 'release';
+  byUserId?: string;
+  byEmail?: string | null;
+  byName?: string | null;
+  at: string;
+}
+
 export interface ConversationDisplayItem {
   id: string;
   messages: ConversationMessageDisplay[];
@@ -52,6 +61,7 @@ export interface ConversationDisplayItem {
   createdAt?: string;
   updatedAt?: string;
   handledBy?: 'bot' | 'agent';
+  controlHistory?: ControlHistoryEntry[];
 }
 
 interface Props {
@@ -757,6 +767,34 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                     </CardHeader>
 
                     <CardContent className="flex-1 overflow-hidden">
+                      {/* Control history */}
+                      {Array.isArray(selected.controlHistory) && selected.controlHistory.length > 0 && (
+                        <div className="mb-4 p-3 border rounded-md bg-muted/40">
+                          <div className="flex items-center gap-2 mb-2">
+                            <History className="h-4 w-4" />
+                            <span className="text-sm font-medium">Control history</span>
+                          </div>
+                          <div className="space-y-2 max-h-40 overflow-auto pr-1">
+                            {selected.controlHistory
+                              .slice()
+                              .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+                              .map((e, i) => (
+                                <div key={`${e.at}-${i}`} className="text-xs text-muted-foreground flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant={e.action === 'take' ? 'default' : 'secondary'} className="uppercase">
+                                      {e.action}
+                                    </Badge>
+                                    <span className="text-foreground">{e.byName || e.byEmail || e.byUserId || 'Unknown'}</span>
+                                  </div>
+                                  <span title={format(new Date(e.at), 'PPpp')}>
+                                    {formatDistanceToNow(new Date(e.at), { addSuffix: true })}
+                                  </span>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
                       <ScrollArea className="h-full py-4">
                         <div className="space-y-4">
                           {(selected.messages || []).map((msg, idx) => {
