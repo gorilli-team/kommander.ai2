@@ -143,6 +143,11 @@ export default function TeamPage() {
     
     try {
       const response = await fetch(`/api/organizations/${selectedOrg.id}/members`);
+      if (response.status === 403) {
+        // No permission to view members (e.g., operator)
+        setMembers([]);
+        return;
+      }
       if (!response.ok) throw new Error('Failed to fetch members');
       
       const memberData = await response.json();
@@ -156,7 +161,7 @@ export default function TeamPage() {
     if (!selectedOrg) return;
     
     try {
-      const response = await fetch(`/api/organizations/${selectedOrg.id}/invitations`);
+      const response = await fetch(`/api/organizations/${selectedOrg.id}/invitations?status=pending`);
       if (!response.ok) throw new Error('Failed to fetch invitations');
       
       const inviteData = await response.json();
@@ -379,6 +384,25 @@ export default function TeamPage() {
   const canManageInvitations = selectedOrg?.userPermissions?.includes('manage_invitations') || false;
   const canManageOrganization = selectedOrg?.userPermissions?.includes('manage_organization') || selectedOrg?.userRole === 'admin' || selectedOrg?.userRole === 'owner' || false;
   const canDeleteOrganization = selectedOrg?.userRole === 'admin' || selectedOrg?.userRole === 'owner' || false;
+
+  const isOperator = (session?.user as any)?.role === 'operator';
+
+  if (isOperator) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Accesso limitato</AlertTitle>
+          <AlertDescription>
+            Il ruolo Operatore non ha accesso alla gestione del team. Vai alla Operator Dashboard per lavorare sulle conversazioni.
+          </AlertDescription>
+        </Alert>
+        <div className="mt-4">
+          <a href="/operator-dashboard" className="underline text-primary">Apri Operator Dashboard</a>
+        </div>
+      </div>
+    );
+  }
 
   if (status === 'loading' || loading) {
     return (

@@ -32,7 +32,13 @@ export async function GET(
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
-    const invitations = await organizationService.getOrganizationInvitations(organizationId);
+    const url = new URL(request.url);
+    const statusFilter = url.searchParams.get('status') || 'pending';
+
+    let invitations = await organizationService.getOrganizationInvitations(organizationId);
+    if (statusFilter) {
+      invitations = invitations.filter((inv: any) => inv.status === statusFilter);
+    }
 
     await withAuditLog(
       request,
@@ -41,7 +47,7 @@ export async function GET(
       session.user.id,
       true,
       undefined,
-      { organizationId, invitationCount: invitations.length }
+      { organizationId, invitationCount: invitations.length, status: statusFilter }
     );
 
     return NextResponse.json(invitations);
