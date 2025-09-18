@@ -23,14 +23,19 @@ export interface OfferQueryResult {
 }
 
 function tokenize(query: string): string[] {
+  const stop: Set<string> = new Set([
+    'su','di','per','la','il','le','un','una','della','del','dei','delle','lo','gli','che','ci','sono',
+    'offerte','offerta','auto','macchina','noleggio','noleggiare','mi','interessa','avrei','vorrei','info','informazioni','sulla','sulle','sul','modello','marca'
+  ]);
   return query
     .toLowerCase()
     .replace(/[^a-z0-9àèéìòùç\s]/gi, ' ')
     .split(/\s+/)
-    .filter(w => w.length > 1 && !['hai','avete','su','di','per','la','il','le','un','una','della','del','dei','delle','lo','gli','che','ci','sono','offerte','offerta','auto','macchina','noleggio','noleggiare','mi','interessa','avrei','vorrei','info','informazioni','sulla','sulle','sul','modello','marca','tesla?','panda?'].includes(w));
+    .map(w => w.trim())
+    .filter(w => w.length > 1 && !stop.has(w));
 }
 
-export async function searchOffers(userId: string, query: string, limit = 5): Promise<OfferQueryResult[]> {
+export async function searchOffers(userId: string, query: string, limit = 10): Promise<OfferQueryResult[]> {
   const { db } = await connectToDatabase();
   const col = db.collection('offers');
 
@@ -101,7 +106,8 @@ export function buildOffersContext(offers: OfferQueryResult[]): string {
   ctx += '- Data disponibilità: {DataDisponibilita}\n';
   ctx += '- Offerta valida fino: {Validita}\n';
   ctx += "Se l'informazione non è disponibile, inserisci 'Non specificata' o ometti la riga.\n";
-  ctx += "Chiudi con una frase d'invito, ad esempio: 'Se sei interessato/a, posso inviarti ulteriori dettagli o una quotazione.'\n\n";
+  ctx += "Chiudi con una frase d'invito, ad esempio: 'Se sei interessato/a, posso inviarti ulteriori dettagli o una quotazione.'\n";
+  ctx += "Se ci sono più offerte rilevanti, ELENCALE TUTTE senza ometterne alcuna. Non aggregare le offerte. Usa i valori esatti del contesto.\n\n";
 
   offers.forEach((o, idx) => {
     const titolo = (o.brand || o.model) ? `Sì, abbiamo un'offerta di noleggio per la ${o.brand || ''} ${o.model || ''}`.trim() : 'Offerta di noleggio disponibile';

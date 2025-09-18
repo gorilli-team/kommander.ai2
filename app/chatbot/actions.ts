@@ -100,7 +100,7 @@ export async function generateChatResponse(
     let offersContext = '';
     try {
       const { searchOffers, buildOffersContext } = await import('@/backend/lib/offersService');
-      const offers = await searchOffers(userIdToUse, userMessage, 5);
+      const offers = await searchOffers(userIdToUse, userMessage, 10);
       offersContext = buildOffersContext(offers);
     } catch (e: any) {
       console.warn('[chatbot/actions] offers search failed:', e?.message || e);

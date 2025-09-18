@@ -106,7 +106,7 @@ async function generateChatResponseStream(
     let offersContext = '';
     try {
       const { searchOffers, buildOffersContext } = await import('@/backend/lib/offersService');
-      const offers = await searchOffers(userId, userMessage, 5);
+      const offers = await searchOffers(userId, userMessage, 10);
       offersContext = buildOffersContext(offers);
     } catch (e: any) {
       console.warn('[kommander-query-stream] offers search failed:', e?.message || e);
