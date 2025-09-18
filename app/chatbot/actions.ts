@@ -95,6 +95,18 @@ export async function generateChatResponse(
     
     // Genera contesto dai file
     const smartFileContext = buildFileContext(smartFiles);
+
+    // Cerca offerte strutturate nel DB dalle importazioni CSV
+    let offersContext = '';
+    try {
+      const { searchOffers, buildOffersContext } = await import('@/backend/lib/offersService');
+      const offers = await searchOffers(userIdToUse, userMessage, 5);
+      offersContext = buildOffersContext(offers);
+    } catch (e: any) {
+      console.warn('[chatbot/actions] offers search failed:', e?.message || e);
+    }
+
+    const combinedContext = `${offersContext ? offersContext + '\n\n' : ''}${smartFileContext || ''}`.trim();
     
     const userSettings = await getSettings();
     const messages = buildPromptServer(
@@ -105,7 +117,7 @@ export async function generateChatResponse(
       history,
       [], // fileSummaries vuoto (incluso in smartFileContext)
       userSettings || undefined,
-      smartFileContext // Nuovo parametro con contesto intelligente
+      combinedContext // Contesto offerte + file
     );
 
     const openai = getOpenAI();

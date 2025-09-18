@@ -443,6 +443,23 @@ export async function uploadFileAndProcess(formData: FormData, context?: { type:
     } catch (summaryError: any) {
       console.error('[app/training/actions.ts] Error generating or storing summary:', summaryError?.message || summaryError);
     }
+
+    // If CSV, ingest structured offers into database
+    try {
+      if (file.type === 'text/csv' || file.name.toLowerCase().endsWith('.csv')) {
+        const { ingestCsvOffers } = await import('@/backend/lib/csvOffers');
+        const result = await ingestCsvOffers({
+          userId,
+          organizationId,
+          gridFsFileId: uploadStream.id,
+          fileName: file.name,
+          fileBuffer,
+        });
+        console.log(`[app/training/actions.ts] CSV ingestion complete for ${file.name}. Inserted offers: ${result.inserted}`);
+      }
+    } catch (csvError: any) {
+      console.error(`[app/training/actions.ts] CSV ingestion failed for ${file.name}:`, csvError?.message || csvError);
+    }
     
     revalidatePath('/training');
     console.log(`[app/training/actions.ts] uploadFileAndProcess (GridFS): END - Success for user ${userId}.`);
@@ -559,6 +576,14 @@ export async function deleteDocument(id: string) {
     } catch (summaryError: any) {
       console.warn(`[app/training/actions.ts] deleteDocument (GridFS): Warning - could not delete file summary for GridFS ID ${gridFsFileIdToDelete}: ${summaryError.message}`);
       // Don't fail the entire operation if summary deletion fails
+    }
+
+    // Delete offers imported from this CSV (if any)
+    try {
+      const offersDeleteResult = await db.collection('offers').deleteMany({ 'source.gridFsFileId': gridFsFileIdToDelete, userId: userId });
+      console.log(`[app/training/actions.ts] deleteDocument (GridFS): Offers deleted for GridFS ID ${gridFsFileIdToDelete}. Deleted: ${offersDeleteResult.deletedCount}`);
+    } catch (offersError: any) {
+      console.warn(`[app/training/actions.ts] deleteDocument (GridFS): Warning - could not delete offers for GridFS ID ${gridFsFileIdToDelete}: ${offersError.message}`);
     }
     
     revalidatePath('/training');
