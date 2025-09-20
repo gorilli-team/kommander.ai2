@@ -835,6 +835,8 @@
       const text = input.trim();
       if (!text || isSending) return;
       setIsSending(true);
+      // Determine if this will create a brand new conversation before we possibly set a new ID
+      const wasNewConversationFlag = !conversationIdRef.current;
 
       addMessage('user', text, false);
       lastSentTextRef.current = text;
@@ -875,14 +877,47 @@
           .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
           .map((msg) => ({ role: msg.role, content: msg.text }));
 
+        // Calcola titolo conversazione per MovoLab (solo alla creazione)
+        const wasNewConversation = wasNewConversationFlag;
+        const MOVOLAB_USER_ID = '688a1f1cd6c4ca826956b9d2';
+        const ownerIdForApi = organizationId || userId;
+        let conversationTitle;
+        if (wasNewConversation && ownerIdForApi === MOVOLAB_USER_ID) {
+          const extractedName = (function extractMovolabOperatorName() {
+            try {
+              // Preferisci bottoni prominenti con classi tailwind tipiche
+              const btns = Array.from(document.querySelectorAll('button'));
+              const scored = btns.map((b) => {
+                const text = (b.textContent || '').replace(/\s+/g, ' ').trim();
+                const cls = b.className || '';
+                const hasSvg = b.querySelector('svg') ? 1 : 0;
+                let score = 0;
+                if (cls.includes('rounded')) score += 2;
+                if (cls.includes('text-white')) score += 2;
+                if (cls.includes('font-medium')) score += 1;
+                score += hasSvg;
+                if (/^[A-ZÀ-Ý][a-zà-ÿ]+\s+[A-ZÀ-Ý][a-zà-ÿ]+/.test(text)) score += 4; // Nome Cognome
+                if (text.length >= 3 && text.length <= 50) score += 2;
+                return { el: b, text, score };
+              }).filter(x => x.text && x.text.length > 0);
+              scored.sort((a,b)=> b.score - a.score);
+              const best = scored[0];
+              return best?.text || '';
+            } catch { return ''; }
+          })();
+          if (extractedName) {
+            conversationTitle = `Conversazione avviata da ${extractedName}`;
+          }
+        }
 
         const requestBody = {
-          userId: organizationId || userId,
+          userId: ownerIdForApi,
           message: text,
           history: historyForAI,
           conversationId: conversationIdRef.current,
           site: window.location.hostname,
           endUserId: endUserIdRef.current,
+          ...(conversationTitle ? { conversationTitle } : {})
         };
           
         console.log('[Chatbot] Sending message with data:', requestBody);

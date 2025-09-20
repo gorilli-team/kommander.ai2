@@ -12,10 +12,12 @@ export interface ConversationMessageDisplay {
 
 export interface ConversationDisplayItem {
   id: string;
+  title?: string;
   messages: ConversationMessageDisplay[];
   site?: string;
   createdAt?: string;
   updatedAt?: string;
+  handledBy?: 'bot' | 'agent';
 }
 
 export async function getConversations(): Promise<ConversationDisplayItem[]> {
@@ -35,6 +37,7 @@ export async function getConversations(): Promise<ConversationDisplayItem[]> {
 
   return docs.map((doc) => ({
     id: doc.conversationId,
+    title: (doc as any).title, // optional
     handledBy: doc.handledBy ?? 'bot',
     messages: doc.messages.map((m) => ({
       role: m.role,
@@ -52,14 +55,18 @@ export async function appendMessages(
   conversationId: string,
   messages: ConversationMessageDisplay[],
   site?: string,
+  title?: string,
 ): Promise<void> {
   const { db } = await connectToDatabase();
   const now = new Date();
 
+  const setOnInsert: any = { createdAt: now, site };
+  if (title) setOnInsert.title = title;
+
   await db.collection<ConversationDocument>('conversations').updateOne(
     { userId, conversationId },
     {
-      $setOnInsert: { createdAt: now, site },
+      $setOnInsert: setOnInsert,
       $set: { updatedAt: now },
       $push: {
         messages: {
@@ -102,6 +109,7 @@ export async function getConversation(
   if (!doc) return null;
   return {
     id: doc.conversationId,
+    title: (doc as any).title,
     handledBy: doc.handledBy ?? 'bot',
     messages: doc.messages.map((m) => ({
       role: m.role,

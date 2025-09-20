@@ -91,6 +91,7 @@ export async function GET(
     if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     const conv = {
       id: doc.conversationId,
+      title: (doc as any).title,
       handledBy: doc.handledBy ?? 'bot',
       messages: (doc.messages || []).map((m: any) => ({
         role: m.role,

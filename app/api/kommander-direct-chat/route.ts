@@ -20,7 +20,7 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    const { userId, message, history, conversationId, site, endUserId } = await request.json();
+    const { userId, message, history, conversationId, site, endUserId, conversationTitle } = await request.json();
 
     if (!userId || !message) {
       return NextResponse.json(
@@ -104,13 +104,23 @@ export async function POST(request: Request) {
     const isNewConversation = !existing;
     
     // Salva solo il messaggio utente all'inizio
+    // Solo per MovoLab interno abilitiamo il set del titolo iniziale, se fornito
+    const MOVOLAB_USER_ID = '688a1f1cd6c4ca826956b9d2';
+    const effectiveTitle = (isNewConversation && userId === MOVOLAB_USER_ID && typeof conversationTitle === 'string' && conversationTitle.trim())
+      ? conversationTitle.trim()
+      : undefined;
+
+    if (effectiveTitle) {
+      console.log(`[kommander-direct-chat] Imposto titolo iniziale per conversazione ${convId}:`, effectiveTitle);
+    }
     await appendMessages(
       userId,
       convId,
       [
         { role: 'user', text: message, timestamp: new Date().toISOString() },
       ],
-      site
+      site,
+      effectiveTitle
     );
     
     // Invia notifica email per nuova conversazione
@@ -191,7 +201,8 @@ export async function POST(request: Request) {
                 [
                   { role: 'assistant', text: response, timestamp: new Date().toISOString() },
                 ],
-                site
+                site,
+                undefined
               );
               // Broadcast update via relay/local
               try {

@@ -56,6 +56,7 @@ export interface ControlHistoryEntry {
 
 export interface ConversationDisplayItem {
   id: string;
+  title?: string;
   messages: ConversationMessageDisplay[];
   site?: string;
   createdAt?: string;
@@ -654,9 +655,20 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                               <div className="space-y-3">
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium line-clamp-2 mb-1">
-                                      {last?.text || 'New conversation'}
-                                    </p>
+                                    {c.title ? (
+                                      <>
+                                        <p className="text-sm font-semibold line-clamp-1 mb-1">
+                                          {c.title}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground line-clamp-2 mb-1">
+                                          {last?.text || 'New conversation'}
+                                        </p>
+                                      </>
+                                    ) : (
+                                      <p className="text-sm font-medium line-clamp-2 mb-1">
+                                        {last?.text || 'New conversation'}
+                                      </p>
+                                    )}
                                     {c.site && (
                                       <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
                                         <Globe className="h-3 w-3" />
@@ -734,7 +746,7 @@ export default function ConversationsClient({ conversations: initial }: Props) {
                         <div>
                           <CardTitle className="flex items-center gap-2">
                             <MessageSquare className="h-5 w-5" />
-                            Conversation {selected.id.slice(-8)}
+                            {selected.title || `Conversation ${selected.id.slice(-8)}`}
                           </CardTitle>
                           <p className="text-sm text-muted-foreground mt-1">
                             {selected.updatedAt ? format(new Date(selected.updatedAt), 'PPpp') : ''}

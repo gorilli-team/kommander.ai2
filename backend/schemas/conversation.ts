@@ -14,6 +14,7 @@ export const ConversationSchema = z.object({
   userId: z.string(),
   conversationId: z.string(),
   site: z.string().optional(),
+  title: z.string().optional(),
   messages: z.array(ConversationMessageSchema),
   handledBy: z.enum(['bot', 'agent']).default('bot'),
   createdAt: z.date().optional(),

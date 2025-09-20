@@ -66,6 +66,7 @@ export async function GET(request: NextRequest) {
 
     const conversations = docs.map((doc: any) => ({
       id: doc.conversationId,
+      title: doc.title,
       handledBy: doc.handledBy ?? 'bot',
       messages: (doc.messages || []).map((m: any) => ({
         role: m.role,
